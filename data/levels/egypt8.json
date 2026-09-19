@@ -1,0 +1,25 @@
+{
+ "id": "egypt8",
+ "name": "Egypt 8 (story)",
+ "stage": "egypt",
+ "default_kind": "ground",
+ "bans": [
+  "sunflower",
+  "twinsunflower",
+  "iceburg",
+  "gravebuster",
+  "sunshroom",
+  "puffshroom",
+  "sunbean",
+  "melonpult",
+  "toadstool",
+  "goldleaf",
+  "stallia",
+  "primalsunflower",
+  "moonflower",
+  "goldbloom",
+  "birthsunflower",
+  "imppear"
+ ],
+ "source": "declared level definition EGYPT8"
+}

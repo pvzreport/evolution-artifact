@@ -1,0 +1,45 @@
+{
+ "note": "What a cell's planting checks reject, beyond the stage rule and the level's bans. Each kind was read from a debugger capture of the game's candidate lists; the capture is identified by the SHA-256 of its record. The flooded kind admits by the declared CanLiveOnWaves flag instead of a stored list; the capture confirmed that flag. Intensive Carrot and Cob Cannon are rejected on every ordinary cell because their checks need board conditions no fresh planting meets (a revival record, two adjacent Kernel-pults).",
+ "kinds": {
+  "ground": {
+   "description": "Ordinary ground: Egypt, Dark Ages, Beach left of the coast, Pirate deck",
+   "rejects": ["intensivecarrot", "cobcannon", "lilypad"],
+   "measured": [
+    {"level": "Egypt 13", "capture_sha256": "5c7015b4f66911906f7ebecf88bb0a64fb6da23d5cd8ba040e7f079e596448ed", "cells": "nine cells, cost 50"},
+    {"level": "Memory Lane season 33 level 6 difficult", "capture_sha256": "179f74504c2c66e8ebc79d3b8090cc78e4b1d22bdfb6c4198f012e7d6641ad42", "cells": "column 2, costs 0 and 50"},
+    {"level": "Pirate Seas 1", "capture_sha256": "dc4a50370d9bfcc51d827d7f07c87a8f4551a28f22bfe217a3a8c0df7f50fc84", "cells": "columns 4 and 5, costs 0, 25 and 50"},
+    {"level": "Penny's Pursuit, stage dark", "capture_sha256": "1e391c76bf63dd40306213a21ad11098e26f7f1dde0d30de84e5f8866d0a6dd7", "cells": "costs 25 to 175"}
+   ]
+  },
+  "beach_shore": {
+   "description": "Beach cell right of the coast while dry, with no Lily Pad on it",
+   "rejects": ["intensivecarrot", "cobcannon"],
+   "measured": [
+    {"level": "Memory Lane season 33 level 6 difficult", "capture_sha256": "ad609b04f903b96dcea90a7d16afbeb74977b4ae97bfcc8e3b90c039bb807c89", "cells": "column 3, cost 0"}
+   ]
+  },
+  "beach_pad": {
+   "description": "A plant standing on a Lily Pad, over water or over a dry shore cell",
+   "rejects": ["intensivecarrot", "cobcannon", "lilypad", "bamboo", "celerystalker", "cactus", "escaperoot", "snappea", "olivepit", "jewelrabbit"],
+   "note": "The list was captured over water. Over a dry shore cell it was not captured; a played check on 2026-09-19 in Memory Lane season 33 level 6 difficult (fresh launch, no previews, tide out, Puff-shrooms at 2-1, at 3-1 on bare shore and at 3-2 on a Lily Pad, activation at 2-2) gave chestnut, bloomerang and agave, the results this kind predicts for 3-2; the ground kind predicts pumpkinwitch at 3-2 and turkeypult at 3-1, the shore kind endurian and turkeypult. Correction: added cactus to the Beach Lily Pad reject list.",
+   "measured": [
+    {"level": "Memory Lane season 33 level 6 difficult", "capture_sha256": "179f74504c2c66e8ebc79d3b8090cc78e4b1d22bdfb6c4198f012e7d6641ad42", "cells": "3-1 at cost 0, 4-1 at cost 50"}
+   ]
+  },
+  "beach_water": {
+   "description": "Flooded cell with no Lily Pad; only a plant whose property sheet declares CanLiveOnWaves can stand there",
+   "admits_flag": "can_live_on_waves",
+   "note": "Admits the plants whose plants.json record carries can_live_on_waves, the declared CanLiveOnWaves flag, so a rebuilt plants.json carries a new version's list; the captured list was reproduced exactly. The game's rule for a flooded cell also admits a plant type whose equipped accessory carries the water_master or sky_master boost (declared by unique_duck and flying_saucer); for an account that equips one, set can_live_on_waves on that plant's record.",
+   "measured": [
+    {"level": "Memory Lane season 33 level 6 difficult", "capture_sha256": "179f74504c2c66e8ebc79d3b8090cc78e4b1d22bdfb6c4198f012e7d6641ad42", "cells": "3-2, Sea-shroom at cost 0"}
+   ]
+  },
+  "pirate_plank": {
+   "description": "Pirate Seas plank cell",
+   "rejects": ["intensivecarrot", "cobcannon", "lilypad", "turnip", "bamboo", "celerystalker", "cactus", "sugarcane", "levitater"],
+   "measured": [
+    {"level": "Pirate Seas 1", "capture_sha256": "dc4a50370d9bfcc51d827d7f07c87a8f4551a28f22bfe217a3a8c0df7f50fc84", "cells": "6-4 at cost 0, 6-5 at cost 50"}
+   ]
+  }
+ }
+}

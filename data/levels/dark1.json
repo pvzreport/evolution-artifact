@@ -1,0 +1,21 @@
+{
+ "id": "dark1",
+ "name": "Dark Ages level 1",
+ "stage": "dark",
+ "default_kind": "ground",
+ "bans": [],
+ "source": "declared level definition DARK1",
+ "cells": {
+  "3-1": "none",
+  "4-4": "none",
+  "5-2": "none",
+  "6-5": "none",
+  "7-2": "none",
+  "7-3": "none",
+  "8-3": "none",
+  "8-5": "none",
+  "9-1": "none",
+  "9-4": "none"
+ },
+ "notes": "Gravestones declared at level start on 3-1, 4-4, 5-2, 6-5, 7-2, 7-3, 8-3, 8-5, 9-1, 9-4 hold no plant while they stand; give ground for that activation once one has been destroyed."
+}

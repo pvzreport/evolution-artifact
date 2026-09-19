@@ -1,0 +1,9 @@
+{
+ "id": "pennys-pursuit-dark",
+ "name": "Penny's Pursuit level, stage dark, no bans",
+ "stage": "dark",
+ "default_kind": "ground",
+ "bans": [],
+ "notes": "Stage name and empty ban list read from the running game during the capture; the level definition was not identified. Gravestone cells are not listed.",
+ "source": "capture memory reads"
+}

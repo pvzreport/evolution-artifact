@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pvz2-evolution"
+version = "0.1.0"
+description = "Offline reproduction of the Evolution artifact's fixed-seed shuffle in Plants vs. Zombies 2 (CHS iOS 4.2.2.394)"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.9"
+
+[project.scripts]
+pvz2-evolution = "evolution.cli:main"
+
+[tool.setuptools]
+packages = ["evolution"]

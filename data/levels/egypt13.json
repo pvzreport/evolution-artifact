@@ -1,0 +1,23 @@
+{
+ "id": "egypt13",
+ "name": "Egypt 13 (story)",
+ "stage": "egypt",
+ "default_kind": "ground",
+ "bans": [
+  "sunflower",
+  "twinsunflower",
+  "sunshroom",
+  "puffshroom",
+  "sunbean",
+  "gravebuster",
+  "toadstool",
+  "goldleaf",
+  "stallia",
+  "primalsunflower",
+  "moonflower",
+  "goldbloom",
+  "birthsunflower",
+  "imppear"
+ ],
+ "source": "declared level definition EGYPT13"
+}
