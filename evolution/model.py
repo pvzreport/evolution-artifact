@@ -25,7 +25,7 @@ from .tiles import NONE
 PAD = "beach_pad"
 RANKS = (1, 4)
 
-CONDITIONS = [
+_CONDITIONS = [
     "Start after a full process restart (seed 5489, offset 0).",
     "Run exactly the listed previews, each one complete, and nothing else that uses the artifact "
     "before entering the level.",
@@ -38,6 +38,12 @@ CONDITIONS = [
     "Plant exactly the listed sources in the listed order inside the 3x3 around the activation cell; "
     "the newest plant is processed first.",
 ]
+
+
+def conditions(game):
+    """What a prediction assumes: the game version of its plant data, then the fixed conditions."""
+    return ["The game runs version %s, the version of the plant data used (read from the %s package)."
+            % (game.version, game.platform)] + _CONDITIONS
 
 
 class Planting:
@@ -214,20 +220,20 @@ def activate(board, pools, plantings, rank, stream, offset):
     return place(rows, kind_of, pools.kinds), offset
 
 
-def scenario(document, kinds, previews, sequence=(), level=None, plantings=(), activation=None,
-             overrides=None, offset=0, rank=1, stream=None):
-    """Replay previews, optional extra raw outputs, then an optional activation, from a fresh process."""
+def scenario(game, sequence=(), level=None, plantings=(), activation=None, overrides=None, offset=0, rank=1,
+             stream=None):
+    """Replay previews, optional extra raw outputs, then an optional activation, from a fresh process,
+    under one game version's data."""
     if offset < 0:
         raise ValueError("The extra offset cannot be negative")
     stream = stream or shared()
-    preview_rows, after_previews = previews.advance(stream, 0, list(sequence))
+    preview_rows, after_previews = game.previews.advance(stream, 0, list(sequence))
     entry = after_previews + offset
     results, end = [], entry
     if level:
         board = Board(level, overrides, activation)
-        pools = Pools(document, kinds, level, previews.spawn_max_cost)
-        results, end = activate(board, pools, plantings, rank, stream, entry)
-    return {"previews": preview_rows, "offset_after_previews": after_previews, "extra_offset": offset,
-            "level": level.describe() if level else None, "level_entry_offset": entry,
+        results, end = activate(board, game.pools(level), plantings, rank, stream, entry)
+    return {"game": game.describe(), "previews": preview_rows, "offset_after_previews": after_previews,
+            "extra_offset": offset, "level": level.describe() if level else None, "level_entry_offset": entry,
             "activation": {"column": activation[0], "row": activation[1]} if activation else None, "rank": rank,
-            "results": results, "stream_end": end, "conditions": list(CONDITIONS)}
+            "results": results, "stream_end": end, "conditions": conditions(game)}

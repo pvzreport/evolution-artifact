@@ -7,12 +7,12 @@
   "1": {
    "description": "Nine Sunflowers evolved, one shuffle of the evolution pool each",
    "steps": [{"shuffle": "evolution", "cells": ["5-3", "5-2", "5-1", "4-3", "4-2", "4-1", "3-3", "3-2", "3-1"]}],
-   "measured": [{"capture_sha256": "e9998db6111e3ce4ebd4203f03e2cd5fab439f207627b54ddc53f67f15b1e151", "note": "one preview after a fresh launch, 2,874 outputs"}]
+   "measured": [{"game_version": "4.2.2", "capture_sha256": "e9998db6111e3ce4ebd4203f03e2cd5fab439f207627b54ddc53f67f15b1e151", "note": "one preview after a fresh launch, 2,874 outputs"}]
   },
   "4": {
    "description": "Three Sunflowers evolved, then three water cells that always receive a Lily Pad (a one-entry shuffle consumes nothing), then six spawns from the spawn pool",
    "steps": [{"shuffle": "evolution", "cells": ["3-3", "3-2", "3-1"]}, {"shuffle": "single", "count": 3, "plant": "lilypad"}, {"shuffle": "spawn", "count": 6}],
-   "measured": [{"capture_sha256": "832ba7992a8c87d586240723274b393b8f3b2bff08ead851fda4cd1a347d6f1a", "note": "two complete previews and the three evolutions of a third, 3,717 outputs, all with this structure; the spawn cells were not recorded"}]
+   "measured": [{"game_version": "4.2.2", "capture_sha256": "832ba7992a8c87d586240723274b393b8f3b2bff08ead851fda4cd1a347d6f1a", "note": "two complete previews and the three evolutions of a third, 3,717 outputs, all with this structure; the spawn cells were not recorded"}]
   }
  }
 }

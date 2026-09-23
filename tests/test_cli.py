@@ -9,11 +9,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from evolution.cli import main
 
+CAPTURED_ON = "4.2.2"  # the version whose captures fix the results asserted below
+
 
 def run(*argv):
+    """A command, with the plant data of CAPTURED_ON unless argv names a game version."""
+    argv = list(argv)
+    if "--game-version" not in argv:
+        argv[1:1] = ["--game-version", CAPTURED_ON]
     out = io.StringIO()
     with contextlib.redirect_stdout(out):
-        main(list(argv))
+        main(argv)
     return out.getvalue()
 
 
@@ -74,6 +80,14 @@ class CliTest(unittest.TestCase):
         text = run("pool", "--level", "pirate1", "--kind", "pirate_plank", "--cost", "0")
         self.assertIn("242 candidates", text)
 
+    def test_game_version_selects_the_plant_data(self):
+        text = run("pool", "--game-version", "4.2.4", "--preview", "evolution")
+        self.assertIn("game 4.2.4: 227 candidates", text)
+        self.assertTrue(text.rstrip().endswith("226  nagasalak"))
+        predicted = json.loads(run("predict", "--game-version", "4.2.4", "--previews", "1", "--json"))
+        self.assertEqual(predicted["game"]["version"], "4.2.4")
+        self.assertIn("version 4.2.4", predicted["conditions"][0])
+
     def test_errors_exit_with_code_2(self):
         self.assert_error(["predict", "--level", "egypt1", "--activate", "1-1", "--plant", "puffshrom=0@1-1"], "Unknown source plant")
         self.assert_error(["predict", "--rank", "4", "--level", "egypt1"], "needs --activate")
@@ -82,6 +96,7 @@ class CliTest(unittest.TestCase):
         self.assert_error(["predict", "--rank", "4", "--level", "beach3", "--activate", "5-3", "--plant", "lilypad=25@5-3"], "cannot stand on")
         self.assert_error(["plan", "--rank", "4", "--level", "beach3", "--activate", "5-3", "--want", "cactus@5-3", "--source", "puffshroom=0"],
                           "can never be placed")
+        self.assert_error(["pool", "--game-version", "9.9", "--preview", "evolution"], "invalid choice: '9.9'")
 
 
 if __name__ == "__main__":

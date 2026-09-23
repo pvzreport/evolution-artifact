@@ -4,15 +4,16 @@ For every candidate, the picker runs the board's planting check on the source's 
 cell, ignoring only the "occupied" reason. That check is code, so its effect is read
 from captures rather than derived: each kind in data/tile-rules.json lists the plants
 it rejects beyond the stage rule and the level's bans, or, for a flooded cell, names
-the plant flag that admits a plant (the declared CanLiveOnWaves, carried by
-plants.json as can_live_on_waves). The kind "none" is a cell that cannot hold a plant
-and is never a target.
+the plant flag that admits a plant (the declared CanLiveOnWaves, carried by the plant
+data as can_live_on_waves). The kind "none" is a cell that cannot hold a plant and is
+never a target. The kinds are shared by every game version; a flag-admitting kind takes
+its list from the plant data of the version in use.
 """
 
 import json
 from pathlib import Path
 
-from .plants import DATA, load_plants
+from .plants import DATA
 
 NONE = "none"
 
@@ -43,11 +44,9 @@ def load_tile_rules(path=None):
     return json.loads(Path(path or DATA / "tile-rules.json").read_text())
 
 
-def tile_kinds(rules=None, document=None):
-    """Name -> TileKind, including the built-in "none"; a kind that admits by flag reads the plant document."""
+def tile_kinds(document, rules=None):
+    """Name -> TileKind for one version's plant document, including the built-in "none"."""
     rules = rules or load_tile_rules()
-    if document is None and any(record.get("admits_flag") for record in rules["kinds"].values()):
-        document = load_plants()
     kinds = {name: TileKind(name, record, document) for name, record in rules["kinds"].items()}
     kinds[NONE] = TileKind(NONE, {"description": "Open water or another cell that cannot hold a plant; never a target",
                                   "admits_only": []})

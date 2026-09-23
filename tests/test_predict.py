@@ -4,7 +4,9 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from evolution import Planting, Previews, Stream, load_level, load_plants, scenario, tile_kinds
+from evolution import Game, Planting, Stream, load_level, scenario
+
+CAPTURED_ON = "4.2.2"
 
 
 def results(rows):
@@ -12,18 +14,17 @@ def results(rows):
 
 
 class PredictTest(unittest.TestCase):
-    """Every expectation below was read from the game: a capture, a forecast saved before play and then matched,
-    or a prediction written before play and reported matched."""
+    """Every expectation below was read from the game, version CAPTURED_ON: a capture, a forecast saved before play
+    and then matched, or a prediction written before play and reported matched."""
 
     @classmethod
     def setUpClass(cls):
-        cls.document = load_plants()
-        cls.kinds = tile_kinds()
-        cls.previews = Previews(cls.document, cls.kinds)
+        cls.game = Game(CAPTURED_ON)
+        cls.previews = cls.game.previews
 
     def run_scenario(self, sequence, level, plantings, activation, overrides=None, offset=0):
-        return scenario(self.document, self.kinds, self.previews, sequence, load_level(level) if level else None,
-                        plantings, activation, overrides, offset)
+        return scenario(self.game, sequence, load_level(level) if level else None, plantings, activation, overrides,
+                        offset)
 
     def test_fresh_launch_rank1_preview(self):
         # Captured after a fresh launch: nine selections, 2,874 outputs.

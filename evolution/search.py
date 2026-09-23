@@ -25,7 +25,7 @@ real source of a sequence, which keeps each sequence unique.
 from collections import Counter
 
 from .level import LILYPAD, format_cell
-from .model import CONDITIONS, PAD, RANKS, Board, Pools, activate, check_board, place, select, selection_row
+from .model import PAD, RANKS, Board, activate, check_board, conditions, place, select, selection_row
 from .stream import shared
 from .tiles import NONE
 
@@ -39,28 +39,29 @@ def parse_spec(spec):
     return (int(spec), None) if isinstance(spec, int) else (int(spec[0]), list(spec[1]))
 
 
-def search_recipe(document, kinds, previews, level, wants, sources, activation=(2, 2), *, overrides=None, rank=1,
-                  prefix=(), preview_rank=1, min_previews=0, max_previews=99, offset=0, max_sources=9,
-                  budget=30000, stream=None):
+def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=None, rank=1, prefix=(),
+                  preview_rank=1, min_previews=0, max_previews=99, offset=0, max_sources=9, budget=30000,
+                  stream=None):
     """Fewest previews of `preview_rank` after the fixed `prefix`, then fewest sources, placing every want.
 
-    wants: list of (plant, cell). sources: {alias: cost} or {alias: (cost, [kinds])} when a source
-    may only be planted on cells of those kinds. overrides: {cell: kind} for this activation.
-    offset: extra raw outputs consumed between the previews and the level. budget: shuffles
-    tried per preview count.
+    game: the game version whose data the recipe is for. wants: list of (plant, cell). sources:
+    {alias: cost} or {alias: (cost, [kinds])} when a source may only be planted on cells of those
+    kinds. overrides: {cell: kind} for this activation. offset: extra raw outputs consumed between
+    the previews and the level. budget: shuffles tried per preview count.
     """
     if rank not in RANKS:
         raise ValueError("Supported activation ranks are 1 and 4")
     if min_previews < 0 or max_previews < min_previews or budget < 1 or max_sources < 0 or offset < 0:
         raise ValueError("Require 0 <= min_previews <= max_previews, max_sources >= 0, offset >= 0 and a positive budget")
+    previews = game.previews
     prefix = list(prefix)
     for preview in prefix + [preview_rank]:
         if preview not in previews.ranks():
             raise ValueError("No measured structure for a rank-%s preview; known ranks: %s"
                              % (preview, ", ".join(str(r) for r in previews.ranks())))
     board = Board(level, overrides, activation)
-    check_board(board, kinds)
-    pools = Pools(document, kinds, level, previews.spawn_max_cost)
+    check_board(board, game.kinds)
+    pools = game.pools(level)
     kind_of = {cell: board.kind_at(cell) for cell in board.area}
     usable = [cell for cell in board.area if kind_of[cell] != NONE]
     wants = [(plant, tuple(cell)) for plant, cell in wants]
@@ -74,7 +75,7 @@ def search_recipe(document, kinds, previews, level, wants, sources, activation=(
         if not any(plant in option["pool"] for option in options if kind in option["kinds"]):
             raise ValueError("%s is not obtainable on %s (%s) from any listed source in this level"
                              % (plant, format_cell(cell), kind))
-        if rank == 4 and pools.spawn(kind, occupied=True) and not kinds[PAD].admits(plant):
+        if rank == 4 and pools.spawn(kind, occupied=True) and not game.kinds[PAD].admits(plant):
             raise ValueError("%s can never be placed on %s at rank 4: the Lily Pad added beneath its source rejects it"
                              % (plant, format_cell(cell)))
     required = Counter(plant for (plant, cell), ok in spawnable.items() if not ok)
@@ -84,7 +85,8 @@ def search_recipe(document, kinds, previews, level, wants, sources, activation=(
                          % (sum(required.values()), max_sources))
     stream = stream or shared()
     result = {
-        "level": level.describe(), "activation": {"column": activation[0], "row": activation[1]}, "rank": rank,
+        "game": game.describe(), "level": level.describe(),
+        "activation": {"column": activation[0], "row": activation[1]}, "rank": rank,
         "cell_kinds": {format_cell(cell): kind_of[cell] for cell in board.area},
         "wants": [{"plant": plant, "cell": cell, "kind": kind_of[cell]} for plant, cell in wants],
         "options": [{"sources": sorted({alias for pairs in o["aliases"].values() for alias, _ in pairs}),
@@ -92,7 +94,7 @@ def search_recipe(document, kinds, previews, level, wants, sources, activation=(
         "unusable_sources": unusable, "prefix": prefix, "preview_rank": preview_rank, "min_previews": min_previews,
         "max_previews": max_previews, "extra_offset": offset, "max_sources": max_sources, "budget": budget,
         "budget_exhausted": [],
-        "conditions": list(CONDITIONS), "match": None,
+        "conditions": conditions(game), "match": None,
     }
     searcher = _Search(stream, pools, board, kind_of, usable, options, wants, required, spawnable, rank, budget)
     _, position = previews.advance(stream, 0, prefix)

@@ -5,16 +5,18 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from evolution import NONE, TileKind, available_levels, load_level, load_plants, tile_kinds
+from evolution import NONE, Game, TileKind, available_levels, load_level
 
-FIXTURES = json.loads((Path(__file__).resolve().parent / "fixtures/pools.json").read_text())["pools"]
+CAPTURED_ON = "4.2.2"  # the version whose declared data gives the count asserted below
+POOLS = json.loads((Path(__file__).resolve().parent / "fixtures/pools.json").read_text())
+FIXTURES = POOLS["pools"]
 
 
 class LevelTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.document = load_plants()
-        cls.kinds = tile_kinds()
+        game = Game(POOLS["game_version"])
+        cls.document, cls.kinds = game.plants, game.kinds
 
     def test_every_description_loads_with_known_kinds(self):
         for name in available_levels():
@@ -48,11 +50,11 @@ class LevelTest(unittest.TestCase):
         self.assertEqual(dark.kind_at((2, 2)), "ground")
 
     def test_flooded_kind_admits_the_declared_wave_flag(self):
-        water = self.kinds["beach_water"]
-        flagged = [record["plant"] for record in self.document["plants"] if record.get("can_live_on_waves")]
+        game = Game(CAPTURED_ON)
+        water = game.kinds["beach_water"]
+        flagged = [record["plant"] for record in game.plants["plants"] if record.get("can_live_on_waves")]
         self.assertEqual(water.admits_only, flagged)
         self.assertEqual(len(flagged), 32)
-        self.assertEqual(tile_kinds(document=self.document)["beach_water"].admits_only, flagged)
         with self.assertRaises(ValueError):
             TileKind("flooded", {"admits_flag": "can_live_on_waves"})
 

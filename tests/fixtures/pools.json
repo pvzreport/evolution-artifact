@@ -1,4 +1,5 @@
 {
+ "game_version": "4.2.2",
  "note": "Ordered candidate lists read from the running game (plant aliases only); the model must reproduce each exactly. Keys are KIND@SOURCE_COST. The preview lists come from the rank-4 preview capture, whose evolution pool equals the rank-1 preview's.",
  "pools": {
   "egypt13": {
