@@ -1,0 +1,11 @@
+{
+ "id": "egypt14",
+ "stage": "egypt",
+ "bans": [],
+ "default_kind": "ground",
+ "name": "Egypt 14 (story)",
+ "source": {
+  "resource": "PACKAGES/LEVELS/EGYPT14.json",
+  "sha256": "43b801dc127c38a5294dded5c6b8ee91df04511607f0823dfb7e113e28a25e6b"
+ }
+}

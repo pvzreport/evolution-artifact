@@ -1,0 +1,210 @@
+{
+ "scope": "Ten normal-level rank-4, level-30 activations. Inputs, selections, ordered-pool hashes and draw intervals only. Starting offsets were identified after capture; these are replay regression cases, not prospective forecasts. Plant levels and timed passive spawning are outside these expectations.",
+ "cases": [
+  {
+   "capture": 1,
+   "trace_sha256": "2f37997ec1f7a378ef3fbe2cbf8c03b9c26593d252ecdb2e69f3abc7d59d7cfd",
+   "level": "egypt13",
+   "rank": 4,
+   "activation": [2,2],
+   "offset": 0,
+   "plantings": [],
+   "cell_kinds": {},
+   "expected": [
+    {"action":"spawn","cell":[1,1],"result":"whitemelon","candidates":52,"start":0,"end":66,"pool_sha256":"e02a0e56c489921163a03c9cc8c0d21db2a098e454c23cdd2b1b512bb05f15cc"},
+    {"action":"spawn","cell":[1,2],"result":"burdockbatter","candidates":52,"start":66,"end":127,"pool_sha256":"e02a0e56c489921163a03c9cc8c0d21db2a098e454c23cdd2b1b512bb05f15cc"},
+    {"action":"spawn","cell":[1,3],"result":"wallnut","candidates":52,"start":127,"end":196,"pool_sha256":"e02a0e56c489921163a03c9cc8c0d21db2a098e454c23cdd2b1b512bb05f15cc"},
+    {"action":"spawn","cell":[2,1],"result":"sugarcane","candidates":52,"start":196,"end":267,"pool_sha256":"e02a0e56c489921163a03c9cc8c0d21db2a098e454c23cdd2b1b512bb05f15cc"},
+    {"action":"spawn","cell":[2,2],"result":"escaperoot","candidates":52,"start":267,"end":338,"pool_sha256":"e02a0e56c489921163a03c9cc8c0d21db2a098e454c23cdd2b1b512bb05f15cc"},
+    {"action":"spawn","cell":[2,3],"result":"dragonroar","candidates":52,"start":338,"end":407,"pool_sha256":"e02a0e56c489921163a03c9cc8c0d21db2a098e454c23cdd2b1b512bb05f15cc"},
+    {"action":"spawn","cell":[3,1],"result":"vamporcini","candidates":52,"start":407,"end":478,"pool_sha256":"e02a0e56c489921163a03c9cc8c0d21db2a098e454c23cdd2b1b512bb05f15cc"},
+    {"action":"spawn","cell":[3,2],"result":"burdockbatter","candidates":52,"start":478,"end":556,"pool_sha256":"e02a0e56c489921163a03c9cc8c0d21db2a098e454c23cdd2b1b512bb05f15cc"},
+    {"action":"spawn","cell":[3,3],"result":"cabbagepult","candidates":52,"start":556,"end":640,"pool_sha256":"e02a0e56c489921163a03c9cc8c0d21db2a098e454c23cdd2b1b512bb05f15cc"}
+   ],
+   "stream_end": 640
+  },
+  {
+   "capture": 2,
+   "trace_sha256": "3f5ead1eeccb8fc4e524e0d4be7679e3c4681f329d540f90f957e9ce75a23438",
+   "level": "egypt14",
+   "rank": 4,
+   "activation": [2,3],
+   "offset": 640,
+   "plantings": [{"source":"puffshroom","cost":0,"cell":[2,2]},{"source":"sunshroom","cost":25,"cell":[2,3]},{"source":"sunflower","cost":50,"cell":[2,4]}],
+   "cell_kinds": {},
+   "expected": [
+    {"action":"evolve","cell":[2,4],"result":"banana","candidates":226,"start":640,"end":957,"pool_sha256":"1a7d7939e1ec9066d6e3bed0cc8e1ee587b5609c1aab48e667851c2e2fd3277f"},
+    {"action":"evolve","cell":[2,3],"result":"xshot","candidates":243,"start":957,"end":1282,"pool_sha256":"a3d46f8f18427bb238373a0360bd8df85287452bcf1aa0ca39e93fe6bb6ea52d"},
+    {"action":"evolve","cell":[2,2],"result":"thundersnapdragon","candidates":249,"start":1282,"end":1638,"pool_sha256":"1ec85d3c589f0a059f100b63a955595a3985a1bc021c37ca0e430b39dae7575e"},
+    {"action":"spawn","cell":[1,2],"result":"cosmicmushroom","candidates":54,"start":1638,"end":1720,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[1,3],"result":"ents","candidates":54,"start":1720,"end":1790,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[1,4],"result":"wallnut","candidates":54,"start":1790,"end":1861,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[3,2],"result":"wallnut","candidates":54,"start":1861,"end":1931,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[3,3],"result":"spikeweed","candidates":54,"start":1931,"end":1995,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[3,4],"result":"alarmsagittifolia","candidates":54,"start":1995,"end":2066,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"}
+   ],
+   "stream_end": 2066,
+   "planting_order_basis": "reversed recorded processing order"
+  },
+  {
+   "capture": 3,
+   "trace_sha256": "8e8e04fda440c854548e3b3e73e8669f9eb73e8667e5a3dd0db860727951341a",
+   "level": "egypt5",
+   "rank": 4,
+   "activation": [7,2],
+   "offset": 2066,
+   "plantings": [{"source":"puffshroom","cost":0,"cell":[6,3]}],
+   "cell_kinds": {},
+   "expected": [
+    {"action":"evolve","cell":[6,3],"result":"eggplantninja","candidates":249,"start":2066,"end":2416,"pool_sha256":"1ec85d3c589f0a059f100b63a955595a3985a1bc021c37ca0e430b39dae7575e"},
+    {"action":"spawn","cell":[6,1],"result":"saucer","candidates":54,"start":2416,"end":2488,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[7,2],"result":"turnip","candidates":54,"start":2488,"end":2562,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[7,3],"result":"garlic","candidates":54,"start":2562,"end":2629,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[8,2],"result":"chardguard","candidates":54,"start":2629,"end":2706,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[8,3],"result":"springbean","candidates":54,"start":2706,"end":2776,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"}
+   ],
+   "stream_end": 2776
+  },
+  {
+   "capture": 4,
+   "trace_sha256": "6a2262f00f0511c024334d4d49901385f96dc3625c3b1072c2bdb5ebc8bfba68",
+   "level": "egypt1",
+   "rank": 4,
+   "activation": [2,1],
+   "offset": 2874,
+   "plantings": [{"source":"puffshroom","cost":0,"cell":[1,1]}],
+   "cell_kinds": {},
+   "expected": [
+    {"action":"evolve","cell":[1,1],"result":"witchhazel","candidates":249,"start":2874,"end":3222,"pool_sha256":"1ec85d3c589f0a059f100b63a955595a3985a1bc021c37ca0e430b39dae7575e"},
+    {"action":"spawn","cell":[1,2],"result":"cracker","candidates":54,"start":3222,"end":3293,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[2,1],"result":"vanilla","candidates":54,"start":3293,"end":3368,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[2,2],"result":"saucer","candidates":54,"start":3368,"end":3454,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[3,1],"result":"devilsflower","candidates":54,"start":3454,"end":3518,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[3,2],"result":"peashooter","candidates":54,"start":3518,"end":3584,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"}
+   ],
+   "stream_end": 3584
+  },
+  {
+   "capture": 5,
+   "trace_sha256": "446a5c26452b9effebcb9f5237cff091b8e76d73fe512ffc882222cd98c41294",
+   "level": "egypt1",
+   "rank": 4,
+   "activation": [1,1],
+   "offset": 3584,
+   "plantings": [],
+   "cell_kinds": {},
+   "expected": [
+    {"action":"spawn","cell":[1,1],"result":"burdockbatter","candidates":54,"start":3584,"end":3664,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[1,2],"result":"magnifyinggrass","candidates":54,"start":3664,"end":3743,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[2,1],"result":"escaperoot","candidates":54,"start":3743,"end":3812,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[2,2],"result":"cracker","candidates":54,"start":3812,"end":3895,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"}
+   ],
+   "stream_end": 3895
+  },
+  {
+   "capture": 6,
+   "trace_sha256": "61125af5152bceb0adaa5e5280f5d6e7b8b1f3301b00e19c5da901b67914644e",
+   "level": "pirate2",
+   "rank": 4,
+   "activation": [5,4],
+   "offset": 3895,
+   "plantings": [{"source":"puffshroom","cost":0,"cell":[6,4]},{"source":"puffshroom","cost":0,"cell":[4,3]},{"source":"primalsunflower","cost":75,"cell":[4,4]}],
+   "cell_kinds": {},
+   "expected": [
+    {"action":"evolve","cell":[4,4],"result":"peanut","candidates":216,"start":3895,"end":4211,"pool_sha256":"1e7fd0f696e5ef3d8e68d8d3cc49d053411e9512bd874153d320386719a4a72a"},
+    {"action":"evolve","cell":[4,3],"result":"devilsflower","candidates":248,"start":4211,"end":4553,"pool_sha256":"596826f70a127fc36f36429719179121227fd86380dc8260a9af156f3df874af"},
+    {"action":"evolve","cell":[6,4],"result":"xshot","candidates":242,"start":4553,"end":4905,"pool_sha256":"f5f827f78855b0cdf8f962481978a5893ae3a51b9807f201aaa89a08b0e01f5a"},
+    {"action":"spawn","cell":[4,5],"result":"wallnut","candidates":54,"start":4905,"end":4981,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[5,3],"result":"magnifyinggrass","candidates":54,"start":4981,"end":5055,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[5,4],"result":"turnip","candidates":54,"start":5055,"end":5132,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[5,5],"result":"exorcislily","candidates":54,"start":5132,"end":5205,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[6,3],"result":"cthulhuactinia","candidates":50,"start":5205,"end":5269,"pool_sha256":"4f8676b8c24efce7670a7a02116579865663a0bd38515acdd565b0ee1d13e331"}
+   ],
+   "stream_end": 5269,
+   "planting_order_basis": "reversed recorded processing order"
+  },
+  {
+   "capture": 7,
+   "trace_sha256": "e2ca15d0ff2560e3b9539ae45b149fba4ca81eb6bce8ad7f98260965c73b9c2e",
+   "level": "dark4",
+   "rank": 4,
+   "activation": [9,3],
+   "offset": 5279,
+   "plantings": [],
+   "cell_kinds": {},
+   "expected": [
+    {"action":"spawn","cell":[8,3],"result":"levitater","candidates":54,"start":5279,"end":5350,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[8,4],"result":"burdockbatter","candidates":54,"start":5350,"end":5421,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[9,2],"result":"icelotus","candidates":54,"start":5421,"end":5497,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[9,3],"result":"marigold","candidates":54,"start":5497,"end":5569,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"}
+   ],
+   "stream_end": 5569
+  },
+  {
+   "capture": 8,
+   "trace_sha256": "c1c661727050b304b19f194b9388926ed9a25451e1d44b2742335be960c27309",
+   "level": "beach3",
+   "rank": 4,
+   "activation": [9,3],
+   "offset": 5569,
+   "plantings": [],
+   "cell_kinds": {"8-2":"beach_water","8-3":"beach_water","8-4":"beach_water","9-2":"beach_water","9-3":"beach_pad","9-4":"beach_water"},
+   "expected": [
+    {"action":"spawn","cell":[8,2],"result":"ghostpepper","candidates":6,"start":5569,"end":5576,"pool_sha256":"430e73d0ded8783c88822c4d16d62d6ce93b9d96bf97c30ff285882ab882afd5"},
+    {"action":"spawn","cell":[8,3],"result":"saucer","candidates":6,"start":5576,"end":5583,"pool_sha256":"430e73d0ded8783c88822c4d16d62d6ce93b9d96bf97c30ff285882ab882afd5"},
+    {"action":"spawn","cell":[8,4],"result":"pineapple","candidates":6,"start":5583,"end":5588,"pool_sha256":"430e73d0ded8783c88822c4d16d62d6ce93b9d96bf97c30ff285882ab882afd5"},
+    {"action":"spawn","cell":[9,2],"result":"guardshroom","candidates":6,"start":5588,"end":5594,"pool_sha256":"430e73d0ded8783c88822c4d16d62d6ce93b9d96bf97c30ff285882ab882afd5"},
+    {"action":"spawn","cell":[9,3],"result":"peashooter","candidates":52,"start":5594,"end":5657,"pool_sha256":"643b40d2a0237ab9836afc9914bcbcbb58adfb87cac77dc93aad9207c10a0856"},
+    {"action":"spawn","cell":[9,4],"result":"lilypad","candidates":6,"start":5657,"end":5662,"pool_sha256":"430e73d0ded8783c88822c4d16d62d6ce93b9d96bf97c30ff285882ab882afd5"}
+   ],
+   "stream_end": 5662
+  },
+  {
+   "capture": 9,
+   "trace_sha256": "29337e306eafa7201024348499ce47b737799ec2f4ee1ece86f109b8862d5795",
+   "level": "beach3",
+   "rank": 4,
+   "activation": [4,3],
+   "offset": 5740,
+   "plantings": [{"source":"puffshroom","cost":0,"cell":[3,2]},{"source":"puffshroom","cost":0,"cell":[5,2]},{"source":"seashroom","cost":0,"cell":[5,3]}],
+   "cell_kinds": {"4-2":"beach_water","4-3":"beach_pad","4-4":"beach_water","5-2":"beach_pad","5-3":"beach_water","5-4":"beach_pad"},
+   "expected": [
+    {"action":"evolve","cell":[5,3],"result":"electricpeel","candidates":18,"start":5740,"end":5764,"pool_sha256":"75a25b0f18f9822a8e9cc80102b4d19b3584f9a3b2a048775d7ec8087b207227"},
+    {"action":"evolve","cell":[5,2],"result":"hoyacordata","candidates":241,"start":5764,"end":6087,"pool_sha256":"33644f4a24fbd15b99de6728e05d9572eb3c95a97f09ff3e4cfff92e32da11ed"},
+    {"action":"evolve","cell":[3,2],"result":"scaredyshroom","candidates":248,"start":6087,"end":6443,"pool_sha256":"2f7da514a436d685ffc86cbb13c274f29d23132815941bcc65ef83187073ebdc"},
+    {"action":"spawn","cell":[3,3],"result":"ghostpepper","candidates":54,"start":6443,"end":6522,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[3,4],"result":"happyleek","candidates":54,"start":6522,"end":6601,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[4,2],"result":"lilypad","candidates":6,"start":6601,"end":6606,"pool_sha256":"430e73d0ded8783c88822c4d16d62d6ce93b9d96bf97c30ff285882ab882afd5"},
+    {"action":"spawn","cell":[4,3],"result":"vanilla","candidates":52,"start":6606,"end":6668,"pool_sha256":"643b40d2a0237ab9836afc9914bcbcbb58adfb87cac77dc93aad9207c10a0856"},
+    {"action":"spawn","cell":[4,4],"result":"pineapple","candidates":6,"start":6668,"end":6675,"pool_sha256":"430e73d0ded8783c88822c4d16d62d6ce93b9d96bf97c30ff285882ab882afd5"},
+    {"action":"spawn","cell":[5,3],"result":"lilypad","candidates":1,"start":6675,"end":6675,"pool_sha256":"45c60ecadcd13cb951c38316895232802e631238185ef8605066582573307fac"},
+    {"action":"spawn","cell":[5,4],"result":"marigold","candidates":52,"start":6675,"end":6754,"pool_sha256":"643b40d2a0237ab9836afc9914bcbcbb58adfb87cac77dc93aad9207c10a0856"}
+   ],
+   "stream_end": 6754,
+   "planting_order_basis": "user notes"
+  },
+  {
+   "capture": 10,
+   "trace_sha256": "ee5dc1a0e4d88939012210e75d6e9a5584fca4f92ed821e0ea506bd4a8ae88fc",
+   "level": "egypt14",
+   "rank": 4,
+   "activation": [2,2],
+   "offset": 6754,
+   "plantings": [{"source":"puffshroom","cost":0,"cell":[1,1]},{"source":"sunshroom","cost":25,"cell":[2,1]},{"source":"sunflower","cost":50,"cell":[3,1]}],
+   "cell_kinds": {},
+   "expected": [
+    {"action":"evolve","cell":[3,1],"result":"coconutcannon","candidates":226,"start":6754,"end":7075,"pool_sha256":"1a7d7939e1ec9066d6e3bed0cc8e1ee587b5609c1aab48e667851c2e2fd3277f"},
+    {"action":"evolve","cell":[2,1],"result":"beanchemist","candidates":243,"start":7075,"end":7393,"pool_sha256":"a3d46f8f18427bb238373a0360bd8df85287452bcf1aa0ca39e93fe6bb6ea52d"},
+    {"action":"evolve","cell":[1,1],"result":"aeonium","candidates":249,"start":7393,"end":7738,"pool_sha256":"1ec85d3c589f0a059f100b63a955595a3985a1bc021c37ca0e430b39dae7575e"},
+    {"action":"spawn","cell":[1,2],"result":"apsarlotus","candidates":54,"start":7738,"end":7812,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[1,3],"result":"dragonroar","candidates":54,"start":7812,"end":7881,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[2,2],"result":"chardguard","candidates":54,"start":7881,"end":7958,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[2,3],"result":"peashooter","candidates":54,"start":7958,"end":8036,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[3,2],"result":"whitemelon","candidates":54,"start":8036,"end":8117,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"},
+    {"action":"spawn","cell":[3,3],"result":"burdockbatter","candidates":54,"start":8117,"end":8196,"pool_sha256":"39469df02ed00a7342eb4fee77468b76503269a9542f144e6f1f2f87f59d3250"}
+   ],
+   "stream_end": 8196,
+   "planting_order_basis": "user notes"
+  }
+ ]
+}

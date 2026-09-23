@@ -85,7 +85,7 @@ def cmd_predict(args):
     sequence = parse_sequence(args.previews)
     level = load_level(args.level) if args.level else None
     activation = parse_cell(args.activate) if args.activate else None
-    if level and not args.plant:
+    if level and not args.plant and args.rank == 1:
         raise SystemExit("With --level, list the planted sources with --plant")
     if args.plant and not level:
         raise SystemExit("--plant needs --level")
@@ -99,7 +99,7 @@ def cmd_predict(args):
             raise SystemExit("No effective cost for %s: write ALIAS=COST@CELL or add --source ALIAS=COST" % entry["source"])
         plantings.append(Planting(entry["source"], cost, entry["cell"], entry["kind"]))
     result = scenario(document, kinds, previews, sequence, level, plantings, activation,
-                      dict(args.cell or []), args.offset)
+                      dict(args.cell or []), args.offset, args.rank)
     if args.json:
         print(json.dumps(result, indent=2, default=list))
         return
@@ -112,9 +112,12 @@ def cmd_predict(args):
         print("Level %s (stage %s); activation at %s; level entry at offset %d." % (
             level.name, level.stage, format_cell(activation) if activation else "unspecified", result["level_entry_offset"]))
         for index, row in enumerate(result["results"], start=1):
-            print("  processed %d: %s %s (%s, cost %d, %d candidates) -> %s" % (
-                index, format_cell(row["cell"]), row["source"], row["kind"], row["cost"], row["candidates"],
-                row["result"] or "nothing (empty pool)"))
+            source = "%s, cost %d" % (row["source"], row["cost"]) if row["action"] == "evolve" else "rank-4 spawn"
+            outcome = row["result"] or "unchanged (empty pool)"
+            if row["result"] and not row["placed"]:
+                outcome += " (placement blocked)"
+            print("  processed %d: %s %s (%s, %d candidates) -> %s" % (
+                index, format_cell(row["cell"]), source, row["kind"], row["candidates"], outcome))
         print("Stream ends at %d." % result["stream_end"])
     print("\nConditions:")
     for line in result["conditions"]:
@@ -124,10 +127,10 @@ def cmd_predict(args):
 def cmd_plan(args):
     document, kinds, previews = _context(args)
     level = load_level(args.level)
-    result = search_recipe(document, kinds, previews, level, args.want, dict(args.source), parse_cell(args.activate),
+    result = search_recipe(document, kinds, previews, level, args.want, dict(args.source or []), parse_cell(args.activate),
                            overrides=dict(args.cell or []), preview_rank=args.preview_rank,
                            min_previews=args.min_previews, max_previews=args.max_previews,
-                           max_sources=args.max_sources, node_budget=args.node_budget)
+                           max_sources=args.max_sources, node_budget=args.node_budget, rank=args.rank)
     if args.json:
         print(json.dumps(result, indent=2))
         return
@@ -144,13 +147,15 @@ def cmd_plan(args):
     else:
         print("\n1. Fully quit and relaunch the game.")
         print("2. Complete %d rank-%d preview(s), each one full run of the preview." % (match["preview_count"], match["preview_rank"]))
-        print("3. Enter the level directly and plant, in this order:")
+        print("3. Enter the level directly" + (" and plant, in this order:" if match["planting_order"] else "; leave the activation area empty."))
         for step in match["planting_order"]:
             print("   %d. %s at %s" % (step["step"], "/".join(step["sources"]), step["cell"]))
-        print("4. Start the waves, then activate Evolution once at %s." % args.activate)
-        print("\nPredicted results (processing order, newest plant first):")
+        print("4. Start the waves, then activate rank-%d Evolution once at %s." % (args.rank, args.activate))
+        print("\nPredicted selections (transformations first, then rank-4 placements):")
         for step in match["processing_order"]:
-            print("   %s: %s -> %s%s" % (step["cell"], "/".join(step["sources"]), step["result"], "  <- wanted" if step["wanted"] else ""))
+            print("   %s: %s -> %s%s%s" % (step["cell"], "/".join(step["sources"]) or "spawn", step["result"],
+                  " (placement blocked)" if step.get("placed") is False and step["result"] else "",
+                  "  <- wanted" if step["wanted"] else ""))
         print("\nStream: level entry at raw offset %d, activation ends at %d." % (match["level_entry_offset"], match["stream_end"]))
     print("\nConditions:")
     for line in result["conditions"]:
@@ -187,6 +192,7 @@ def main(argv=None):
     predict = commands.add_parser("predict", help="Replay a stated scenario and print what the game shows")
     predict.add_argument("--previews", default="", help="Preview ranks in order, for example 1x6 or 1,4 (default: none)")
     predict.add_argument("--offset", type=int, default=0, help="Extra raw engine outputs consumed before the level")
+    predict.add_argument("--rank", type=int, choices=(1, 4), default=1, help="Artifact rank for the level activation (default: 1)")
     predict.add_argument("--level", help="Level id from data/levels, or a path to a description")
     predict.add_argument("--activate", help="Activation cell COLUMN-ROW")
     predict.add_argument("--plant", type=parse_planting, action="append", metavar="ALIAS[=COST]@CELL[:KIND]",
@@ -200,15 +206,17 @@ def main(argv=None):
 
     plan = commands.add_parser("plan", help="Find previews and a planting order that put wanted plants on wanted cells")
     plan.add_argument("--level", required=True)
+    plan.add_argument("--rank", type=int, choices=(1, 4), default=1, help="Artifact rank for the level activation (default: 1)")
     plan.add_argument("--want", type=parse_want, action="append", required=True, metavar="PLANT@CELL")
-    plan.add_argument("--source", type=parse_source, action="append", required=True, metavar="ALIAS=COST")
+    plan.add_argument("--source", type=parse_source, action="append", metavar="ALIAS=COST",
+                      help="Available source and effective cost; optional for an empty rank-4 area")
     plan.add_argument("--activate", default="2-2", help="Activation cell COLUMN-ROW (default 2-2)")
     plan.add_argument("--cell", type=parse_override, action="append", metavar="CELL=KIND")
     plan.add_argument("--preview-rank", type=int, default=1, help="Rank of the previews run before the level (default 1)")
     plan.add_argument("--min-previews", type=int, default=0)
     plan.add_argument("--max-previews", type=int, default=99)
     plan.add_argument("--max-sources", type=int, default=9)
-    plan.add_argument("--node-budget", type=int, default=20000, help="Shuffles tried per preview count")
+    plan.add_argument("--node-budget", type=int, default=20000, help="Search nodes tried per preview count")
     plan.add_argument("--json", action="store_true")
     plan.set_defaults(run=cmd_plan)
 

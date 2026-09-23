@@ -1,0 +1,18 @@
+{
+ "id": "egypt5",
+ "stage": "egypt",
+ "bans": [],
+ "default_kind": "ground",
+ "cells": {
+  "6-2": "none",
+  "7-1": "none",
+  "7-5": "none",
+  "8-1": "none",
+  "8-4": "none"
+ },
+ "name": "Egypt 5 (story)",
+ "source": {
+  "resource": "PACKAGES/LEVELS/EGYPT5.json",
+  "sha256": "2ff76cf0fae95bc1805695331b666e9792e0e40e1e60205d9c5c14066a1389bf"
+ }
+}

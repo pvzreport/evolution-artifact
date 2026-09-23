@@ -1,0 +1,33 @@
+{
+ "id": "pirate2",
+ "stage": "pirate",
+ "bans": [],
+ "default_kind": "ground",
+ "cells": {
+  "6-1": "pirate_plank",
+  "7-1": "pirate_plank",
+  "8-1": "pirate_plank",
+  "9-1": "pirate_plank",
+  "6-2": "pirate_plank",
+  "7-2": "pirate_plank",
+  "8-2": "pirate_plank",
+  "9-2": "pirate_plank",
+  "6-3": "pirate_plank",
+  "7-3": "pirate_plank",
+  "8-3": "pirate_plank",
+  "9-3": "pirate_plank",
+  "6-4": "pirate_plank",
+  "7-4": "pirate_plank",
+  "8-4": "pirate_plank",
+  "9-4": "pirate_plank",
+  "6-5": "none",
+  "7-5": "none",
+  "8-5": "none",
+  "9-5": "none"
+ },
+ "name": "Pirate Seas 2 (story)",
+ "source": {
+  "resource": "PACKAGES/LEVELS/PIRATE2.json",
+  "sha256": "db11396c55662e58ffed055b487e639f9fdf27cfbc41e00c0106106e7c113b38"
+ }
+}

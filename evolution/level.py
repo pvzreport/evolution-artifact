@@ -34,6 +34,7 @@ class Level:
         self.stage = record["stage"]
         self.bans = list(record.get("bans") or ())
         self.default_kind = record.get("default_kind", "ground")
+        self.width, self.height = record.get("width", 9), record.get("height", 5)
         self.cells = {parse_cell(cell): kind for cell, kind in (record.get("cells") or {}).items()}
         self.notes = record.get("notes", "")
 
@@ -42,6 +43,9 @@ class Level:
         if overrides and cell in overrides:
             return overrides[cell]
         return self.cells.get(tuple(cell), self.default_kind)
+
+    def contains(self, cell):
+        return 1 <= cell[0] <= self.width and 1 <= cell[1] <= self.height
 
     def base_pool(self, document):
         """Registry-ordered candidates after the filters, the stage rule, and the bans."""
@@ -56,7 +60,7 @@ class Level:
 
     def describe(self):
         return {"id": self.id, "name": self.name, "stage": self.stage, "bans": self.bans,
-                "default_kind": self.default_kind,
+                "default_kind": self.default_kind, "width": self.width, "height": self.height,
                 "cells": {format_cell(cell): kind for cell, kind in sorted(self.cells.items())}}
 
 

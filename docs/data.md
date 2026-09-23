@@ -8,6 +8,13 @@ Everything the model needs is under `data/`. All of it is declared game data or 
 
 `data/previews.json` describes what one preview on the artifact screen does: the display board's stage and cell kind, the cost cut of the evolution pool and the spawn pool, and for each rank the ordered steps, where `evolution` steps name their cells in processing order, `single` steps are one-candidate shuffles that consume nothing, and `spawn` steps draw from the spawn pool.
 
-`data/levels/*.json` holds one description per level: `stage`, `bans` (the seed bank's black list), `default_kind`, and `cells`, a map of COLUMN-ROW to kind for the cells whose kind differs from the default. Declared initial gravestones are `none` cells, which cannot hold a plant; give `ground` for that activation once one has been destroyed. Story levels declare these values in their level definition; a level whose file is not at hand can be described by hand from the seed-selection screen, which shows the bans, and from the board.
+`data/levels/*.json` holds one description per level: `stage`, `bans` (the seed bank's black list), `default_kind`, and `cells`, a map of COLUMN-ROW to kind for the cells whose kind differs from the default. Optional `width` and `height` default to 9 and 5. Declared initial gravestones are `none` cells, which cannot hold a plant; give `ground` for that activation once one has been destroyed. Story levels declare these values in their level definition; a level whose file is not at hand can be described by hand from the seed-selection screen, which shows the bans, and from the board.
 
 `tests/fixtures/pools.json` holds ordered candidate lists read from the running game, keyed by level, cell kind and source cost, plus the two preview pools; the tests require the model to reproduce each of them in order.
+
+`tests/fixtures/rank4-captures.json` retains ten normal-level input scenarios,
+selection results, ordered-pool hashes, draw intervals, and trace hashes. It contains
+no process or account data. Some source orders were reconstructed by reversing the
+recorded processing order; those cases are marked. All starting offsets were
+identified from recorded draws, so these are regression inputs rather than forecasts.
+The model regenerates the draws from the default seed; the fixture does not supply them.

@@ -1,5 +1,6 @@
 import contextlib
 import io
+import json
 from pathlib import Path
 import sys
 import unittest
@@ -36,6 +37,14 @@ class CliTest(unittest.TestCase):
     def test_pool_listing(self):
         text = run("pool", "--level", "pirate1", "--kind", "pirate_plank", "--cost", "0")
         self.assertIn("242 candidates", text)
+
+    def test_rank4_empty_corner_prediction_and_recipe(self):
+        result = json.loads(run("predict", "--rank", "4", "--level", "egypt1", "--activate", "1-1", "--json"))
+        self.assertEqual([row["cell"] for row in result["results"]], [[1, 1], [1, 2], [2, 1], [2, 2]])
+        text = run("plan", "--rank", "4", "--level", "egypt13", "--want", "whitemelon@1-1",
+                   "--max-sources", "0", "--max-previews", "0")
+        self.assertIn("leave the activation area empty", text)
+        self.assertIn("rank-4 Evolution", text)
 
 
 if __name__ == "__main__":

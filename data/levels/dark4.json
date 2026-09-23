@@ -1,0 +1,20 @@
+{
+ "id": "dark4",
+ "stage": "dark",
+ "bans": [],
+ "default_kind": "ground",
+ "cells": {
+  "5-1": "none",
+  "6-2": "none",
+  "6-4": "none",
+  "7-1": "none",
+  "8-2": "none",
+  "8-5": "none",
+  "9-4": "none"
+ },
+ "name": "Dark Ages 4 (story)",
+ "source": {
+  "resource": "PACKAGES/LEVELS/DARK4.json",
+  "sha256": "f452d19d58c069f2bf21ac3452d2b60fd01aac44b560e3f86f2dd0afd47955b1"
+ }
+}

@@ -1,0 +1,45 @@
+{
+ "id": "beach3",
+ "stage": "beach",
+ "bans": [
+  "rhubarbarian"
+ ],
+ "default_kind": "ground",
+ "cells": {
+  "4-1": "beach_shore",
+  "5-1": "beach_shore",
+  "6-1": "beach_shore",
+  "7-1": "beach_shore",
+  "8-1": "beach_shore",
+  "9-1": "beach_shore",
+  "4-2": "beach_shore",
+  "5-2": "beach_shore",
+  "6-2": "beach_shore",
+  "7-2": "beach_shore",
+  "8-2": "beach_shore",
+  "9-2": "beach_shore",
+  "4-3": "beach_shore",
+  "5-3": "beach_shore",
+  "6-3": "beach_shore",
+  "7-3": "beach_shore",
+  "8-3": "beach_shore",
+  "9-3": "beach_shore",
+  "4-4": "beach_shore",
+  "5-4": "beach_shore",
+  "6-4": "beach_shore",
+  "7-4": "beach_shore",
+  "8-4": "beach_shore",
+  "9-4": "beach_shore",
+  "4-5": "beach_shore",
+  "5-5": "beach_shore",
+  "6-5": "beach_shore",
+  "7-5": "beach_shore",
+  "8-5": "beach_shore",
+  "9-5": "beach_shore"
+ },
+ "name": "Big Wave Beach 3 (story)",
+ "source": {
+  "resource": "PACKAGES/LEVELS/BEACH3.json",
+  "sha256": "162d79f241002ec0d0636748588967da1ea3dd8ab3d5f706b68389740d45ef16"
+ }
+}
