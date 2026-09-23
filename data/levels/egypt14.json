@@ -1,11 +1,21 @@
 {
  "id": "egypt14",
- "stage": "egypt",
- "bans": [],
- "default_kind": "ground",
  "name": "Egypt 14 (story)",
- "source": {
-  "resource": "PACKAGES/LEVELS/EGYPT14.json",
-  "sha256": "43b801dc127c38a5294dded5c6b8ee91df04511607f0823dfb7e113e28a25e6b"
+ "stage": "egypt",
+ "default_kind": "ground",
+ "bans": [],
+ "provenance": {
+  "kind": "declared",
+  "exporter": "tools/export_level.py",
+  "resources": [
+   {
+    "path": "PACKAGES/LEVELS/EGYPT14.json",
+    "sha256": "43b801dc127c38a5294dded5c6b8ee91df04511607f0823dfb7e113e28a25e6b"
+   },
+   {
+    "path": "PACKAGES/LEVELMODULES.json",
+    "sha256": "104bcd4e760bb2be68113d9b5abbc07f8576446b91e17f50e812df67495c9196"
+   }
+  ]
  }
 }

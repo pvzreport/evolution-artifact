@@ -1,11 +1,21 @@
 {
  "id": "egypt1",
- "stage": "egypt",
- "bans": [],
- "default_kind": "ground",
  "name": "Egypt 1 (story)",
- "source": {
-  "resource": "PACKAGES/LEVELS/EGYPT1.json",
-  "sha256": "d44de275ed0a78f62938702bfdd37cf6a2ade31232b1f8ad2a48e3cd7f4942b3"
+ "stage": "egypt",
+ "default_kind": "ground",
+ "bans": [],
+ "provenance": {
+  "kind": "declared",
+  "exporter": "tools/export_level.py",
+  "resources": [
+   {
+    "path": "PACKAGES/LEVELS/EGYPT1.json",
+    "sha256": "d44de275ed0a78f62938702bfdd37cf6a2ade31232b1f8ad2a48e3cd7f4942b3"
+   },
+   {
+    "path": "PACKAGES/LEVELMODULES.json",
+    "sha256": "104bcd4e760bb2be68113d9b5abbc07f8576446b91e17f50e812df67495c9196"
+   }
+  ]
  }
 }

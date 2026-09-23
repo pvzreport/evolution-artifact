@@ -4,6 +4,8 @@
  "stage": "dark",
  "default_kind": "ground",
  "bans": [],
- "notes": "Stage name and empty ban list read from the running game during the capture; the level definition was not identified. Gravestone cells are not listed.",
- "source": "capture memory reads"
+ "provenance": {
+  "kind": "capture",
+  "note": "Stage name and empty ban list read from the running game during the capture; the level definition was not identified."
+ }
 }

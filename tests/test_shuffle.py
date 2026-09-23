@@ -31,22 +31,18 @@ class ShuffleTest(unittest.TestCase):
         random_shuffle(range(226), engine)
         self.assertEqual(engine.draws, 306)
 
-    def test_inlined_index_draw_matches_the_generic_distribution(self):
-        # The shuffle inlines the distribution for spans below 2**32; both paths must consume
-        # the same outputs and return the same indices.
-        for span in (2, 3, 7, 55, 226, 240, 1000, 65537):
-            generic, inlined = Mt19937(), Mt19937()
-            values = [uniform_int(generic, 0, span - 1) for _ in range(200)]
-            mask = (1 << (span - 1).bit_length()) - 1
-            fast = []
-            for _ in range(200):
-                while True:
-                    index = inlined() & mask
-                    if index < span:
-                        break
-                fast.append(index)
-            self.assertEqual(values, fast, span)
-            self.assertEqual(generic.draws, inlined.draws, span)
+    def test_shuffle_draws_match_the_generic_distribution(self):
+        # The shuffle writes out the distribution for spans below 2**32; it must consume the same
+        # outputs and swap the same indices as libc++'s generic uniform_int_distribution would.
+        for size in (2, 3, 7, 55, 226, 240, 1000):
+            reference, engine = Mt19937(), Mt19937()
+            expected = list(range(size))
+            for first in range(size - 1):
+                index = uniform_int(reference, 0, size - 1 - first)
+                if index:
+                    expected[first], expected[first + index] = expected[first + index], expected[first]
+            self.assertEqual(random_shuffle(range(size), engine), expected, size)
+            self.assertEqual(engine.draws, reference.draws, size)
 
     def test_short_ranges_draw_nothing(self):
         engine = Mt19937()

@@ -19,5 +19,18 @@
   "birthsunflower",
   "imppear"
  ],
- "source": "declared level definition EGYPT13"
+ "provenance": {
+  "kind": "declared",
+  "exporter": "tools/export_level.py",
+  "resources": [
+   {
+    "path": "PACKAGES/LEVELS/EGYPT13.json",
+    "sha256": "9f8dc0cb6b9d1e62b9e3c7756839a2d7ca9dd82c08cb37b00639f4e31ad2abda"
+   },
+   {
+    "path": "PACKAGES/LEVELMODULES.json",
+    "sha256": "104bcd4e760bb2be68113d9b5abbc07f8576446b91e17f50e812df67495c9196"
+   }
+  ]
+ }
 }

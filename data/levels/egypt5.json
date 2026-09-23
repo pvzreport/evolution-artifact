@@ -1,8 +1,9 @@
 {
  "id": "egypt5",
+ "name": "Egypt 5 (story)",
  "stage": "egypt",
- "bans": [],
  "default_kind": "ground",
+ "bans": [],
  "cells": {
   "6-2": "none",
   "7-1": "none",
@@ -10,9 +11,19 @@
   "8-1": "none",
   "8-4": "none"
  },
- "name": "Egypt 5 (story)",
- "source": {
-  "resource": "PACKAGES/LEVELS/EGYPT5.json",
-  "sha256": "2ff76cf0fae95bc1805695331b666e9792e0e40e1e60205d9c5c14066a1389bf"
+ "notes": "Gravestones declared at level start on 6-2, 7-1, 7-5, 8-1, 8-4 hold no plant while they stand; give ground for that activation once one has been destroyed.",
+ "provenance": {
+  "kind": "declared",
+  "exporter": "tools/export_level.py",
+  "resources": [
+   {
+    "path": "PACKAGES/LEVELS/EGYPT5.json",
+    "sha256": "2ff76cf0fae95bc1805695331b666e9792e0e40e1e60205d9c5c14066a1389bf"
+   },
+   {
+    "path": "PACKAGES/LEVELMODULES.json",
+    "sha256": "104bcd4e760bb2be68113d9b5abbc07f8576446b91e17f50e812df67495c9196"
+   }
+  ]
  }
 }

@@ -4,7 +4,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from evolution import Mt19937, Planting, Previews, load_level, load_plants, scenario, tile_kinds
+from evolution import Planting, Previews, Stream, load_level, load_plants, scenario, tile_kinds
 
 
 def results(rows):
@@ -102,17 +102,15 @@ class PredictTest(unittest.TestCase):
     def test_two_rank4_previews_and_a_third_start_from_offset_35296(self):
         # Captured 2026-09-19: two complete rank-4 previews and the three evolutions of a third,
         # 3,717 outputs, starting at offset 35,296.
-        engine = Mt19937()
-        for _ in range(35296):
-            engine()
-        rows = self.previews.advance(engine, [4, 4])
+        stream = Stream()
+        rows, end = self.previews.advance(stream, 35296, [4, 4])
         evolved = [r["result"] for p in rows for r in p["results"] if r["step"] == "evolution"]
         self.assertEqual(evolved, ["cottonyeti", "inferno", "goldencassia", "elaeocarpus", "waxgourd", "rhubarbarian"])
         spawned = [r["result"] for p in rows for r in p["results"] if r["step"] == "spawn"]
         self.assertEqual(spawned, ["wallnut", "pineapple", "lilypad", "garlic", "guardshroom", "cosmicmushroom",
                                    "aloes", "endurian", "heavendatura", "endurian", "turnip", "cosmicmushroom"])
-        self.assertEqual(engine.draws, 35296 + 2782)
-        third = self.previews.run(engine, 4)
+        self.assertEqual(end, 35296 + 2782)
+        third, _ = self.previews.run(stream, end, 4)
         self.assertEqual([r["result"] for r in third if r["step"] == "evolution"], ["bowlingbulb", "chestnut", "peonychi"])
         self.assertEqual(third[2]["end"], 35296 + 3717)
 

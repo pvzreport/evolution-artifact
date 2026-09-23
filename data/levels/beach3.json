@@ -1,10 +1,11 @@
 {
  "id": "beach3",
+ "name": "Big Wave Beach 3 (story)",
  "stage": "beach",
+ "default_kind": "ground",
  "bans": [
   "rhubarbarian"
  ],
- "default_kind": "ground",
  "cells": {
   "4-1": "beach_shore",
   "5-1": "beach_shore",
@@ -37,9 +38,22 @@
   "8-5": "beach_shore",
   "9-5": "beach_shore"
  },
- "name": "Big Wave Beach 3 (story)",
- "source": {
-  "resource": "PACKAGES/LEVELS/BEACH3.json",
-  "sha256": "162d79f241002ec0d0636748588967da1ea3dd8ab3d5f706b68389740d45ef16"
+ "notes": "Columns 1 to 3 never flood. Columns 4 to 9 are shore cells when dry; the tide is a scheduled level event. For a flooded cell give beach_water (no pad) or beach_pad (plant on a Lily Pad) for that activation. The shore column is observed.",
+ "provenance": {
+  "kind": "declared",
+  "exporter": "tools/export_level.py",
+  "resources": [
+   {
+    "path": "PACKAGES/LEVELS/BEACH3.json",
+    "sha256": "162d79f241002ec0d0636748588967da1ea3dd8ab3d5f706b68389740d45ef16"
+   },
+   {
+    "path": "PACKAGES/LEVELMODULES.json",
+    "sha256": "104bcd4e760bb2be68113d9b5abbc07f8576446b91e17f50e812df67495c9196"
+   }
+  ],
+  "observed": {
+   "shore_from": 4
+  }
  }
 }

@@ -23,41 +23,57 @@
  ],
  "cells": {
   "3-1": "beach_shore",
-  "3-2": "beach_shore",
-  "3-3": "beach_shore",
-  "3-4": "beach_shore",
-  "3-5": "beach_shore",
   "4-1": "beach_shore",
-  "4-2": "beach_shore",
-  "4-3": "beach_shore",
-  "4-4": "beach_shore",
-  "4-5": "beach_shore",
   "5-1": "beach_shore",
-  "5-2": "beach_shore",
-  "5-3": "beach_shore",
-  "5-4": "beach_shore",
-  "5-5": "beach_shore",
   "6-1": "beach_shore",
-  "6-2": "beach_shore",
-  "6-3": "beach_shore",
-  "6-4": "beach_shore",
-  "6-5": "beach_shore",
   "7-1": "beach_shore",
-  "7-2": "beach_shore",
-  "7-3": "beach_shore",
-  "7-4": "beach_shore",
-  "7-5": "beach_shore",
   "8-1": "beach_shore",
-  "8-2": "beach_shore",
-  "8-3": "beach_shore",
-  "8-4": "beach_shore",
-  "8-5": "beach_shore",
   "9-1": "beach_shore",
+  "3-2": "beach_shore",
+  "4-2": "beach_shore",
+  "5-2": "beach_shore",
+  "6-2": "beach_shore",
+  "7-2": "beach_shore",
+  "8-2": "beach_shore",
   "9-2": "beach_shore",
+  "3-3": "beach_shore",
+  "4-3": "beach_shore",
+  "5-3": "beach_shore",
+  "6-3": "beach_shore",
+  "7-3": "beach_shore",
+  "8-3": "beach_shore",
   "9-3": "beach_shore",
+  "3-4": "beach_shore",
+  "4-4": "beach_shore",
+  "5-4": "beach_shore",
+  "6-4": "beach_shore",
+  "7-4": "beach_shore",
+  "8-4": "beach_shore",
   "9-4": "beach_shore",
+  "3-5": "beach_shore",
+  "4-5": "beach_shore",
+  "5-5": "beach_shore",
+  "6-5": "beach_shore",
+  "7-5": "beach_shore",
+  "8-5": "beach_shore",
   "9-5": "beach_shore"
  },
- "notes": "Columns 1 and 2 never flood. Columns 3 to 9 are shore cells when dry; the tide is a scheduled level event. For a flooded cell give beach_water (no pad) or beach_pad (plant on a Lily Pad) for that activation. The shore column and the two columns that stay dry are observed in play.",
- "source": "declared level definition PVZ1_S33_6_H"
+ "notes": "Columns 1 to 2 never flood. Columns 3 to 9 are shore cells when dry; the tide is a scheduled level event. For a flooded cell give beach_water (no pad) or beach_pad (plant on a Lily Pad) for that activation. The shore column is observed.",
+ "provenance": {
+  "kind": "declared",
+  "exporter": "tools/export_level.py",
+  "resources": [
+   {
+    "path": "PACKAGES/LEVELS/PVZ1_S33_6_H.json",
+    "sha256": "c73704889592c5b2a1dfdbc76d429d980d700a4cfd5933185cad6162e0919f3d"
+   },
+   {
+    "path": "PACKAGES/LEVELMODULES.json",
+    "sha256": "104bcd4e760bb2be68113d9b5abbc07f8576446b91e17f50e812df67495c9196"
+   }
+  ],
+  "observed": {
+   "shore_from": 3
+  }
+ }
 }
