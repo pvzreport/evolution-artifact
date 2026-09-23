@@ -36,6 +36,9 @@ class Level:
         self.default_kind = record.get("default_kind", "ground")
         self.width, self.height = record.get("width", 9), record.get("height", 5)
         self.cells = {parse_cell(cell): kind for cell, kind in (record.get("cells") or {}).items()}
+        for location, kind in [("default_kind", self.default_kind)] + [(format_cell(cell), kind) for cell, kind in self.cells.items()]:
+            if not isinstance(kind, str):
+                raise ValueError("Cell kind at %s must be a string, got %r" % (location, kind))
         self.notes = record.get("notes", "")
 
     def kind_at(self, cell, overrides=None):

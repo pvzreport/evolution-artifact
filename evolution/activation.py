@@ -48,10 +48,10 @@ class Activation:
 
     def pool(self, kind, cost=None, occupied=False):
         """A cost requests a transformation pool; None requests rank-4 placement."""
+        if not isinstance(kind, str) or kind not in self.kinds:
+            raise ValueError("Unknown cell kind %r; known: %s" % (kind, ", ".join(sorted(self.kinds))))
         key = kind, cost, occupied
         if key not in self.pools:
-            if kind not in self.kinds:
-                raise ValueError("Unknown cell kind: " + kind)
             candidates = self.kinds[kind].filter(self.base)
             if cost is None:
                 candidates = [a for a in candidates if self.costs[a] <= 100
@@ -71,6 +71,8 @@ class Activation:
                 "start": start, "end": engine.draws}
 
     def transform(self, planting, engine):
+        if planting.source not in self.costs:
+            raise ValueError("Unknown source plant %r at %s" % (planting.source, format_cell(planting.cell)))
         kind = planting.kind or self.kind_at(planting.cell)
         if kind == NONE:
             raise ValueError("Cell %s cannot hold a plant in this level" % format_cell(planting.cell))
@@ -115,8 +117,9 @@ class Activation:
         cells = [p.cell for p in plantings]
         if len(set(cells)) != len(cells):
             raise ValueError("List at most one transformation source per cell; describe Lily Pads with beach_pad")
-        if any(not self.level.contains(cell) or (self.cells is not None and cell not in self.cells) for cell in cells):
-            raise ValueError("A source is outside the activation area or board")
+        for cell in cells:
+            if not self.level.contains(cell) or (self.cells is not None and cell not in self.cells):
+                raise ValueError("Source cell %s is outside the activation area or board" % format_cell(cell))
         rows = [self.transform(p, engine) for p in reversed(plantings)]
         return self.finish(plantings, rows, engine, rank)
 

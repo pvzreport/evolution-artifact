@@ -109,8 +109,8 @@ def cmd_predict(args):
     if args.offset:
         print("Extra raw outputs consumed: %d" % args.offset)
     if level:
-        print("Level %s (stage %s); activation at %s; level entry at offset %d." % (
-            level.name, level.stage, format_cell(activation) if activation else "unspecified", result["level_entry_offset"]))
+        print("Level %s (stage %s); rank-%d activation at %s; level entry at offset %d." % (
+            level.name, level.stage, args.rank, format_cell(activation) if activation else "unspecified", result["level_entry_offset"]))
         for index, row in enumerate(result["results"], start=1):
             source = "%s, cost %d" % (row["source"], row["cost"]) if row["action"] == "evolve" else "rank-4 spawn"
             outcome = row["result"] or "unchanged (empty pool)"
@@ -118,7 +118,7 @@ def cmd_predict(args):
                 outcome += " (placement blocked)"
             print("  processed %d: %s %s (%s, %d candidates) -> %s" % (
                 index, format_cell(row["cell"]), source, row["kind"], row["candidates"], outcome))
-        print("Stream ends at %d." % result["stream_end"])
+        print("Selection stream ends at %d." % result["stream_end"])
     print("\nConditions:")
     for line in result["conditions"]:
         print("  " + line)
@@ -134,29 +134,36 @@ def cmd_plan(args):
     if args.json:
         print(json.dumps(result, indent=2))
         return
-    print("Level %s (stage %s); " % (level.name, level.stage) + "; ".join(
+    options = [
         "%s at cost %d on %s: %d candidates" % ("/".join(o["sources"]), o["cost"], "/".join(o["kinds"]), o["candidates"])
-        for o in result["options"]))
+        for o in result["options"]]
+    print("; ".join(["Level %s (stage %s)" % (level.name, level.stage)] + options))
     if result["budget_exhausted_counts"]:
         print("Node budget %d exhausted for %d preview count(s); deeper mixes there were not searched."
               % (result["node_budget"], result["budget_exhausted_counts"]))
     match = result["match"]
     if match is None:
-        print("No recipe within %d..%d rank-%d previews and up to %d sources."
+        print("No recipe within %d..%d previews (first rank 1, later rank %d) and up to %d sources."
               % (result["min_previews"], result["max_previews"], args.preview_rank, result["max_sources"]))
     else:
         print("\n1. Fully quit and relaunch the game.")
-        print("2. Complete %d rank-%d preview(s), each one full run of the preview." % (match["preview_count"], match["preview_rank"]))
+        if match["preview_count"] > 1 and match["preview_rank"] != 1:
+            print("2. Complete one rank-1 preview, then %d rank-%d preview(s), each one full run." % (
+                match["preview_count"] - 1, match["preview_rank"]))
+        else:
+            print("2. Complete %d rank-1 preview(s), each one full run of the preview." % match["preview_count"])
         print("3. Enter the level directly" + (" and plant, in this order:" if match["planting_order"] else "; leave the activation area empty."))
         for step in match["planting_order"]:
             print("   %d. %s at %s" % (step["step"], "/".join(step["sources"]), step["cell"]))
         print("4. Start the waves, then activate rank-%d Evolution once at %s." % (args.rank, args.activate))
-        print("\nPredicted selections (transformations first, then rank-4 placements):")
+        print("\nPredicted selections (transformations first, then rank-4 placements):" if args.rank == 4
+              else "\nPredicted transformations:")
         for step in match["processing_order"]:
-            print("   %s: %s -> %s%s%s" % (step["cell"], "/".join(step["sources"]) or "spawn", step["result"],
+            print("   %s: %s -> %s%s%s" % (step["cell"], "/".join(step["sources"]) or "spawn",
+                  step["result"] or "unchanged (empty pool)",
                   " (placement blocked)" if step.get("placed") is False and step["result"] else "",
                   "  <- wanted" if step["wanted"] else ""))
-        print("\nStream: level entry at raw offset %d, activation ends at %d." % (match["level_entry_offset"], match["stream_end"]))
+        print("\nStream: level entry at raw offset %d, selections end at %d." % (match["level_entry_offset"], match["stream_end"]))
     print("\nConditions:")
     for line in result["conditions"]:
         print("  " + line)
@@ -212,7 +219,8 @@ def main(argv=None):
                       help="Available source and effective cost; optional for an empty rank-4 area")
     plan.add_argument("--activate", default="2-2", help="Activation cell COLUMN-ROW (default 2-2)")
     plan.add_argument("--cell", type=parse_override, action="append", metavar="CELL=KIND")
-    plan.add_argument("--preview-rank", type=int, default=1, help="Rank of the previews run before the level (default 1)")
+    plan.add_argument("--preview-rank", type=int, choices=(1, 4), default=1,
+                      help="Rank after the mandatory first rank-1 preview (default 1); counts include that first preview")
     plan.add_argument("--min-previews", type=int, default=0)
     plan.add_argument("--max-previews", type=int, default=99)
     plan.add_argument("--max-sources", type=int, default=9)

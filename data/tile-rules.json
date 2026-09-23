@@ -19,7 +19,7 @@
    ]
   },
   "beach_pad": {
-   "description": "A plant standing on a Lily Pad, over water or over a dry shore cell",
+   "description": "A Lily Pad, bare or supporting an ordinary plant, over water or over a dry shore cell",
    "rejects": ["intensivecarrot", "cobcannon", "lilypad", "bamboo", "celerystalker", "cactus", "escaperoot", "snappea", "olivepit", "jewelrabbit"],
    "note": "The list was captured over water. Over a dry shore cell it was not captured; a played check on 2026-09-19 in Memory Lane season 33 level 6 difficult (fresh launch, no previews, tide out, Puff-shrooms at 2-1, at 3-1 on bare shore and at 3-2 on a Lily Pad, activation at 2-2) gave chestnut, bloomerang and agave, the results this kind predicts for 3-2; the ground kind predicts pumpkinwitch at 3-2 and turkeypult at 3-1, the shore kind endurian and turkeypult. Correction: added cactus to the Beach Lily Pad reject list.",
    "measured": [

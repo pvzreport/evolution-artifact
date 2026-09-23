@@ -1,0 +1,93 @@
+{
+ "scope": "Three rank-4 level-30 Beach follow-ups. B and Cactus use forecasts fixed before play; A tests an offset-independent occupied-shore pool and retrospectively replays species. Placed assertions compare recorded plant-add calls only where terrain stayed unchanged. Post-selection draws are retained separately and are not modeled. No process or account data.",
+ "cases": [
+  {
+   "capture": "B",
+   "activation": [9,3],
+   "offset": 20078,
+   "previews": [1,1,1,1,1,1,1],
+   "plantings": [{"source":"seashroom","cost":0,"cell":[9,3]}],
+   "cell_kinds": {"8-2":"beach_water","8-3":"beach_water","8-4":"beach_water","9-2":"beach_water","9-3":"beach_water","9-4":"beach_water"},
+   "placement_excluded_cells": [],
+   "board_notes": ["Sea-shroom stood over water without a pad; other cells in the clipped area were empty and flooded.","The user confirmed only a Lily Pad remained at 9-3 after the effects."],
+   "level": "beach3",
+   "rank": 4,
+   "trace_sha256": "aec046aff3376dca18db522e2a4c273274aa1eef47e6f90ff3e49807502f7ddc",
+   "offset_basis": "declared before play",
+   "expected": [
+    {"action":"evolve","cell":[9,3],"result":"lilypad","candidates":18,"start":20078,"end":20098,"pool_sha256":"75a25b0f18f9822a8e9cc80102b4d19b3584f9a3b2a048775d7ec8087b207227","placed":false},
+    {"action":"spawn","cell":[8,2],"result":"guardshroom","candidates":6,"start":20098,"end":20112,"pool_sha256":"430e73d0ded8783c88822c4d16d62d6ce93b9d96bf97c30ff285882ab882afd5","placed":true},
+    {"action":"spawn","cell":[8,3],"result":"ghostpepper","candidates":6,"start":20112,"end":20117,"pool_sha256":"430e73d0ded8783c88822c4d16d62d6ce93b9d96bf97c30ff285882ab882afd5","placed":true},
+    {"action":"spawn","cell":[8,4],"result":"lilypad","candidates":6,"start":20117,"end":20122,"pool_sha256":"430e73d0ded8783c88822c4d16d62d6ce93b9d96bf97c30ff285882ab882afd5","placed":true},
+    {"action":"spawn","cell":[9,2],"result":"guardshroom","candidates":6,"start":20122,"end":20127,"pool_sha256":"430e73d0ded8783c88822c4d16d62d6ce93b9d96bf97c30ff285882ab882afd5","placed":true},
+    {"action":"spawn","cell":[9,3],"result":"lilypad","candidates":1,"start":20127,"end":20127,"pool_sha256":"45c60ecadcd13cb951c38316895232802e631238185ef8605066582573307fac","placed":true},
+    {"action":"spawn","cell":[9,4],"result":"guardshroom","candidates":6,"start":20127,"end":20132,"pool_sha256":"430e73d0ded8783c88822c4d16d62d6ce93b9d96bf97c30ff285882ab882afd5","placed":true}
+   ],
+   "stream_end": 20132,
+   "captured_stream_end": 20132,
+   "post_selection_raw_outputs": 0,
+   "plant_add_selection_indices": [7,6,5,4,3,2]
+  },
+  {
+   "capture": "A",
+   "activation": [5,3],
+   "offset": 0,
+   "plantings": [{"source":"puffshroom","cost":0,"cell":[5,3]}],
+   "cell_kinds": {},
+   "placement_excluded_cells": [],
+   "board_notes": ["Puff-shroom stood on dry shore without a pad; the other eight cells were empty and pad-free.","The user removed the level initial Lily Pads before planting. Their original cells were not specified.","Only the occupied-cell singleton Lily Pad pool and zero draws were predicted before play; species and the starting offset were reconstructed afterward."],
+   "level": "beach3",
+   "rank": 4,
+   "trace_sha256": "1232750568f169261d3b6058a4020caae83976a9535f873cafd17291dcb423c6",
+   "offset_basis": "reconstructed after capture",
+   "expected": [
+    {"action":"evolve","cell":[5,3],"result":"roseswordman","candidates":249,"start":0,"end":324,"pool_sha256":"ef81a94ede4b08d71c1aaff78715f7b1b69cc5f7263dde49a2dcbf77b5bd087d","placed":true},
+    {"action":"spawn","cell":[4,2],"result":"draftodil","candidates":55,"start":324,"end":398,"pool_sha256":"2bf0769c22c68b267acb87e5ffbd6f878d7050c3f0a1376ac53377df376f4a2e","placed":true},
+    {"action":"spawn","cell":[4,3],"result":"holonut","candidates":55,"start":398,"end":472,"pool_sha256":"2bf0769c22c68b267acb87e5ffbd6f878d7050c3f0a1376ac53377df376f4a2e","placed":true},
+    {"action":"spawn","cell":[4,4],"result":"hoyacordata","candidates":55,"start":472,"end":556,"pool_sha256":"2bf0769c22c68b267acb87e5ffbd6f878d7050c3f0a1376ac53377df376f4a2e","placed":true},
+    {"action":"spawn","cell":[5,2],"result":"cabbagepult","candidates":55,"start":556,"end":641,"pool_sha256":"2bf0769c22c68b267acb87e5ffbd6f878d7050c3f0a1376ac53377df376f4a2e","placed":true},
+    {"action":"spawn","cell":[5,3],"result":"lilypad","candidates":1,"start":641,"end":641,"pool_sha256":"45c60ecadcd13cb951c38316895232802e631238185ef8605066582573307fac","placed":true},
+    {"action":"spawn","cell":[5,4],"result":"holonut","candidates":55,"start":641,"end":716,"pool_sha256":"2bf0769c22c68b267acb87e5ffbd6f878d7050c3f0a1376ac53377df376f4a2e","placed":true},
+    {"action":"spawn","cell":[6,2],"result":"wallnut","candidates":55,"start":716,"end":793,"pool_sha256":"2bf0769c22c68b267acb87e5ffbd6f878d7050c3f0a1376ac53377df376f4a2e","placed":true},
+    {"action":"spawn","cell":[6,3],"result":"turnip","candidates":55,"start":793,"end":870,"pool_sha256":"2bf0769c22c68b267acb87e5ffbd6f878d7050c3f0a1376ac53377df376f4a2e","placed":true},
+    {"action":"spawn","cell":[6,4],"result":"burdockbatter","candidates":55,"start":870,"end":945,"pool_sha256":"2bf0769c22c68b267acb87e5ffbd6f878d7050c3f0a1376ac53377df376f4a2e","placed":true}
+   ],
+   "stream_end": 945,
+   "captured_stream_end": 947,
+   "post_selection_raw_outputs": 2,
+   "plant_add_selection_indices": [10,9,8,7,6,5,4,3,2,1]
+  },
+  {
+   "capture": "Cactus",
+   "activation": [5,3],
+   "offset": 31495,
+   "previews": [1,1,1,1,1,1,1,1,1,1,1],
+   "plantings": [{"source":"puffshroom","cost":0,"cell":[5,3]},{"source":"sunflower","cost":50,"cell":[6,4]},{"source":"sunflower","cost":50,"cell":[4,2]}],
+   "cell_kinds": {},
+   "placement_excluded_cells": [[6,2],[6,3],[6,4]],
+   "board_notes": ["Captured selection pools match the stated dry-shore, pad-free setup with three sources in the stated planting order.","The user reported column 6 flooding and confirmed column 5 stayed dry. Tide state was not directly logged.","The missing adds for hoyacordata at 6-2 and apsarlotus at 6-3 are consistent with the reported flooding; exact rejection branches were not logged.","Placement assertions exclude column 6; this is not a complete unchanged-terrain placement match."],
+   "level": "beach3",
+   "rank": 4,
+   "trace_sha256": "d107eecc421122e941be4d319d8ec6691f07c1bccd1b8c8a6c202008f776c517",
+   "offset_basis": "declared before play",
+   "expected": [
+    {"action":"evolve","cell":[4,2],"result":"guardshroom","candidates":225,"start":31495,"end":31798,"pool_sha256":"0f8d75bd2607fa3fc3d8f752658fd90f316c5b0d5963ec95f68798d3e5369ba4","placed":true},
+    {"action":"evolve","cell":[6,4],"result":"hollyknight","candidates":225,"start":31798,"end":32127,"pool_sha256":"0f8d75bd2607fa3fc3d8f752658fd90f316c5b0d5963ec95f68798d3e5369ba4"},
+    {"action":"evolve","cell":[5,3],"result":"cactus","candidates":249,"start":32127,"end":32460,"pool_sha256":"ef81a94ede4b08d71c1aaff78715f7b1b69cc5f7263dde49a2dcbf77b5bd087d","placed":false},
+    {"action":"spawn","cell":[4,2],"result":"lilypad","candidates":1,"start":32460,"end":32460,"pool_sha256":"45c60ecadcd13cb951c38316895232802e631238185ef8605066582573307fac","placed":true},
+    {"action":"spawn","cell":[4,3],"result":"happyleek","candidates":55,"start":32460,"end":32535,"pool_sha256":"2bf0769c22c68b267acb87e5ffbd6f878d7050c3f0a1376ac53377df376f4a2e","placed":true},
+    {"action":"spawn","cell":[4,4],"result":"dragonroar","candidates":55,"start":32535,"end":32621,"pool_sha256":"2bf0769c22c68b267acb87e5ffbd6f878d7050c3f0a1376ac53377df376f4a2e","placed":true},
+    {"action":"spawn","cell":[5,2],"result":"levitater","candidates":55,"start":32621,"end":32700,"pool_sha256":"2bf0769c22c68b267acb87e5ffbd6f878d7050c3f0a1376ac53377df376f4a2e","placed":true},
+    {"action":"spawn","cell":[5,3],"result":"lilypad","candidates":1,"start":32700,"end":32700,"pool_sha256":"45c60ecadcd13cb951c38316895232802e631238185ef8605066582573307fac","placed":true},
+    {"action":"spawn","cell":[5,4],"result":"endurian","candidates":55,"start":32700,"end":32774,"pool_sha256":"2bf0769c22c68b267acb87e5ffbd6f878d7050c3f0a1376ac53377df376f4a2e","placed":true},
+    {"action":"spawn","cell":[6,2],"result":"hoyacordata","candidates":55,"start":32774,"end":32841,"pool_sha256":"2bf0769c22c68b267acb87e5ffbd6f878d7050c3f0a1376ac53377df376f4a2e"},
+    {"action":"spawn","cell":[6,3],"result":"apsarlotus","candidates":55,"start":32841,"end":32923,"pool_sha256":"2bf0769c22c68b267acb87e5ffbd6f878d7050c3f0a1376ac53377df376f4a2e"},
+    {"action":"spawn","cell":[6,4],"result":"lilypad","candidates":1,"start":32923,"end":32923,"pool_sha256":"45c60ecadcd13cb951c38316895232802e631238185ef8605066582573307fac"}
+   ],
+   "stream_end": 32923,
+   "captured_stream_end": 32927,
+   "post_selection_raw_outputs": 4,
+   "plant_add_selection_indices": [12,9,8,7,6,5,4,2,1]
+  }
+ ]
+}

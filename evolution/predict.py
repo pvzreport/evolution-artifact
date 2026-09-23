@@ -14,11 +14,13 @@ from .shuffle import Mt19937
 CONDITIONS = [
     "Start after a full process restart (seed 5489, offset 0).",
     "Run exactly the listed previews, each one complete, and nothing else that uses the artifact "
-    "before entering the level. Account for any additional shared-engine draws with the offset.",
+    "before entering the level. The first preview must be rank 1; later previews may be rank 1 or 4.",
+    "Accepted modeling assumption: entering or restarting a level consumes no shared-engine outputs.",
     "Same level as described, sources at the listed effective cost (no discounts unless included), "
     "activate once while every source remains and before any automatic spawning.",
     "Each cell's kind must match the board at activation: Beach cells right of the coast are shore when dry, "
-    "water when flooded without a pad, and pad when a plant stands on a Lily Pad, whether the cell is flooded or dry.",
+    "water when flooded without a pad, and pad whenever a Lily Pad is present, bare or occupied. "
+    "Keep terrain and supports unchanged until the effects finish, apart from the predicted additions.",
     "Plant exactly the listed sources in the listed order inside the 3x3 around the activation cell; "
     "the newest plant is processed first.",
 ]

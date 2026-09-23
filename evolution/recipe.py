@@ -18,16 +18,20 @@ from .tiles import NONE
 
 def search_recipe(document, kinds, previews, level, wants, sources, activation=(2, 2), *, overrides=None,
                   preview_rank=1, min_previews=0, max_previews=99, max_sources=9, node_budget=20000, rank=1):
-    """Fewest previews of one rank, then fewest sources, putting every wanted plant on its wanted cell.
+    """Fewest total previews, then fewest sources, putting every wanted plant on its wanted cell.
 
     wants: list of (plant, cell). sources: {alias: cost} or {alias: (cost, [kinds])} when a
     source may only be planted on cells of those kinds. overrides: {cell: kind} for this
     activation. node_budget caps the shuffles tried per preview count.
+    The first preview is rank 1; preview_rank selects the rank of later previews.
     """
     if rank not in (1, 4):
         raise ValueError("Supported activation ranks are 1 and 4")
     area = area_around(activation, level.width, level.height)
     model = Activation(document, kinds, level, activation, overrides)
+    for alias in sources:
+        if alias not in model.costs:
+            raise ValueError("Unknown source plant: %r" % alias)
     kind_of = {cell: level.kind_at(cell, overrides) for cell in area}
     usable = [cell for cell in area if kind_of[cell] != NONE]
     wanted_cells = [cell for _, cell in wants]
@@ -51,6 +55,11 @@ def search_recipe(document, kinds, previews, level, wants, sources, activation=(
         if not (any(plant in option["pool"] for option in options if kind in option["kinds"])
                 or (rank == 4 and plant in model.pool(kind))):
             raise ValueError("%s is not obtainable on a %s cell from any listed source in this level" % (plant, kind))
+    minimum_sources = sum(rank == 1 or plant not in model.pool(kind_of[cell]) for plant, cell in wants)
+    if max_sources < minimum_sources:
+        raise ValueError("max_sources must be at least %d for the requested transformations (got %d)"
+                         % (minimum_sources, max_sources))
+    needed = Counter(plant for plant, _ in wants)
     result = {
         "level": level.describe(), "activation": {"column": activation[0], "row": activation[1]},
         "cell_kinds": {format_cell(cell): kind_of[cell] for cell in area},
@@ -72,7 +81,7 @@ def search_recipe(document, kinds, previews, level, wants, sources, activation=(
                 result["match"] = _recipe(count, preview_rank, engine.draws, path)
                 return result
         if count < max_previews:
-            previews.run(engine, preview_rank)
+            previews.run(engine, 1 if count == 0 else preview_rank)
     return result
 
 
@@ -81,6 +90,10 @@ def _options(document, kinds, level, sources, capacity):
     by_pool = {}
     for alias, spec in sources.items():
         cost, allowed = (spec, None) if isinstance(spec, int) else (int(spec[0]), list(spec[1]))
+        for kind in allowed or ():
+            if not isinstance(kind, str) or kind not in kinds:
+                raise ValueError("Unknown source kind %r for %s; known: %s"
+                                 % (kind, alias, ", ".join(sorted(kinds))))
         for kind in sorted(capacity):
             if allowed is not None and kind not in allowed:
                 continue
@@ -122,7 +135,7 @@ def _rank4_search(engine, model, options, max_sources, node_budget, wants, usabl
                     row["sources"] = choices[row["cell"]]
             return accepted(rows)
 
-        needed = Counter((plant, kind_of[cell]) for plant, cell in wants)
+        needed = Counter(plant for plant, _ in wants)
         capacity = Counter(kind_of[cell] for cell in usable)
         return _breadth_first(engine, options, needed, capacity, max_sources, node_budget,
                               wants, usable, kind_of, complete_transformations)
@@ -187,10 +200,8 @@ def _breadth_first(engine, options, needed, capacity, max_sources, node_budget, 
                         "source_cost": option["cost"], "kinds": option["kinds"],
                         "result": selected, "start": start, "end": trial.draws}
                 counts = matched.copy()
-                for kind in option["kinds"]:
-                    if counts[(selected, kind)] < needed[(selected, kind)]:
-                        counts[(selected, kind)] += 1
-                        break
+                if counts[selected] < needed[selected]:
+                    counts[selected] += 1
                 if counts == needed:
                     assigned = _assign(path + [step], wants, usable, kind_of)
                     if assigned is not None:
@@ -204,37 +215,33 @@ def _breadth_first(engine, options, needed, capacity, max_sources, node_budget, 
 
 def _assign(path, wants, usable, kind_of):
     """Give every step a cell: wanted results on their wanted cells, the rest anywhere their kinds allow."""
-    pending = {}
-    for plant, cell in wants:
-        pending.setdefault(plant, []).append(cell)
+    wanted = {cell: plant for plant, cell in wants}
+    if not len(wanted) <= len(path) <= len(usable):
+        return None
     steps = [dict(step) for step in path]
-    taken = set()
-    for step in steps:
-        cells = [cell for cell in pending.get(step["result"], []) if kind_of[cell] in step["kinds"] and cell not in taken]
-        if cells:
-            step["cell"] = cells[0]
-            step["wanted"] = True
-            taken.add(cells[0])
-    free = [cell for cell in usable if cell not in taken]
-    fillers = [step for step in steps if "cell" not in step]
-    match = _matching(fillers, free, kind_of)
+    # Match the whole board so fillers can also displace an earlier assignment.
+    # Unused slots have no result and therefore cannot occupy a wanted cell.
+    unused = [{"kinds": set(kind_of[cell] for cell in usable)} for _ in range(len(usable) - len(steps))]
+    match = _matching(steps + unused, usable, kind_of, wanted)
     if match is None:
         return None
-    for step, cell in zip(fillers, match):
+    for step, cell in zip(steps, match):
         step["cell"] = cell
-        step["wanted"] = False
-    for step in steps:
-        step["kind"] = kind_of[step["cell"]]
+        step["wanted"] = cell in wanted
+        step["kind"] = kind_of[cell]
         step["sources"] = step.pop("sources_by_kind")[step["kind"]]
     return steps
 
 
-def _matching(steps, cells, kind_of):
-    """Bipartite matching of steps to cells whose kind the step allows; None if impossible."""
+def _matching(steps, cells, kind_of, wanted=None):
+    """Match steps by cell kind and any required result; None if impossible."""
     owner = {}
+    wanted = wanted or {}
 
     def place(index, seen):
         for cell in cells:
+            if cell in wanted and steps[index].get("result") != wanted[cell]:
+                continue
             if kind_of[cell] in steps[index]["kinds"] and cell not in seen:
                 seen.add(cell)
                 if cell not in owner or place(owner[cell], seen):
@@ -262,5 +269,6 @@ def _recipe(preview_count, preview_rank, level_entry_offset, path):
     sources = [step for step in path if step["action"] == "evolve"]
     planting = [dict(step, step=index) for index, step in enumerate(reversed(sources), start=1)]
     return {"preview_count": preview_count, "preview_rank": preview_rank, "level_entry_offset": level_entry_offset,
+            "preview_sequence": ([1] + [preview_rank] * (preview_count - 1)) if preview_count else [],
             "source_count": len(sources), "processing_order": path, "planting_order": planting,
             "stream_end": path[-1]["end"] if path else level_entry_offset}

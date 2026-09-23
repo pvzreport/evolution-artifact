@@ -18,3 +18,18 @@ no process or account data. Some source orders were reconstructed by reversing t
 recorded processing order; those cases are marked. All starting offsets were
 identified from recorded draws, so these are regression inputs rather than forecasts.
 The model regenerates the draws from the default seed; the fixture does not supply them.
+
+The original captures are not one continuous route: captures 1-3 belong to one
+process, and 4-10 to a later process whose capture 4 begins at offset 2,874.
+There are unrecorded gaps of 10 and 78 outputs before captures 7 and 9; what
+consumed those outputs was not recorded.
+
+`tests/fixtures/rank4-followups.json` contains the three subsequent Beach cases.
+It retains their stated inputs, ordered-pool hashes, draw intervals and observed
+plant-add order. B and Cactus include the preview sequences declared before play;
+A identifies its offset retrospectively. `placed` expectations are asserted only
+where terrain remained unchanged; Cactus's flooded column 6 is explicitly excluded.
+`captured_stream_end` includes the separately counted outputs after selection,
+while `stream_end` retains the predictor's selection-only meaning. Neither fixture
+contains account or process data, and neither supplies captured random numbers to
+the model.
