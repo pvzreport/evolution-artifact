@@ -1,9 +1,8 @@
 """One game version: its plant data, and the cell kinds and previews built on it.
 
-Only the plant data differs between versions. The cell kinds, the preview structure and
-the level descriptions are shared by every version, and each measurement records the
-version it was taken on. Building the three together keeps a prediction from mixing one
-version's plants with another's pools.
+Only the plant data is versioned; the cell kinds, the preview structure and the level
+descriptions are shared by every version. Building the three together keeps a prediction
+from mixing one version's plants with another's pools.
 """
 
 from .model import Pools

@@ -75,7 +75,7 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
         if not any(plant in option["pool"] for option in options if kind in option["kinds"]):
             raise ValueError("%s is not obtainable on %s (%s) from any listed source in this level"
                              % (plant, format_cell(cell), kind))
-        if rank == 4 and pools.spawn(kind, occupied=True) and not pools.kinds[PAD].admits(plant):
+        if rank == 4 and pools.spawn(kind, occupied=True) and not game.kinds[PAD].admits(plant):
             raise ValueError("%s can never be placed on %s at rank 4: the Lily Pad added beneath its source rejects it"
                              % (plant, format_cell(cell)))
     required = Counter(plant for (plant, cell), ok in spawnable.items() if not ok)

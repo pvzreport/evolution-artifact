@@ -25,7 +25,7 @@ from .tiles import NONE
 PAD = "beach_pad"
 RANKS = (1, 4)
 
-CONDITIONS = [
+_CONDITIONS = [
     "Start after a full process restart (seed 5489, offset 0).",
     "Run exactly the listed previews, each one complete, and nothing else that uses the artifact "
     "before entering the level.",
@@ -41,9 +41,9 @@ CONDITIONS = [
 
 
 def conditions(game):
-    """What a prediction assumes: the game version of its plant data, then CONDITIONS."""
+    """What a prediction assumes: the game version of its plant data, then the fixed conditions."""
     return ["The game runs version %s, the version of the plant data used (read from the %s package)."
-            % (game.version, game.platform)] + CONDITIONS
+            % (game.version, game.platform)] + _CONDITIONS
 
 
 class Planting:

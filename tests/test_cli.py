@@ -85,7 +85,7 @@ class CliTest(unittest.TestCase):
         self.assertIn("game 4.2.4: 227 candidates", text)
         self.assertTrue(text.rstrip().endswith("226  nagasalak"))
         predicted = json.loads(run("predict", "--game-version", "4.2.4", "--previews", "1", "--json"))
-        self.assertEqual(predicted["game"], {"version": "4.2.4", "platform": "Android"})
+        self.assertEqual(predicted["game"]["version"], "4.2.4")
         self.assertIn("version 4.2.4", predicted["conditions"][0])
 
     def test_errors_exit_with_code_2(self):

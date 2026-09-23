@@ -14,29 +14,28 @@ The newest version is the default.
 
 import json
 from pathlib import Path
+import re
 
 DATA = Path(__file__).resolve().parents[1] / "data"
 PLANTS = DATA / "plants"
+VERSION = re.compile(r"\d+(\.\d+)+")
 EXCLUDED_ALIASES = ("coffeebean", "pumpkin", "powervine", "peavine")
 PARALLEL_PREFIX = "parallel_"
 VINE_CLASSES = {"PlantTypeVine", "PlantTypeAquaVine", "PlantTypeMiniShroom", "PlantTypeShinevine"}
 
 
-def _version_key(version):
-    return [(0, int(part)) if part.isdigit() else (1, part) for part in version.split(".")]
-
-
-def available_plants():
-    """The game versions with plant data in data/plants, oldest first."""
-    return sorted((path.stem for path in PLANTS.glob("*.json")), key=_version_key)
+def game_versions():
+    """The game versions with plant data in data/plants, oldest first; other files there are ignored."""
+    versions = [path.stem for path in PLANTS.glob("*.json") if VERSION.fullmatch(path.stem)]
+    return sorted(versions, key=lambda version: tuple(map(int, version.split("."))))
 
 
 def load_plants(version=None):
     """The plant data of a game version from data/plants; by default the newest."""
-    version = version or available_plants()[-1]
+    version = version or game_versions()[-1]
     path = PLANTS / (version + ".json")
-    if not path.is_file():
-        raise ValueError("No plant data for game version %r; available: %s" % (version, ", ".join(available_plants())))
+    if not VERSION.fullmatch(version) or not path.is_file():
+        raise ValueError("No plant data for game version %r; available: %s" % (version, ", ".join(game_versions())))
     document = json.loads(path.read_text())
     game = document.get("game") or {}
     if game.get("version") != version or "platform" not in game:

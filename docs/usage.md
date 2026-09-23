@@ -1,10 +1,10 @@
 # Using and verifying
 
-Python 3.9 or newer, standard library only. Run it from a checkout with `python3 -m evolution`, or install it editable with `pip install -e .` for the `pvz2-evolution` command. The tests run with `python3 -m unittest discover -s tests`.
+Supported Python: 3.9 or newer, standard library only. Use the latest Python for better performance, especially with `plan`. Run it from a checkout with `python3 -m evolution`, or install it editable with `pip install -e .` for the `pvz2-evolution` command. The tests run with `python3 -m unittest discover -s tests`.
 
 ## Commands
 
-`predict`, `plan` and `pool` take `--game-version VERSION`, the game version whose plant data to use: one of those in `data/plants`, the newest by default. Use the version your game runs. The versions differ in their plants, so the same route gives different results, and every prediction names the version it assumed in its conditions.
+`predict`, `plan` and `pool` take `--game-version VERSION`, the game version whose plant data to use: one of those in `data/plants`, the newest by default. Use the version your game runs. The versions differ in their plants, so the same route can give different results, and every prediction names the version it assumed in its conditions.
 
 ```bash
 python3 -m evolution predict --game-version 4.2.2 --previews 1x3

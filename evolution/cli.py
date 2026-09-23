@@ -14,14 +14,13 @@
 import argparse
 import json
 from pathlib import Path
-import re
 import sys
 
 from .build import build_plants
 from .game import Game
 from .level import format_cell, load_level, parse_cell
 from .model import Planting, scenario
-from .plants import PLANTS, available_plants
+from .plants import PLANTS, VERSION, game_versions
 from .previews import parse_sequence
 from .search import search_recipe
 
@@ -87,7 +86,7 @@ def parse_override(text):
 
 def parse_version(text):
     """A game version such as 4.2.4, which also names the plant file."""
-    if not re.fullmatch(r"\d+(\.\d+)+", text):
+    if not VERSION.fullmatch(text):
         raise argparse.ArgumentTypeError("A game version is numbers separated by dots, for example 4.2.4")
     return text
 
@@ -244,7 +243,7 @@ def main(argv=None):
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest="command", required=True)
     data = argparse.ArgumentParser(add_help=False)
-    data.add_argument("--game-version", choices=available_plants(),
+    data.add_argument("--game-version", choices=game_versions(),
                       help="Game version whose plant data to use (default: the newest)")
 
     predict = commands.add_parser("predict", parents=[data], help="Replay a stated scenario and print what the game shows")

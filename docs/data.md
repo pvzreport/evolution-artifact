@@ -2,11 +2,11 @@
 
 Everything the model needs is under `data/`. All of it is declared game data or lists read from the running game; none of it is game code.
 
-`data/plants/` holds the plant registry as the picker sees it, one file per game version, named by the version. `game` gives the version and the platform of the package the data was read from. `plants` lists every declared plant type in declaration order with its alias, class, declared cost, the flags the filters read (`enabled`, `hero_properties`, `is_consumable`, `valid_stages`, `black_list_stages`), and `can_live_on_waves`, the declared `CanLiveOnWaves` flag that the flooded cell kind reads. `registry_order.configured_types` is the game's `PlantTypeOrder`, which the registry puts first. `artifact.plant_black_list` is the artifact's own black list. `sources` records the three game files the projection came from, with their SHA-256.
+`data/plants/` holds the plant registry as the picker sees it, one file per game version, named by the version. `game` gives the version and the platform of the package the data was read from; a version's declared data is assumed to be the same on every platform. `plants` lists every declared plant type in declaration order with its alias, class, declared cost, the flags the filters read (`enabled`, `hero_properties`, `is_consumable`, `valid_stages`, `black_list_stages`), and `can_live_on_waves`, the declared `CanLiveOnWaves` flag that the flooded cell kind reads. `registry_order.configured_types` is the game's `PlantTypeOrder`, which the registry puts first. `artifact.plant_black_list` is the artifact's own black list. `sources` records the three game files the projection came from, with their SHA-256.
 
 To add a version, decode `PLANTTYPES`, `PROPERTYSHEETS` and `ARTIFACT` from its configuration package to JSON, outside this repository, and run `build-plants` with `--game-version` and `--platform`; the result is `data/plants/VERSION.json`. The newest version is the default.
 
-Only the plant data is versioned. The files below and the level descriptions are shared by every version and assumed to carry over, which fits their nature: the cell kinds reject short fixed lists of plants, and a new plant is admitted unless a list names it. Each measurement records the game version it was taken on in `game_version`.
+Only the plant data is versioned. `data/tile-rules.json`, `data/previews.json` and the level descriptions are shared by every version and assumed to carry over; each measured record in the two rule files names the game version it was taken on in `game_version`.
 
 `data/tile-rules.json` holds the named cell kinds. Each kind lists the plants its planting check rejects beyond the stage rule and the level's bans (`rejects`), or, for a flooded cell, the plant flag that admits a plant (`admits_flag`, the `can_live_on_waves` field of the plant data); a kind may also list the only plants it admits (`admits_only`). The kind `none` is built in. `measured` names the captures behind a kind and the game version each was taken on. To add a kind, read a source's candidate list on such a cell from the game, diff it against the model's list for that level and cost, and record the difference here.
 
@@ -24,7 +24,7 @@ Declared initial gravestones are `none` cells, which cannot hold a plant; give `
 
 ## Capture fixtures
 
-Each fixture file names the game version it was read from in `game_version`, and the tests replay it with that version's plant data, so evidence from another version can sit beside it and adding a version changes no test. The expectations written into the test files name their version the same way, in `CAPTURED_ON`.
+Each fixture file names the game version it was read from in `game_version`, and the tests replay it with that version's plant data; the expectations written into the test files name their version in `CAPTURED_ON`. Adding a version therefore changes no expectation. One test covers every version: each plant the shared data names must be declared in it, so a renamed plant cannot silently drop a rule.
 
 `tests/fixtures/pools.json` holds ordered candidate lists read from the running game, keyed by level, cell kind and source cost, plus the two preview pools; the tests require the model to reproduce each of them in order.
 
