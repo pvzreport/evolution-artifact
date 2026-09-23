@@ -6,26 +6,42 @@
  "bans": [],
  "cells": {
   "6-1": "pirate_plank",
-  "6-2": "pirate_plank",
-  "6-4": "pirate_plank",
-  "6-5": "pirate_plank",
   "7-1": "pirate_plank",
-  "7-2": "pirate_plank",
-  "7-4": "pirate_plank",
-  "7-5": "pirate_plank",
   "8-1": "pirate_plank",
-  "8-2": "pirate_plank",
-  "8-4": "pirate_plank",
-  "8-5": "pirate_plank",
   "9-1": "pirate_plank",
+  "6-2": "pirate_plank",
+  "7-2": "pirate_plank",
+  "8-2": "pirate_plank",
   "9-2": "pirate_plank",
-  "9-4": "pirate_plank",
-  "9-5": "pirate_plank",
   "6-3": "none",
   "7-3": "none",
   "8-3": "none",
-  "9-3": "none"
+  "9-3": "none",
+  "6-4": "pirate_plank",
+  "7-4": "pirate_plank",
+  "8-4": "pirate_plank",
+  "9-4": "pirate_plank",
+  "6-5": "pirate_plank",
+  "7-5": "pirate_plank",
+  "8-5": "pirate_plank",
+  "9-5": "pirate_plank"
  },
- "notes": "Deck columns 1 to 5. Planks on rows 1, 2, 4 and 5 from column 6; row 3 is open water there. The plank rows are declared; the deck edge was observed in the capture.",
- "source": "declared level definition PIRATE1"
+ "notes": "Deck columns 1 to 5. Planks on rows 1, 2, 4, 5 from column 6; other rows are open water there. The plank rows are declared; the deck edge is observed.",
+ "provenance": {
+  "kind": "declared",
+  "exporter": "tools/export_level.py",
+  "resources": [
+   {
+    "path": "PACKAGES/LEVELS/PIRATE1.json",
+    "sha256": "62934ee186c5e9d6283b1246f06363a9f6a9f615481e201e2a2830fce63efcaa"
+   },
+   {
+    "path": "PACKAGES/LEVELMODULES.json",
+    "sha256": "104bcd4e760bb2be68113d9b5abbc07f8576446b91e17f50e812df67495c9196"
+   }
+  ],
+  "observed": {
+   "deck_columns": 5
+  }
+ }
 }

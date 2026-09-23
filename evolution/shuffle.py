@@ -108,14 +108,15 @@ def uniform_int(engine, low, high):
             return low + value
 
 
-def random_shuffle(values, engine):
+def random_shuffle(values, draw):
     """The body of libc++'s two-argument std::random_shuffle, returned as a new list.
 
-    The loop runs forward from the front of the range and draws one index per
-    position, so element 0 of the result is what the artifact selects. For spans
-    below 2**32 the distribution reduces to one masked 32-bit output per attempt,
-    rejected while it is not below the span; that path is inlined here and checked
-    against `uniform_int` by the tests.
+    `draw` is any zero-argument callable returning the next raw 32-bit output: an
+    engine, a recorded sequence, or a stream cursor. The loop runs forward from the
+    front of the range and draws one index per position, so element 0 of the result
+    is what the artifact selects. For spans below 2**32 the distribution reduces to
+    one masked 32-bit output per attempt, rejected while it is not below the span;
+    that path is written out here and checked against `uniform_int` by the tests.
     """
     result = list(values)
     distance = len(result)
@@ -128,20 +129,13 @@ def random_shuffle(values, engine):
         if span < MASK32:
             mask = (1 << (span - 1).bit_length()) - 1
             while True:
-                index = engine() & mask
+                index = draw() & mask
                 if index < span:
                     break
         else:
-            index = uniform_int(engine, 0, distance)
+            index = uniform_int(draw, 0, distance)
         if index != 0:
             result[first], result[first + index] = result[first + index], result[first]
         first += 1
         distance -= 1
     return result
-
-
-def advance_shuffles(engine, lengths):
-    """Consume the stream exactly as earlier shuffles of the given lengths would have."""
-    for length in lengths:
-        random_shuffle(range(length), engine)
-    return engine

@@ -1,8 +1,9 @@
 {
  "id": "dark4",
+ "name": "Dark Ages 4 (story)",
  "stage": "dark",
- "bans": [],
  "default_kind": "ground",
+ "bans": [],
  "cells": {
   "5-1": "none",
   "6-2": "none",
@@ -12,9 +13,19 @@
   "8-5": "none",
   "9-4": "none"
  },
- "name": "Dark Ages 4 (story)",
- "source": {
-  "resource": "PACKAGES/LEVELS/DARK4.json",
-  "sha256": "f452d19d58c069f2bf21ac3452d2b60fd01aac44b560e3f86f2dd0afd47955b1"
+ "notes": "Gravestones declared at level start on 5-1, 6-2, 6-4, 7-1, 8-2, 8-5, 9-4 hold no plant while they stand; give ground for that activation once one has been destroyed.",
+ "provenance": {
+  "kind": "declared",
+  "exporter": "tools/export_level.py",
+  "resources": [
+   {
+    "path": "PACKAGES/LEVELS/DARK4.json",
+    "sha256": "f452d19d58c069f2bf21ac3452d2b60fd01aac44b560e3f86f2dd0afd47955b1"
+   },
+   {
+    "path": "PACKAGES/LEVELMODULES.json",
+    "sha256": "104bcd4e760bb2be68113d9b5abbc07f8576446b91e17f50e812df67495c9196"
+   }
+  ]
  }
 }

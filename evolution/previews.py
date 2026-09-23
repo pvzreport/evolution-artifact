@@ -12,8 +12,7 @@ import json
 from pathlib import Path
 
 from .level import Level, parse_cell
-from .plants import DATA, declared_costs
-from .shuffle import random_shuffle
+from .plants import DATA
 
 
 def load_previews(path=None):
@@ -39,10 +38,10 @@ class Previews:
         board = self.record["board"]
         self.board = Level({"id": "preview-board", "name": board.get("name", "artifact screen"),
                             "stage": board["stage"], "bans": board.get("bans", []), "default_kind": board["kind"]})
-        costs = declared_costs(document)
-        base = kinds[board["kind"]].filter(self.board.base_pool(document))
-        self.pools = {"evolution": [a for a in base if costs[a] > self.record["evolution_source_cost"]],
-                      "spawn": [a for a in base if costs[a] <= self.record["spawn_max_cost"]]}
+        self.evolution_source_cost = self.record["evolution_source_cost"]
+        self.spawn_max_cost = self.record["spawn_max_cost"]
+        self.pools = {"evolution": self.board.pool(board["kind"], self.evolution_source_cost, document, kinds),
+                      "spawn": self.board.spawn_pool(board["kind"], self.spawn_max_cost, document, kinds)}
 
     def ranks(self):
         return sorted(int(rank) for rank in self.record["ranks"])
@@ -66,17 +65,20 @@ class Previews:
                 raise ValueError("Unknown preview step: " + label)
         return steps
 
-    def run(self, engine, rank):
-        """Advance the engine through one preview and return what it showed, step by step."""
+    def run(self, stream, offset, rank):
+        """One preview of this rank starting at an offset: what it showed, step by step, and the offset after."""
         rows = []
         for label, pool, cell in self.steps(rank):
-            start = engine.draws
-            shuffled = random_shuffle(pool, engine)
+            shuffled, end = stream.shuffle(pool, offset)
             rows.append({"step": label, "cell": cell, "result": shuffled[0], "candidates": len(pool),
-                         "start": start, "end": engine.draws})
-        return rows
+                         "start": offset, "end": end})
+            offset = end
+        return rows, offset
 
-    def advance(self, engine, sequence):
-        """Run a sequence of previews; returns one entry per preview."""
-        return [{"preview": index, "rank": rank, "results": self.run(engine, rank)}
-                for index, rank in enumerate(sequence, start=1)]
+    def advance(self, stream, offset, sequence):
+        """A sequence of previews from an offset: one entry per preview, and the offset after them."""
+        entries = []
+        for index, rank in enumerate(sequence, start=1):
+            rows, offset = self.run(stream, offset, rank)
+            entries.append({"preview": index, "rank": rank, "results": rows})
+        return entries, offset

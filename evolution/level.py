@@ -12,6 +12,7 @@ from pathlib import Path
 from .plants import DATA, declared_costs, model_pool
 
 LEVELS = DATA / "levels"
+LILYPAD = "lilypad"
 
 
 def parse_cell(text):
@@ -54,12 +55,23 @@ class Level:
         """Registry-ordered candidates after the filters, the stage rule, and the bans."""
         return model_pool(document, self.stage, self.bans)
 
+    def candidates(self, kind, document, kinds):
+        """Registry-ordered plants a cell of this kind admits in this level, before any cost rule."""
+        if not isinstance(kind, str) or kind not in kinds:
+            raise ValueError("Unknown cell kind %r; known: %s" % (kind, ", ".join(sorted(kinds))))
+        return kinds[kind].filter(self.base_pool(document))
+
     def pool(self, kind, source_cost, document, kinds):
         """Candidates for a source of this effective cost standing on a cell of this kind."""
-        if kind not in kinds:
-            raise ValueError("Unknown cell kind %r; known: %s" % (kind, ", ".join(sorted(kinds))))
         costs = declared_costs(document)
-        return [alias for alias in kinds[kind].filter(self.base_pool(document)) if costs[alias] > source_cost]
+        return [alias for alias in self.candidates(kind, document, kinds) if costs[alias] > source_cost]
+
+    def spawn_pool(self, kind, max_cost, document, kinds, occupied=False):
+        """Candidates for a rank-4 addition on a cell of this kind: declared cost at most max_cost, and beneath a
+        plant only a Lily Pad, which a shore or water cell admits (capture 9 and follow-ups A, B and Cactus)."""
+        costs = declared_costs(document)
+        return [alias for alias in self.candidates(kind, document, kinds)
+                if costs[alias] <= max_cost and (not occupied or alias == LILYPAD)]
 
     def describe(self):
         return {"id": self.id, "name": self.name, "stage": self.stage, "bans": self.bans,

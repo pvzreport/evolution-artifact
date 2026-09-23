@@ -1,8 +1,9 @@
 {
  "id": "pirate2",
+ "name": "Pirate Seas 2 (story)",
  "stage": "pirate",
- "bans": [],
  "default_kind": "ground",
+ "bans": [],
  "cells": {
   "6-1": "pirate_plank",
   "7-1": "pirate_plank",
@@ -25,9 +26,22 @@
   "8-5": "none",
   "9-5": "none"
  },
- "name": "Pirate Seas 2 (story)",
- "source": {
-  "resource": "PACKAGES/LEVELS/PIRATE2.json",
-  "sha256": "db11396c55662e58ffed055b487e639f9fdf27cfbc41e00c0106106e7c113b38"
+ "notes": "Deck columns 1 to 5. Planks on rows 1, 2, 3, 4 from column 6; other rows are open water there. The plank rows are declared; the deck edge is observed.",
+ "provenance": {
+  "kind": "declared",
+  "exporter": "tools/export_level.py",
+  "resources": [
+   {
+    "path": "PACKAGES/LEVELS/PIRATE2.json",
+    "sha256": "db11396c55662e58ffed055b487e639f9fdf27cfbc41e00c0106106e7c113b38"
+   },
+   {
+    "path": "PACKAGES/LEVELMODULES.json",
+    "sha256": "104bcd4e760bb2be68113d9b5abbc07f8576446b91e17f50e812df67495c9196"
+   }
+  ],
+  "observed": {
+   "deck_columns": 5
+  }
  }
 }

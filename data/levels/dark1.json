@@ -4,7 +4,6 @@
  "stage": "dark",
  "default_kind": "ground",
  "bans": [],
- "source": "declared level definition DARK1",
  "cells": {
   "3-1": "none",
   "4-4": "none",
@@ -17,5 +16,19 @@
   "9-1": "none",
   "9-4": "none"
  },
- "notes": "Gravestones declared at level start on 3-1, 4-4, 5-2, 6-5, 7-2, 7-3, 8-3, 8-5, 9-1, 9-4 hold no plant while they stand; give ground for that activation once one has been destroyed."
+ "notes": "Gravestones declared at level start on 3-1, 4-4, 5-2, 6-5, 7-2, 7-3, 8-3, 8-5, 9-1, 9-4 hold no plant while they stand; give ground for that activation once one has been destroyed.",
+ "provenance": {
+  "kind": "declared",
+  "exporter": "tools/export_level.py",
+  "resources": [
+   {
+    "path": "PACKAGES/LEVELS/DARK1.json",
+    "sha256": "7df878549f06d604eb97ab243842f293999f7dd0e3bb439c1dd754273ba5982f"
+   },
+   {
+    "path": "PACKAGES/LEVELMODULES.json",
+    "sha256": "104bcd4e760bb2be68113d9b5abbc07f8576446b91e17f50e812df67495c9196"
+   }
+  ]
+ }
 }
