@@ -6,9 +6,10 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from evolution import (Board, Level, Planting, Pools, Previews, Stream, activate, load_level, load_plants, scenario,
-                       search_recipe, tile_kinds)
+from evolution import Board, Game, Level, Planting, Stream, activate, load_level, scenario, search_recipe
 from evolution.tiles import NONE
+
+CAPTURED_ON = "4.2.2"  # the version whose captures fix the preview counts and offsets asserted below
 
 
 class SearchTest(unittest.TestCase):
@@ -16,22 +17,20 @@ class SearchTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.document = load_plants()
-        cls.kinds = tile_kinds(document=cls.document)
-        cls.previews = Previews(cls.document, cls.kinds)
+        cls.game = Game(CAPTURED_ON)
+        cls.previews = cls.game.previews
 
     def search(self, level, wants, sources, activation=(2, 2), **options):
         if isinstance(level, str):
             level = load_level(level)
-        return search_recipe(self.document, self.kinds, self.previews, level, wants, sources, activation, **options)
+        return search_recipe(self.game, level, wants, sources, activation, **options)
 
     def replay(self, level, match, activation, overrides=None, rank=1, offset=0):
         """Replay a recipe exactly as a player would follow it, and check it delivers what it promised."""
         if isinstance(level, str):
             level = load_level(level)
         plantings = [Planting(s["source"], s["cost"], s["cell"]) for s in match["planting_order"]]
-        out = scenario(self.document, self.kinds, self.previews, match["preview_sequence"], level, plantings,
-                       activation, overrides, offset, rank)
+        out = scenario(self.game, match["preview_sequence"], level, plantings, activation, overrides, offset, rank)
         self.assertEqual(out["level_entry_offset"], match["level_entry_offset"])
         self.assertEqual(out["stream_end"], match["stream_end"])
         keys = ("action", "cell", "result", "placed", "start", "end")
@@ -185,7 +184,7 @@ class SearchTest(unittest.TestCase):
             level, rank = rng.choice(boards), rng.choice((1, 4))
             activation = (rng.randint(1, level.width), rng.randint(1, level.height))
             board = Board(level, None, activation)
-            pools = Pools(self.document, self.kinds, level, self.previews.spawn_max_cost)
+            pools = self.game.pools(level)
             usable = [cell for cell in board.area if board.kind_at(cell) != NONE]
             sources = {alias: source_pool[alias] for alias in rng.sample(sorted(source_pool), rng.randint(1, 3))}
             if rank == 1 and all(alias == "wintermelon" for alias in sources):

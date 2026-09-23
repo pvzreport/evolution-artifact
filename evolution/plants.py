@@ -6,19 +6,42 @@ the artifact's own black list, and a per-tile planting check. A candidate then
 qualifies for a given source when its declared cost is strictly greater than the
 source's effective cost. Everything in this module is declared data; the per-tile
 check is code in the game, so its effect is measured per cell kind in `tiles`.
+
+The declared data changes with the game version, so data/plants holds one file per
+version, named by it, and each file names the version and platform it was read from.
+The newest version is the default.
 """
 
 import json
 from pathlib import Path
 
 DATA = Path(__file__).resolve().parents[1] / "data"
+PLANTS = DATA / "plants"
 EXCLUDED_ALIASES = ("coffeebean", "pumpkin", "powervine", "peavine")
 PARALLEL_PREFIX = "parallel_"
 VINE_CLASSES = {"PlantTypeVine", "PlantTypeAquaVine", "PlantTypeMiniShroom", "PlantTypeShinevine"}
 
 
-def load_plants(path=None):
-    return json.loads(Path(path or DATA / "plants.json").read_text())
+def _version_key(version):
+    return [(0, int(part)) if part.isdigit() else (1, part) for part in version.split(".")]
+
+
+def available_plants():
+    """The game versions with plant data in data/plants, oldest first."""
+    return sorted((path.stem for path in PLANTS.glob("*.json")), key=_version_key)
+
+
+def load_plants(version=None):
+    """The plant data of a game version from data/plants; by default the newest."""
+    version = version or available_plants()[-1]
+    path = PLANTS / (version + ".json")
+    if not path.is_file():
+        raise ValueError("No plant data for game version %r; available: %s" % (version, ", ".join(available_plants())))
+    document = json.loads(path.read_text())
+    game = document.get("game") or {}
+    if game.get("version") != version or "platform" not in game:
+        raise ValueError("%s must name game version %s and its platform; rebuild it with build-plants" % (path.name, version))
+    return document
 
 
 def declared_costs(document):

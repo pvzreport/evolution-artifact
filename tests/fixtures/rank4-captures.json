@@ -1,4 +1,5 @@
 {
+ "game_version": "4.2.2",
  "scope": "Ten normal-level rank-4, level-30 activations. Inputs, selections, ordered-pool hashes and draw intervals only. Starting offsets were identified after capture; these are replay regression cases, not prospective forecasts. Plant levels and timed passive spawning are outside these expectations.",
  "stream_history": "Captures 1-3 belong to one process; 4-10 belong to a later process, with capture 4 starting at offset 2874. Unrecorded gaps of 10 and 78 outputs precede captures 7 and 9. The fixture does not assert continuity across these boundaries.",
  "cases": [

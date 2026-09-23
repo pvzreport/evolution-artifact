@@ -6,36 +6,34 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from evolution import Planting, Pools, Previews, load_level, load_plants, parse_cell, scenario, tile_kinds
+from evolution import Game, Planting, load_level, parse_cell, scenario
 
 FIXTURES = Path(__file__).parent / "fixtures"
-CASES = json.loads((FIXTURES / "rank4-captures.json").read_text())["cases"]
-FOLLOWUPS = json.loads((FIXTURES / "rank4-followups.json").read_text())["cases"]
+CAPTURES = [json.loads((FIXTURES / name).read_text()) for name in ("rank4-captures.json", "rank4-followups.json")]
 
 
 class Rank4Test(unittest.TestCase):
-    """Thirteen captured rank-4 activations: selections, ordered pools, draw intervals, and the recorded plant-add calls."""
+    """Thirteen captured rank-4 activations: selections, ordered pools, draw intervals, and the recorded plant-add calls,
+    each replayed with the plant data of the game version it was captured on."""
 
     @classmethod
     def setUpClass(cls):
-        cls.document = load_plants()
-        cls.kinds = tile_kinds(document=cls.document)
-        cls.previews = Previews(cls.document, cls.kinds)
+        games = {version: Game(version) for version in {fixture["game_version"] for fixture in CAPTURES}}
+        cls.cases = [(games[fixture["game_version"]], case) for fixture in CAPTURES for case in fixture["cases"]]
 
     def test_captured_selections_and_placement_calls(self):
-        for case in CASES + FOLLOWUPS:
+        for game, case in self.cases:
             with self.subTest(capture=case["capture"]):
                 level = load_level(case["level"])
                 plantings = [Planting(**p) for p in case["plantings"]]
                 overrides = {parse_cell(cell): kind for cell, kind in case["cell_kinds"].items()}
-                result = scenario(self.document, self.kinds, self.previews, level=level,
-                                  plantings=plantings, activation=case["activation"], overrides=overrides,
-                                  sequence=case.get("previews", []),
+                result = scenario(game, level=level, plantings=plantings, activation=case["activation"],
+                                  overrides=overrides, sequence=case.get("previews", []),
                                   offset=0 if "previews" in case else case["offset"], rank=4)
                 self.assertEqual(result["level_entry_offset"], case["offset"])
                 self.assertEqual(result["stream_end"], case["stream_end"])
                 self.assertEqual(len(result["results"]), len(case["expected"]))
-                pools = Pools(self.document, self.kinds, level, self.previews.spawn_max_cost)
+                pools = game.pools(level)
                 occupied = {p.cell for p in plantings}
                 excluded = case.get("placement_excluded_cells", [])
                 for actual, expected in zip(result["results"], case["expected"]):

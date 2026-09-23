@@ -4,6 +4,12 @@ Python 3.9 or newer, standard library only. Run it from a checkout with `python3
 
 ## Commands
 
+`predict`, `plan` and `pool` take `--game-version VERSION`, the game version whose plant data to use: one of those in `data/plants`, the newest by default. Use the version your game runs. The versions differ in their plants, so the same route gives different results, and every prediction names the version it assumed in its conditions.
+
+```bash
+python3 -m evolution predict --game-version 4.2.2 --previews 1x3
+```
+
 `predict` replays a stated route and prints what the game shows: a full restart, a sequence of previews, optionally some extra engine outputs, then an activation in a level.
 
 - `--previews 1x6,4` lists the preview ranks in order; the default is none.
@@ -24,7 +30,7 @@ Python 3.9 or newer, standard library only. Run it from a checkout with `python3
 - `--max-sources N` caps the sources; `--budget N` caps the shuffles tried per preview count (default 30000).
 - `--json` prints the full result, including the recipe's complete `preview_sequence`.
 
-`pool` prints an ordered candidate list: `--level`, `--kind` and `--cost` for a level pool, or `--preview evolution|spawn` for a preview pool. `build-plants PLANTTYPES.json PROPERTYSHEETS.json ARTIFACT.json` regenerates `data/plants.json` from decoded game files.
+`pool` prints an ordered candidate list: `--level`, `--kind` and `--cost` for a level pool, or `--preview evolution|spawn` for a preview pool. `build-plants PLANTTYPES.json PROPERTYSHEETS.json ARTIFACT.json --game-version VERSION --platform iOS|Android` builds one version's plant data from decoded game files into `data/plants/VERSION.json`.
 
 ```bash
 python3 -m evolution predict --level egypt13 --activate 2-2 \
@@ -59,7 +65,7 @@ A level description gives each cell's usual kind. The kinds are `ground`, `beach
 
 ## Previews
 
-A rank-1 preview evolves nine Sunflowers from a 226-entry pool; a rank-4 preview evolves three, places three Lily Pads, and spawns six plants from a 55-entry pool. Each consumes a data-dependent but exactly replayable number of outputs. `predict --previews 1,4` prints what one rank-1 preview and then one rank-4 preview show after a fresh launch, and the offset the stream reaches after each.
+A rank-1 preview evolves nine Sunflowers from the evolution pool; a rank-4 preview evolves three, places three Lily Pads, and spawns six plants from the spawn pool. Both pools come from the plant data of the version in use, and `pool --preview evolution|spawn` lists them. Each consumes a data-dependent but exactly replayable number of outputs. `predict --previews 1,4` prints what one rank-1 preview and then one rank-4 preview show after a fresh launch, and the offset the stream reaches after each.
 
 `plan` reports the whole route it assumed as `preview_sequence`: the fixed `--previews` prefix followed by the counted previews of `--preview-rank`. Replay a recipe with exactly that sequence. The artifact screen opens on rank 1, so a route a player can follow starts with a rank-1 preview; the tool does not enforce that, so give `--previews 1` when counting rank-4 previews.
 

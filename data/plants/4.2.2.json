@@ -1,4 +1,8 @@
 {
+ "game": {
+  "version": "4.2.2",
+  "platform": "iOS"
+ },
  "plant_order": "GamePropertySheet.PlantTypeOrder names first, then the remaining declared types in declaration order",
  "plant_storage_order": "PLANTTYPES.json declaration order",
  "registry_order": {

@@ -1,10 +1,11 @@
-"""Build data/plants.json from three decoded game files.
+"""Build one game version's plant data from three decoded game files.
 
 The three files are the decoded JSON forms of PLANTTYPES, PROPERTYSHEETS and ARTIFACT
 from the game's configuration package. Decoding them is outside this repository. The
 projection keeps only the fields the picker and the cell kinds read: each type's alias,
 class, declared cost and flags from its property sheet, the configured registry order, and the
-artifact's own black list, plus the hash of each source file.
+artifact's own black list, plus the game version and platform of the package the files
+came from and the hash of each source file.
 """
 
 import hashlib
@@ -29,7 +30,7 @@ def _sheet_alias(reference):
     return reference[len(RTID_PREFIX):-len(RTID_SUFFIX)]
 
 
-def build_plants(planttypes_path, propertysheets_path, artifact_path):
+def build_plants(planttypes_path, propertysheets_path, artifact_path, version, platform):
     types = json.loads(Path(planttypes_path).read_text())
     sheets = json.loads(Path(propertysheets_path).read_text())
     artifacts = json.loads(Path(artifact_path).read_text())
@@ -74,7 +75,8 @@ def build_plants(planttypes_path, propertysheets_path, artifact_path):
     artifact = {"alias": ARTIFACT_ALIAS, "objclass": evolution[0]["objclass"], "value_status": "declared",
                 "plant_black_list": evolution[0]["objdata"]["plantBlackList"]}
 
-    return {"plant_order": "GamePropertySheet.PlantTypeOrder names first, then the remaining declared types in declaration order",
+    return {"game": {"version": version, "platform": platform},
+            "plant_order": "GamePropertySheet.PlantTypeOrder names first, then the remaining declared types in declaration order",
             "plant_storage_order": "PLANTTYPES.json declaration order",
             "registry_order": registry, "plants": records, "artifact": artifact,
             "sources": [dict(namespace="PlantTypes", **_source(planttypes_path, types)),

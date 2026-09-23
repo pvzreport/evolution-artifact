@@ -1,4 +1,4 @@
-"""Command line: predict a stated scenario, plan a recipe, list a pool, rebuild the plant file.
+"""Command line: predict a stated scenario, plan a recipe, list a pool, build a version's plant data.
 
   python3 -m evolution predict --previews 1,4
   python3 -m evolution predict --level memory-lane-s33-6-hard --previews 1x6 --activate 2-2 \\
@@ -8,20 +8,24 @@
       --source sunflower=50 --source puffshroom=0 --cell 3-1=beach_shore
   python3 -m evolution plan --rank 4 --level egypt13 --want kiwifruit@2-1 --want primalwallnut@3-3 --source wallnut=50
   python3 -m evolution pool --level pirate1 --kind pirate_plank --cost 0
+  python3 -m evolution pool --game-version 4.2.2 --preview evolution
 """
 
 import argparse
 import json
 from pathlib import Path
+import re
 import sys
 
 from .build import build_plants
+from .game import Game
 from .level import format_cell, load_level, parse_cell
 from .model import Planting, scenario
-from .plants import DATA, load_plants
-from .previews import Previews, parse_sequence
+from .plants import PLANTS, available_plants
+from .previews import parse_sequence
 from .search import search_recipe
-from .tiles import tile_kinds
+
+PLATFORMS = ("iOS", "Android")
 
 
 def parse_planting(text):
@@ -81,6 +85,13 @@ def parse_override(text):
     return parse_cell(cell), kind
 
 
+def parse_version(text):
+    """A game version such as 4.2.4, which also names the plant file."""
+    if not re.fullmatch(r"\d+(\.\d+)+", text):
+        raise argparse.ArgumentTypeError("A game version is numbers separated by dots, for example 4.2.4")
+    return text
+
+
 def format_sequence(sequence):
     """Preview ranks as RANKxCOUNT runs, for example 1x6,4; "none" for an empty sequence."""
     runs = []
@@ -90,12 +101,6 @@ def format_sequence(sequence):
         else:
             runs.append([rank, 1])
     return ",".join("%dx%d" % (rank, count) if count > 1 else str(rank) for rank, count in runs) or "none"
-
-
-def _context(args):
-    document = load_plants(args.plants)
-    kinds = tile_kinds(document=document)
-    return document, kinds, Previews(document, kinds)
 
 
 def _print_previews(rows):
@@ -128,7 +133,7 @@ def _describe_row(row):
 
 
 def cmd_predict(args):
-    document, kinds, previews = _context(args)
+    game = Game(args.game_version)
     sequence = parse_sequence(args.previews)
     level = load_level(args.level) if args.level else None
     activation = parse_cell(args.activate) if args.activate else None
@@ -146,8 +151,7 @@ def cmd_predict(args):
         if cost is None:
             raise ValueError("No effective cost for %s: write ALIAS=COST@CELL or add --source ALIAS=COST" % entry["source"])
         plantings.append(Planting(entry["source"], cost, entry["cell"], entry["kind"]))
-    result = scenario(document, kinds, previews, sequence, level, plantings, activation,
-                      dict(args.cell or []), args.offset, args.rank)
+    result = scenario(game, sequence, level, plantings, activation, dict(args.cell or []), args.offset, args.rank)
     if args.json:
         print(json.dumps(result, indent=2))
         return
@@ -171,9 +175,9 @@ def cmd_predict(args):
 
 
 def cmd_plan(args):
-    document, kinds, previews = _context(args)
+    game = Game(args.game_version)
     level = load_level(args.level)
-    result = search_recipe(document, kinds, previews, level, args.want, merge_sources(args.source), parse_cell(args.activate),
+    result = search_recipe(game, level, args.want, merge_sources(args.source), parse_cell(args.activate),
                            overrides=dict(args.cell or []), rank=args.rank, prefix=parse_sequence(args.previews),
                            preview_rank=args.preview_rank, min_previews=args.min_previews,
                            max_previews=args.max_previews, offset=args.offset, max_sources=args.max_sources,
@@ -214,33 +218,36 @@ def cmd_plan(args):
 
 
 def cmd_pool(args):
-    document, kinds, previews = _context(args)
+    game = Game(args.game_version)
     if args.preview:
-        pool = previews.pools[args.preview]
-        print("Preview %s pool: %d candidates" % (args.preview, len(pool)))
+        pool = game.previews.pools[args.preview]
+        print("Preview %s pool, game %s: %d candidates" % (args.preview, game.version, len(pool)))
     else:
         level = load_level(args.level)
-        pool = level.pool(args.kind, args.cost, document, kinds)
-        print("%s, %s cell, source cost %d: %d candidates" % (level.name, args.kind, args.cost, len(pool)))
+        pool = level.pool(args.kind, args.cost, game.plants, game.kinds)
+        print("%s, %s cell, source cost %d, game %s: %d candidates" % (level.name, args.kind, args.cost, game.version, len(pool)))
     for index, alias in enumerate(pool):
         print("  %3d  %s" % (index, alias))
 
 
 def cmd_build_plants(args):
-    document = build_plants(args.planttypes, args.propertysheets, args.artifact)
-    Path(args.output).write_text(json.dumps(document, indent=1, ensure_ascii=False) + "\n")
-    print("Wrote %s: %d plant types, %d configured registry names, %d black-listed plants." % (
-        args.output, len(document["plants"]), len(document["registry_order"]["configured_types"] or ()),
-        len(document["artifact"]["plant_black_list"])))
+    document = build_plants(args.planttypes, args.propertysheets, args.artifact, args.game_version, args.platform)
+    output = PLANTS / (args.game_version + ".json")
+    output.write_text(json.dumps(document, indent=1, ensure_ascii=False) + "\n")
+    print("Wrote %s: game %s (%s), %d plant types, %d configured registry names, %d black-listed plants." % (
+        output, args.game_version, args.platform, len(document["plants"]),
+        len(document["registry_order"]["configured_types"] or ()), len(document["artifact"]["plant_black_list"])))
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="python3 -m evolution", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--plants", type=Path, default=DATA / "plants.json", help="Plant file (default: data/plants.json)")
     commands = parser.add_subparsers(dest="command", required=True)
+    data = argparse.ArgumentParser(add_help=False)
+    data.add_argument("--game-version", choices=available_plants(),
+                      help="Game version whose plant data to use (default: the newest)")
 
-    predict = commands.add_parser("predict", help="Replay a stated scenario and print what the game shows")
+    predict = commands.add_parser("predict", parents=[data], help="Replay a stated scenario and print what the game shows")
     predict.add_argument("--previews", default="", help="Preview ranks in order, for example 1x6 or 1,4 (default: none)")
     predict.add_argument("--offset", type=int, default=0, help="Extra raw engine outputs consumed before the level")
     predict.add_argument("--level", help="Level id from data/levels, or a path to a description")
@@ -255,7 +262,7 @@ def main(argv=None):
     predict.add_argument("--json", action="store_true")
     predict.set_defaults(run=cmd_predict)
 
-    plan = commands.add_parser("plan", help="Find previews and a planting order that put wanted plants on wanted cells")
+    plan = commands.add_parser("plan", parents=[data], help="Find previews and a planting order that put wanted plants on wanted cells")
     plan.add_argument("--level", required=True, help="Level id from data/levels, or a path to a description")
     plan.add_argument("--rank", type=int, choices=(1, 4), default=1, help="Artifact rank of the activation (default: 1)")
     plan.add_argument("--want", type=parse_want, action="append", required=True, metavar="PLANT@CELL")
@@ -274,18 +281,19 @@ def main(argv=None):
     plan.add_argument("--json", action="store_true")
     plan.set_defaults(run=cmd_plan)
 
-    pool = commands.add_parser("pool", help="Print an ordered candidate pool")
+    pool = commands.add_parser("pool", parents=[data], help="Print an ordered candidate pool")
     pool.add_argument("--level", help="Level id or path")
     pool.add_argument("--kind", default="ground")
     pool.add_argument("--cost", type=int, default=0, help="Effective source cost")
     pool.add_argument("--preview", choices=("evolution", "spawn"), help="A preview pool instead of a level pool")
     pool.set_defaults(run=cmd_pool)
 
-    build = commands.add_parser("build-plants", help="Rebuild data/plants.json from decoded game files")
+    build = commands.add_parser("build-plants", help="Build one game version's plant data from decoded game files into data/plants")
     build.add_argument("planttypes", type=Path)
     build.add_argument("propertysheets", type=Path)
     build.add_argument("artifact", type=Path)
-    build.add_argument("--output", type=Path, default=DATA / "plants.json")
+    build.add_argument("--game-version", type=parse_version, required=True, help="The version the files come from, for example 4.2.4")
+    build.add_argument("--platform", choices=PLATFORMS, required=True, help="The platform of the package the files come from")
     build.set_defaults(run=cmd_build_plants)
 
     args = parser.parse_args(argv)

@@ -40,6 +40,12 @@ CONDITIONS = [
 ]
 
 
+def conditions(game):
+    """What a prediction assumes: the game version of its plant data, then CONDITIONS."""
+    return ["The game runs version %s, the version of the plant data used (read from the %s package)."
+            % (game.version, game.platform)] + CONDITIONS
+
+
 class Planting:
     """One transformation source: alias, effective cost, cell, and optionally the cell's kind for this activation."""
 
@@ -214,20 +220,20 @@ def activate(board, pools, plantings, rank, stream, offset):
     return place(rows, kind_of, pools.kinds), offset
 
 
-def scenario(document, kinds, previews, sequence=(), level=None, plantings=(), activation=None,
-             overrides=None, offset=0, rank=1, stream=None):
-    """Replay previews, optional extra raw outputs, then an optional activation, from a fresh process."""
+def scenario(game, sequence=(), level=None, plantings=(), activation=None, overrides=None, offset=0, rank=1,
+             stream=None):
+    """Replay previews, optional extra raw outputs, then an optional activation, from a fresh process,
+    under one game version's data."""
     if offset < 0:
         raise ValueError("The extra offset cannot be negative")
     stream = stream or shared()
-    preview_rows, after_previews = previews.advance(stream, 0, list(sequence))
+    preview_rows, after_previews = game.previews.advance(stream, 0, list(sequence))
     entry = after_previews + offset
     results, end = [], entry
     if level:
         board = Board(level, overrides, activation)
-        pools = Pools(document, kinds, level, previews.spawn_max_cost)
-        results, end = activate(board, pools, plantings, rank, stream, entry)
-    return {"previews": preview_rows, "offset_after_previews": after_previews, "extra_offset": offset,
-            "level": level.describe() if level else None, "level_entry_offset": entry,
+        results, end = activate(board, game.pools(level), plantings, rank, stream, entry)
+    return {"game": game.describe(), "previews": preview_rows, "offset_after_previews": after_previews,
+            "extra_offset": offset, "level": level.describe() if level else None, "level_entry_offset": entry,
             "activation": {"column": activation[0], "row": activation[1]} if activation else None, "rank": rank,
-            "results": results, "stream_end": end, "conditions": list(CONDITIONS)}
+            "results": results, "stream_end": end, "conditions": conditions(game)}

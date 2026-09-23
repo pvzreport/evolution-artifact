@@ -1,4 +1,5 @@
 {
+ "game_version": "4.2.2",
  "scope": "Three rank-4 level-30 Beach follow-ups. B and Cactus use forecasts fixed before play; A tests an offset-independent occupied-shore pool and retrospectively replays species. Placed assertions compare recorded plant-add calls only where terrain stayed unchanged. Post-selection draws are retained separately and are not modeled. No process or account data.",
  "cases": [
   {
