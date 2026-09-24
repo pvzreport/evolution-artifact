@@ -71,18 +71,26 @@ class CliTest(unittest.TestCase):
         self.assert_error(["plan", "--level", "egypt13", "--want", "kiwifruit@1-1", "--source", "wallnut=50", "--source", "wallnut=75"],
                           "two costs")
 
+    def test_rank4_preview_text_shows_pads_spawns_and_cells(self):
+        # Played check: the display board after a rank-1 and a rank-4 preview with Sunflowers at cost 47.
+        text = run("predict", "--previews", "1,4", "--preview-cost", "47")
+        self.assertIn("3-3 exorcislily, 3-2 mulberry, 3-1 bonkchoy; pads beneath 3-1, 3-2, 3-3; spawns 4-1 streetlamp, "
+                      "4-2 wallnut, 4-3 scaredyshroom, 5-1 vanilla, 5-2 dragonroar, 5-3 alarmsagittifolia", text)
+
     def test_preview_cost_reaches_previews_and_pools(self):
         # Captured: eleven rank-1 previews with Sunflowers at cost 47 end at 33404, the tenth placing a Draftodil at
         # 4-3 that shuffles three plant objects; the cost-47 evolution pool has 243 entries.
         out = json.loads(run("predict", "--previews", "1x11", "--preview-cost", "47", "--json"))
         self.assertEqual((out["preview_cost"], out["offset_after_previews"]), (47, 33404))
         self.assertEqual(out["previews"][9]["effects"][0]["objects"], 3)
-        self.assertIn("draftodil at 4-3 shuffles 3 plant objects (2 draws)", run("predict", "--previews", "1x11", "--preview-cost", "47"))
+        self.assertIn("draftodil at 4-3 shuffles 3 plant objects (2 draws) (selections end at 30333; stream at 30335 after)",
+                      run("predict", "--previews", "1x11", "--preview-cost", "47"))
         self.assertIn("243 candidates", run("pool", "--preview", "evolution", "--cost", "47"))
         error = io.StringIO()
         with contextlib.redirect_stderr(error):
             run("predict", "--level", "dark1", "--activate", "2-2", "--previews", "1", "--plant", "sunflower=47@1-1")
-        self.assertIn("pass --preview-cost", error.getvalue())
+            run("predict", "--level", "dark1", "--activate", "2-2", "--plant", "sunflower=47@1-1")
+        self.assertEqual(error.getvalue().count("pass --preview-cost"), 1)
 
     def test_pool_listing(self):
         text = run("pool", "--level", "pirate1", "--kind", "pirate_plank", "--cost", "0")

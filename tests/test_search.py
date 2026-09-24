@@ -158,9 +158,11 @@ class SearchTest(unittest.TestCase):
 
     def test_impossible_wants_are_refused_with_the_rule_that_forbids_them(self):
         # Each refusal states a model rule: a Lily Pad is a kind, not a result; a want needs a source whose pool holds
-        # it; the pad beneath a rank-4 source rejects some plants; a source cannot be a Lily Pad.
+        # it; one cell holds one plant; the pad beneath a rank-4 source rejects some plants; a source cannot be a
+        # Lily Pad.
         cases = [
             ("egypt13", [("lilypad", (1, 1))], {"wallnut": 50}, {}, "not obtainable"),
+            ("egypt13", [("kiwifruit", (1, 1)), ("eagleclaw", (1, 1))], {"wallnut": 50}, {}, "distinct cells"),
             ("egypt13", [("kiwifruit", (1, 1))], {"puffshroom": 0}, {}, "not obtainable"),
             ("beach3", [("cactus", (5, 3))], {"puffshroom": 0}, dict(activation=(5, 3), rank=4), "can never be placed"),
             ("beach3", [("celerystalker", (5, 3)), ("lilypad", (5, 3))], {"puffshroom": 0}, dict(activation=(5, 3), rank=4), "can never be placed"),
@@ -218,7 +220,7 @@ class SearchTest(unittest.TestCase):
             return spec if isinstance(spec, int) else spec[0]
 
         def routes(count):
-            _, offset = self.previews.advance(stream, 0, [1] * count)
+            _, offset = self.previews.advance(stream, 0, [1] * count, 50)
             for size in range(len(usable) + 1):
                 for cells in itertools.permutations(usable, size):
                     choices = [[a for a in sources if allowed(a, cell)] for cell in cells]

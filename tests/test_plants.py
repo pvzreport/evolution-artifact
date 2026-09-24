@@ -25,8 +25,8 @@ class PlantsTest(unittest.TestCase):
 
     def test_preview_pools_equal_the_captured_lists(self):
         previews = Game(POOLS["game_version"]).previews
-        self.assertEqual(list(previews.pool("evolution")), POOLS["pools"]["preview"]["evolution"])
-        self.assertEqual(list(previews.pool("spawn")), POOLS["pools"]["preview"]["spawn"])
+        self.assertEqual(list(previews.evolution_pool(50)), POOLS["pools"]["preview"]["evolution"])
+        self.assertEqual(list(previews.spawn_pool()), POOLS["pools"]["preview"]["spawn"])
 
     def test_every_version_declares_the_plants_the_shared_data_names(self):
         # The cell kinds, previews and levels are shared by every version; a renamed plant would silently drop a rule.

@@ -17,7 +17,7 @@ from pathlib import Path
 
 from .level import Level, parse_cell
 from .model import Board, Planting, Pools, activate, placement_draws
-from .plants import DATA, declared_costs
+from .plants import DATA
 
 
 def load_previews(path=None):
@@ -41,15 +41,16 @@ class Previews:
     def __init__(self, document, kinds, record=None):
         self.record = record or load_previews()
         board = self.record["board"]
-        self.board = Level({"id": "preview-board", "name": board.get("name", "artifact screen"),
+        self.level = Level({"id": "preview-board", "name": board.get("name", "artifact screen"),
                             "stage": board["stage"], "bans": board.get("bans", []), "default_kind": board["kind"]})
         self.activation = parse_cell(self.record["activation"])
         self.source = self.record["source"]
-        self.declared_cost = declared_costs(document)[self.source]
         self.spawn_max_cost = self.record["spawn_max_cost"]
         self.sources = {int(rank): [parse_cell(cell) for cell in spec["sources"]]
                         for rank, spec in self.record["ranks"].items()}
-        self.pools = Pools(document, kinds, self.board, self.spawn_max_cost)
+        self.pools = Pools(document, kinds, self.level, self.spawn_max_cost)
+        self.declared_cost = self.pools.costs[self.source]
+        self.populations = {rank: Counter(cell[1] for cell in cells) for rank, cells in self.sources.items()}
 
     def ranks(self):
         return sorted(self.sources)
@@ -62,37 +63,35 @@ class Previews:
             raise ValueError("The preview source cost must be a non-negative integer")
         return cost
 
-    def plantings(self, rank, cost=None):
-        """The display board's sources for one rank, in planting order."""
+    def plantings(self, rank, cost):
+        """The display board's sources for one rank at an effective cost, in planting order."""
         if rank not in self.sources:
             raise ValueError("No measured structure for a rank-%s preview; known ranks: %s"
                              % (rank, ", ".join(str(r) for r in self.ranks())))
-        cost = self.cost(cost)
+        if not self.evolution_pool(cost):
+            raise ValueError("A %s at effective cost %d has no evolution candidates" % (self.source, cost))
         return [Planting(self.source, cost, cell) for cell in self.sources[rank]]
 
-    def pool(self, which, cost=None):
-        """The display board's evolution pool at a source cost, or its rank-4 spawn pool."""
-        kind = self.board.default_kind
-        if which == "evolution":
-            return self.pools.transformation(kind, self.cost(cost))
-        if which == "spawn":
-            return self.pools.spawn(kind)
-        raise ValueError("Preview pools are evolution and spawn")
+    def evolution_pool(self, cost):
+        """The display board's evolution pool for a source at this effective cost."""
+        return self.pools.transformation(self.level.default_kind, cost)
 
-    def run(self, stream, offset, rank, cost=None):
-        """One preview at an offset: its selection rows, its effect rows, the selection end and the offset after."""
-        plantings = self.plantings(rank, cost)
-        board = Board(self.board, None, self.activation)
-        rows, selection_end = activate(board, self.pools, plantings, rank, stream, offset)
-        population = Counter(cell[1] for cell in self.sources[rank])
-        effects, end = placement_draws(rows, population, stream, selection_end)
-        return rows, effects, selection_end, end
+    def spawn_pool(self):
+        """The display board's rank-4 spawn pool for a free cell."""
+        return self.pools.spawn(self.level.default_kind)
 
-    def advance(self, stream, offset, sequence, cost=None):
+    def run(self, stream, offset, rank, cost):
+        """One preview at an offset: its selection rows and effect rows, the selection end and the offset after."""
+        board = Board(self.level, None, self.activation)
+        rows, selection_end = activate(board, self.pools, self.plantings(rank, cost), rank, stream, offset)
+        effects, end = placement_draws(rows, self.populations[rank], stream, selection_end)
+        return {"results": rows, "effects": effects, "selection_end": selection_end, "end": end}
+
+    def advance(self, stream, offset, sequence, cost):
         """A sequence of previews from an offset: one entry per preview, and the offset after them."""
         entries = []
         for index, rank in enumerate(sequence, start=1):
-            rows, effects, selection_end, offset = self.run(stream, offset, rank, cost)
-            entries.append({"preview": index, "rank": rank, "results": rows, "effects": effects,
-                            "selection_end": selection_end, "end": offset})
+            entry = self.run(stream, offset, rank, cost)
+            entries.append({"preview": index, "rank": rank, **entry})
+            offset = entry["end"]
         return entries, offset

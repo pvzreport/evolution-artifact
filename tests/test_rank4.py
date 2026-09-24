@@ -6,7 +6,9 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from evolution import Game, Planting, load_level, parse_cell, scenario
+from collections import Counter
+
+from evolution import Game, Planting, Stream, load_level, parse_cell, placement_draws, scenario
 
 FIXTURES = Path(__file__).parent / "fixtures"
 CAPTURES = [json.loads((FIXTURES / name).read_text()) for name in ("rank4-captures.json", "rank4-followups.json")]
@@ -48,6 +50,11 @@ class Rank4Test(unittest.TestCase):
                         pool = pools.spawn(actual["kind"], actual["cell"] in occupied)
                     digest = hashlib.sha256(json.dumps(list(pool), separators=(",", ":")).encode()).hexdigest()
                     self.assertEqual(digest, expected["pool_sha256"], (case["capture"], expected["cell"]))
+                if any(r["result"] == "draftodil" and r["placed"] for r in result["results"]):
+                    # The sources were the only plants in their rows: the effects pass replays the recorded outputs.
+                    _, end = placement_draws(result["results"], Counter(p.cell[1] for p in plantings), Stream(),
+                                             result["stream_end"])
+                    self.assertEqual(end, case["captured_stream_end"], case["capture"])
                 if "plant_add_selection_indices" in case:
                     stable = {i for i, r in enumerate(result["results"], 1) if list(r["cell"]) not in excluded}
                     predicted = [i for i in reversed(range(1, len(result["results"]) + 1))

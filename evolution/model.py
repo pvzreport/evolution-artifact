@@ -18,13 +18,15 @@ fixtures under tests/fixtures replay the captures named below.
   rejected replacement still removes its source, leaving the bare pad (played check on
   the display board).
 - Placing a Draftodil shuffles the plant objects of its row with the shared engine, so
-  the effects can move the stream: the shuffle draws like any other, one output per
-  object beyond the first plus any rejected values. A Lily Pad is not a plant object
-  for this count, a replaced source is gone, and the Draftodil itself is counted
+  the effects can move the stream: one output per object beyond the first, with the
+  engine's rejection rule as in any shuffle. A Lily Pad beneath a plant is not one of
+  the objects, a replaced source is gone, and the Draftodil itself is counted
   (display-board captures with a Draftodil at 4-3 and at 3-3, follow-up A at 4-2, an
-  Arthur's Challenge activation at 2-3, and played checks in every display row). The
-  count needs every plant in the row, which is known on the display board; a level
-  activation reports its selection end and leaves these draws to the caller.
+  Arthur's Challenge activation at 2-3, and played checks in every display row). A bare
+  Lily Pad is assumed not to count either, a rejected value inside a row shuffle has not
+  been observed, and no other plant's placement has drawn in any capture. The count
+  needs every plant in the row, which is known on the display board; a level activation
+  reports its selection end and leaves these draws to the caller.
 """
 
 from collections import Counter
@@ -45,8 +47,8 @@ _CONDITIONS = [
     "Accepted modeling assumption: entering or restarting a level consumes no shared-engine outputs.",
     "Same level as described, sources at the listed effective cost (no discounts unless included), "
     "activate once while every source remains and before any automatic spawning.",
-    "Activate before any plant on the board produces sun: one capture recorded shared-engine outputs "
-    "from sun creation after the selections.",
+    "Activate promptly after planting and read the results at once: in one capture, outputs from outside "
+    "the artifact followed the selections during the effects, so in-level events can move the stream.",
     "Each cell's kind must match the board at activation: Beach cells right of the coast are shore when dry, "
     "water when flooded without a pad, and pad whenever a Lily Pad is present, bare or occupied. "
     "Keep terrain and supports unchanged until the effects finish, apart from the predicted additions.",
@@ -55,13 +57,15 @@ _CONDITIONS = [
 ]
 
 
-def conditions(game, preview_cost=None):
-    """What a prediction assumes: the game version of its plant data, the preview cost, then the fixed conditions."""
-    previews = game.previews
-    return ["The game runs version %s, the version of the plant data used (read from the %s package)."
-            % (game.version, game.platform),
-            "The previews' %s sources have effective cost %d." % (previews.source, previews.cost(preview_cost))
-            ] + _CONDITIONS
+def conditions(game, preview_cost=None, previews=True):
+    """What a prediction assumes: the game version of its plant data, the previews' cost when the route has
+    previews, then the fixed conditions."""
+    lines = ["The game runs version %s, the version of the plant data used (read from the %s package)."
+             % (game.version, game.platform)]
+    if previews:
+        lines.append("The previews' %s sources have effective cost %d."
+                     % (game.previews.source, game.previews.cost(preview_cost)))
+    return lines + _CONDITIONS
 
 
 class Planting:
@@ -139,17 +143,18 @@ class Pools:
         return self._pools[key]
 
 
-def selection_row(action, cell, kind, source, cost, candidates, shuffled, start, end):
-    """One selection: what was shuffled, what came first, and the offsets the shuffle spanned."""
+def selection_row(action, cell, kind, source, cost, candidates, shuffled, start, end, beneath=False):
+    """One selection: what was shuffled, what came first, the offsets the shuffle spanned, and for a spawn
+    whether it is the Lily Pad added beneath an occupied cell."""
     return {"action": action, "cell": tuple(cell), "kind": kind, "source": source, "cost": cost,
             "candidates": candidates, "result": shuffled[0] if shuffled else None, "runners_up": shuffled[1:5],
-            "start": start, "end": end, "placed": None}
+            "start": start, "end": end, "placed": None, "beneath": beneath}
 
 
-def select(stream, offset, pool, action, cell, kind, source=None, cost=None):
+def select(stream, offset, pool, action, cell, kind, source=None, cost=None, beneath=False):
     """One shuffle at an offset: the row it produces and the offset after it."""
     shuffled, end = stream.shuffle(pool, offset)
-    return selection_row(action, cell, kind, source, cost, len(pool), shuffled, offset, end), end
+    return selection_row(action, cell, kind, source, cost, len(pool), shuffled, offset, end, beneath), end
 
 
 def check_board(board, kinds):
@@ -204,7 +209,7 @@ def spawn_pass(pools, area, kind_of, occupied, stream, offset):
     for cell in area:
         pool = pools.spawn(kind_of[cell], cell in occupied)
         if pool:
-            row, offset = select(stream, offset, pool, "spawn", cell, kind_of[cell])
+            row, offset = select(stream, offset, pool, "spawn", cell, kind_of[cell], beneath=cell in occupied)
             rows.append(row)
     return rows, offset
 
@@ -241,9 +246,9 @@ def activate(board, pools, plantings, rank, stream, offset):
 def placement_draws(rows, population, stream, offset):
     """The shared-engine draws of the placement effects, in effect order, and the offset after them.
 
-    `population` maps a row number to the plant objects standing in it before the effects, Lily Pads
-    excluded and the sources included. Each effect row records a placed row-shuffling plant, the
-    objects its row held at that moment, and the offsets its shuffle spanned.
+    `population` maps a board row to the number of plant objects standing in it before the effects,
+    Lily Pads excluded and the sources included. Each effect row records a placed row-shuffling plant,
+    the number of objects its board row held at that moment, and the offsets its shuffle spanned.
     """
     count = Counter(population)
     effects = []
@@ -284,4 +289,4 @@ def scenario(game, sequence=(), level=None, plantings=(), activation=None, overr
             "offset_after_previews": after_previews, "extra_offset": offset,
             "level": level.describe() if level else None, "level_entry_offset": entry,
             "activation": {"column": activation[0], "row": activation[1]} if activation else None, "rank": rank,
-            "results": results, "stream_end": end, "conditions": conditions(game, cost)}
+            "results": results, "stream_end": end, "conditions": conditions(game, cost, bool(sequence))}

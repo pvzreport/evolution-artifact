@@ -18,7 +18,7 @@ import sys
 
 from .build import build_plants
 from .game import Game
-from .level import LILYPAD, format_cell, load_level, parse_cell
+from .level import format_cell, load_level, parse_cell
 from .model import Planting, scenario
 from .plants import PLANTS, VERSION, game_versions
 from .previews import parse_sequence
@@ -102,15 +102,18 @@ def format_sequence(sequence):
     return ",".join("%dx%d" % (rank, count) if count > 1 else str(rank) for rank, count in runs) or "none"
 
 
-def _print_previews(game, previews):
+def _count(number, noun):
+    return "%d %s%s" % (number, noun, "" if number == 1 else "s")
+
+
+def _print_previews(previews):
     for preview in previews:
-        sources = set(game.previews.sources[preview["rank"]])
         evolved, pads, spawns = [], [], []
         for row in preview["results"]:
             text = "%s %s" % (format_cell(row["cell"]), _outcome(row))
             if row["action"] == "evolve":
                 evolved.append(text)
-            elif row["cell"] in sources and row["result"] == LILYPAD:
+            elif row["beneath"]:
                 pads.append(format_cell(row["cell"]))
             else:
                 spawns.append(text)
@@ -120,18 +123,23 @@ def _print_previews(game, previews):
         if spawns:
             line += "; spawns " + ", ".join(spawns)
         for effect in preview["effects"]:
-            line += "; %s at %s shuffles %d plant objects (%d draws)" % (
-                effect["plant"], format_cell(effect["cell"]), effect["objects"], effect["end"] - effect["start"])
-        print(line + " (stream at %d after)" % preview["end"])
+            line += "; %s at %s shuffles %s (%s)" % (
+                effect["plant"], format_cell(effect["cell"]), _count(effect["objects"], "plant object"),
+                _count(effect["end"] - effect["start"], "draw"))
+        if preview["effects"]:
+            line += " (selections end at %d; stream at %d after)" % (preview["selection_end"], preview["end"])
+        else:
+            line += " (stream at %d after)" % preview["end"]
+        print(line)
 
 
-def _note_preview_cost(game, preview_cost, listed_costs):
+def _note_preview_cost(game, preview_cost, listed_costs, previews):
     """Point out a listed cost of the preview source that differs from the cost the previews assume."""
     cost = game.previews.cost(preview_cost)
     other = sorted({c for c in listed_costs if c is not None and c != cost})
-    if other and preview_cost is None:
-        print("note: the previews assume %s at cost %d, but the level lists it at %s; pass --preview-cost "
-              "if the previews used that cost" % (game.previews.source, cost, ", ".join(str(c) for c in other)),
+    if previews and other and preview_cost is None:
+        print("note: the previews assume %s at effective cost %d, but --plant or --source lists it at %s; pass "
+              "--preview-cost if the previews used that cost" % (game.previews.source, cost, ", ".join(str(c) for c in other)),
               file=sys.stderr)
 
 
@@ -168,7 +176,8 @@ def cmd_predict(args):
         if cost is None:
             raise ValueError("No effective cost for %s: write ALIAS=COST@CELL or add --source ALIAS=COST" % entry["source"])
         plantings.append(Planting(entry["source"], cost, entry["cell"], entry["kind"]))
-    _note_preview_cost(game, args.preview_cost, [p.cost for p in plantings if p.source == game.previews.source])
+    _note_preview_cost(game, args.preview_cost, [p.cost for p in plantings if p.source == game.previews.source],
+                       bool(sequence))
     result = scenario(game, sequence, level, plantings, activation, dict(args.cell or []), args.offset, args.rank,
                       preview_cost=args.preview_cost)
     if args.json:
@@ -178,7 +187,7 @@ def cmd_predict(args):
         print("No previews: the stream starts at offset 0.")
     else:
         print("Previews with %s at effective cost %d:" % (game.previews.source, result["preview_cost"]))
-    _print_previews(game, result["previews"])
+    _print_previews(result["previews"])
     if args.offset:
         print("Extra raw outputs consumed: %d" % args.offset)
     if level:
@@ -200,7 +209,8 @@ def cmd_plan(args):
     level = load_level(args.level)
     sources = merge_sources(args.source)
     listed = sources.get(game.previews.source)
-    _note_preview_cost(game, args.preview_cost, [listed[0] if isinstance(listed, tuple) else listed])
+    _note_preview_cost(game, args.preview_cost, [listed[0] if isinstance(listed, tuple) else listed],
+                       bool(parse_sequence(args.previews)) or args.max_previews > 0)
     result = search_recipe(game, level, args.want, sources, parse_cell(args.activate),
                            overrides=dict(args.cell or []), rank=args.rank, prefix=parse_sequence(args.previews),
                            preview_rank=args.preview_rank, min_previews=args.min_previews,
@@ -225,8 +235,11 @@ def cmd_plan(args):
               % (result["min_previews"], result["max_previews"], args.preview_rank, prefix, result["max_sources"]))
     else:
         print("\n1. Fully quit and relaunch the game.")
-        print("2. Run these previews, each one complete, with %s at effective cost %d: %s."
-              % (game.previews.source, result["preview_cost"], format_sequence(match["preview_sequence"])))
+        if match["preview_sequence"]:
+            print("2. Run these previews, each one complete, with %s at effective cost %d: %s."
+                  % (game.previews.source, result["preview_cost"], format_sequence(match["preview_sequence"])))
+        else:
+            print("2. Run no previews.")
         if result["extra_offset"]:
             print("   Then let the engine consume the %d further outputs stated with --offset." % result["extra_offset"])
         print("3. Enter the level directly" + (" and plant, in this order:" if match["planting_order"] else "; leave the activation area empty."))
@@ -244,10 +257,15 @@ def cmd_plan(args):
 
 def cmd_pool(args):
     game = Game(args.game_version)
-    if args.preview:
-        pool = game.previews.pool(args.preview, args.cost)
-        cost = " at source cost %d" % game.previews.cost(args.cost) if args.preview == "evolution" else ""
-        print("Preview %s pool%s, game %s: %d candidates" % (args.preview, cost, game.version, len(pool)))
+    if args.cost is not None and args.cost < 0:
+        raise ValueError("The source cost cannot be negative")
+    if args.preview == "spawn":
+        pool = game.previews.spawn_pool()
+        print("Preview spawn pool, game %s: %d candidates" % (game.version, len(pool)))
+    elif args.preview == "evolution":
+        cost = game.previews.cost(args.cost)
+        pool = game.previews.evolution_pool(cost)
+        print("Preview evolution pool at source cost %d, game %s: %d candidates" % (cost, game.version, len(pool)))
     else:
         level = load_level(args.level)
         cost = args.cost if args.cost is not None else 0
@@ -315,7 +333,8 @@ def main(argv=None):
     pool = commands.add_parser("pool", parents=[data], help="Print an ordered candidate pool")
     pool.add_argument("--level", help="Level id or path")
     pool.add_argument("--kind", default="ground")
-    pool.add_argument("--cost", type=int, help="Effective source cost (default 0 for a level pool, the declared cost for the preview evolution pool)")
+    pool.add_argument("--cost", type=int, help="Effective source cost: default 0 for a level pool, the declared cost for the "
+                                                "preview evolution pool; the spawn pool has none")
     pool.add_argument("--preview", choices=("evolution", "spawn"), help="A preview pool instead of a level pool")
     pool.set_defaults(run=cmd_pool)
 

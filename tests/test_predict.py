@@ -4,7 +4,9 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from evolution import Game, Planting, Stream, load_level, scenario
+from collections import Counter
+
+from evolution import Game, Planting, Stream, load_level, placement_draws, scenario
 
 CAPTURED_ON = "4.2.2"
 
@@ -31,8 +33,8 @@ class PredictTest(unittest.TestCase):
                         offset, preview_cost=preview_cost)
 
     def test_fresh_launch_rank1_preview(self):
-        # Captured after a fresh launch: nine selections, 2,874 outputs.
-        out = self.run_scenario([1], None, [], None)
+        # Captured after a fresh launch with Sunflowers at cost 50: nine selections, 2,874 outputs.
+        out = self.run_scenario([1], None, [], None, preview_cost=50)
         self.assertEqual(results(out["previews"][0]["results"]),
                          ["nekotail", "goldmagnet", "passionflower", "kiwifruit", "gluttonydragon",
                           "chomper", "electricitea", "agave", "duckpear"])
@@ -52,7 +54,7 @@ class PredictTest(unittest.TestCase):
         # its own result was not checked in that run and is left out here.
         plantings = [Planting("sunflower", 50, c) for c in [(1, 3), (3, 3), (2, 3), (3, 2), (2, 2), (1, 1)]]
         plantings += [Planting("puffshroom", 0, c) for c in [(1, 2), (3, 1), (2, 1)]]
-        out = self.run_scenario([1] * 6, "memory-lane-s33-6-hard", plantings, (2, 2))
+        out = self.run_scenario([1] * 6, "memory-lane-s33-6-hard", plantings, (2, 2), preview_cost=50)
         cells = by_cell(out["results"])
         self.assertEqual(cells[(1, 1)], "aeonium")
         self.assertEqual(cells[(1, 3)], "aeonium")
@@ -62,13 +64,14 @@ class PredictTest(unittest.TestCase):
             self.assertEqual(cells[cell], plant, cell)
 
     def test_pennys_pursuit_27_preview_recipe(self):
-        # Forecast saved before play; both Convallaria Chemists appeared on the iPad, and only those two cells were
-        # checked. The forecast omitted the row shuffles of the four Draftodils among these previews; with them the
-        # stream re-aligns before the level and only the Cactus cell's result differs, which was not checked.
+        # Forecast saved before play with Sunflowers at cost 50; both Convallaria Chemists appeared on the iPad, and
+        # only those two cells were checked. The forecast omitted the row shuffles of the four Draftodils among these
+        # previews. With them the level entry moves by two outputs and the stream re-aligns inside the first level
+        # selection, the Cactus at 2-1, whose result differs and was not checked.
         plantings = [Planting("cosmicpea", 150, (1, 3)), Planting("cabbagepult", 100, (1, 2)),
                      Planting("cabbagepult", 100, (1, 1)), Planting("cabbagepult", 100, (3, 1)),
                      Planting("cactus", 175, (2, 1))]
-        out = self.run_scenario([1] * 27, "pennys-pursuit-dark", plantings, (2, 2))
+        out = self.run_scenario([1] * 27, "pennys-pursuit-dark", plantings, (2, 2), preview_cost=50)
         cells = by_cell(out["results"])
         self.assertEqual(cells[(1, 1)], "convallariachemist")
         self.assertEqual(cells[(1, 3)], "convallariachemist")
@@ -84,11 +87,16 @@ class PredictTest(unittest.TestCase):
                  ("puffshroom", 0, (2, 3)), ("puffshroom", 0, (3, 1)),
                  ("puffshroom", 0, (3, 2)), ("puffshroom", 0, (1, 1)),
                  ("wallnut", 50, (3, 3))]
-        out = self.run_scenario([1] * 24, "arthurs-challenge", [Planting(*p) for p in order], (2, 2), preview_cost=47)
+        plantings = [Planting(*p) for p in order]
+        out = self.run_scenario([1] * 24, "arthurs-challenge", plantings, (2, 2), preview_cost=47)
         self.assertEqual(out["level_entry_offset"], 72725)
         self.assertEqual(results(out["results"]), ["fireshroom", "cthulhuactinia", "monotropa", "sweetpotato",
                                                    "draftodil", "nekotail", "happyleek", "paphiopedilum", "inferno"])
         self.assertEqual(out["stream_end"], 75697)
+        # The nine sources were the only plants in their rows, so the effects pass replays the two recorded outputs.
+        effects, end = placement_draws(out["results"], Counter(p.cell[1] for p in plantings), Stream(), out["stream_end"])
+        self.assertEqual([(e["cell"], e["objects"]) for e in effects], [((2, 3), 3)])
+        self.assertEqual(end, 75699)
 
     def test_beach_flooded_capture_from_offset_zero(self):
         # Captured 2026-09-19 with columns 3 and 4 under water; the stream was at offset 0.
@@ -116,29 +124,29 @@ class PredictTest(unittest.TestCase):
     def test_rank4_preview_after_one_rank1_preview(self):
         # Forecast saved before play on 2026-09-19 and matched on the device: the three evolutions and the six spawns
         # in order. The spawn cells were not recorded then; they follow the display-board layout captured later.
-        out = self.run_scenario([1, 4], None, [], None)
+        out = self.run_scenario([1, 4], None, [], None, preview_cost=50)
         second = out["previews"][1]["results"]
         self.assertEqual([(row["cell"], row["result"]) for row in second if row["action"] == "evolve"],
                          [((3, 3), "pinecone"), ((3, 2), "wiregelsemium"), ((3, 1), "peach")])
-        self.assertEqual([(row["cell"], row["result"]) for row in second if row["candidates"] == 1],
+        self.assertEqual([(row["cell"], row["result"]) for row in second if row["beneath"]],
                          [((3, 1), "lilypad"), ((3, 2), "lilypad"), ((3, 3), "lilypad")])
-        self.assertEqual([(row["cell"], row["result"]) for row in second if row["action"] == "spawn" and row["candidates"] > 1],
+        self.assertEqual([(row["cell"], row["result"]) for row in second if row["action"] == "spawn" and not row["beneath"]],
                          [((4, 1), "buttercup"), ((4, 2), "icelotus"), ((4, 3), "cracker"),
                           ((5, 1), "endurian"), ((5, 2), "streetlamp"), ((5, 3), "wallnut")])
         self.assertEqual(out["offset_after_previews"], 4292)
 
     def test_two_rank4_previews_and_a_third_start_from_offset_35296(self):
-        # Captured 2026-09-19: two complete rank-4 previews and the three evolutions of a third,
-        # 3,717 outputs, starting at offset 35,296.
+        # Captured 2026-09-19 with Sunflowers at cost 50: two complete rank-4 previews and the three evolutions
+        # of a third, 3,717 outputs, starting at offset 35,296.
         stream = Stream()
-        rows, end = self.previews.advance(stream, 35296, [4, 4])
+        rows, end = self.previews.advance(stream, 35296, [4, 4], 50)
         evolved = [r["result"] for p in rows for r in p["results"] if r["action"] == "evolve"]
         self.assertEqual(evolved, ["cottonyeti", "inferno", "goldencassia", "elaeocarpus", "waxgourd", "rhubarbarian"])
-        spawned = [r["result"] for p in rows for r in p["results"] if r["action"] == "spawn" and r["candidates"] > 1]
+        spawned = [r["result"] for p in rows for r in p["results"] if r["action"] == "spawn" and not r["beneath"]]
         self.assertEqual(spawned, ["wallnut", "pineapple", "lilypad", "garlic", "guardshroom", "cosmicmushroom",
                                    "aloes", "endurian", "heavendatura", "endurian", "turnip", "cosmicmushroom"])
         self.assertEqual(end, 35296 + 2782)
-        third, effects, selection_end, _ = self.previews.run(stream, end, 4)
+        third = self.previews.run(stream, end, 4, 50)["results"]
         self.assertEqual([r["result"] for r in third if r["action"] == "evolve"], ["bowlingbulb", "chestnut", "peonychi"])
         self.assertEqual(third[2]["end"], 35296 + 3717)
 
@@ -162,7 +170,7 @@ class PredictTest(unittest.TestCase):
         seventh = out["previews"][6]
         evolved = {row["cell"]: (row["result"], row["placed"]) for row in seventh["results"] if row["action"] == "evolve"}
         self.assertEqual(evolved, {(3, 3): ("dartichoke", True), (3, 2): ("jewelrabbit", False), (3, 1): ("sugarcane", True)})
-        self.assertEqual([(row["cell"], row["result"]) for row in seventh["results"] if row["candidates"] == 1],
+        self.assertEqual([(row["cell"], row["result"]) for row in seventh["results"] if row["beneath"]],
                          [((3, 1), "lilypad"), ((3, 2), "lilypad"), ((3, 3), "lilypad")])
         self.assertEqual((seventh["results"][-1]["cell"], seventh["results"][-1]["result"]), ((5, 3), "draftodil"))
         self.assertEqual(seventh["effects"], [{"action": "shuffle", "plant": "draftodil", "cell": (5, 3), "objects": 2,

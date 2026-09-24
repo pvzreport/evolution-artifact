@@ -58,9 +58,7 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
     cost = previews.cost(preview_cost)
     prefix = list(prefix)
     for preview in prefix + [preview_rank]:
-        if preview not in previews.ranks():
-            raise ValueError("No measured structure for a rank-%s preview; known ranks: %s"
-                             % (preview, ", ".join(str(r) for r in previews.ranks())))
+        previews.plantings(preview, cost)
     board = Board(level, overrides, activation)
     check_board(board, game.kinds)
     pools = game.pools(level)
@@ -96,7 +94,7 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
         "unusable_sources": unusable, "prefix": prefix, "preview_rank": preview_rank, "min_previews": min_previews,
         "max_previews": max_previews, "extra_offset": offset, "max_sources": max_sources, "budget": budget,
         "budget_exhausted": [], "preview_cost": cost,
-        "conditions": conditions(game, cost), "match": None,
+        "conditions": conditions(game, cost, bool(prefix) or max_previews > 0), "match": None,
     }
     searcher = _Search(stream, pools, board, kind_of, usable, options, wants, required, spawnable, rank, budget)
     _, position = previews.advance(stream, 0, prefix, cost)
@@ -111,7 +109,7 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
                 result["match"] = _recipe(count, prefix + [preview_rank] * count, entry, rows)
                 return result
         if count < max_previews:
-            _, _, _, position = previews.run(stream, position, preview_rank, cost)
+            position = previews.run(stream, position, preview_rank, cost)["end"]
     return result
 
 
@@ -278,7 +276,7 @@ class _Search:
             pool = self.pools.spawn(self.kind_of[cell], occupied)
             if pool:
                 self._spend(1)
-                row, _ = select(self.stream, offset, pool, "spawn", cell, self.kind_of[cell])
+                row, _ = select(self.stream, offset, pool, "spawn", cell, self.kind_of[cell], beneath=occupied)
                 row["sources"] = []
                 self.spawns[key] = row
             else:
