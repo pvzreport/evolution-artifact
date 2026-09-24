@@ -43,7 +43,9 @@ _CONDITIONS = [
 def conditions(game):
     """What a prediction assumes: the game version of its plant data, then the fixed conditions."""
     return ["The game runs version %s, the version of the plant data used (read from the %s package)."
-            % (game.version, game.platform)] + _CONDITIONS
+            % (game.version, game.platform),
+            "Preview Sunflowers have effective cost %d; finish each preview's placement effects before continuing."
+            % game.previews.evolution_source_cost] + _CONDITIONS
 
 
 class Planting:

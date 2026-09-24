@@ -36,6 +36,15 @@ class CliTest(unittest.TestCase):
         self.assertIn("pinecone", text)
         self.assertIn("buttercup", text)
 
+    def test_preview_cost_uses_shared_source_or_explicit_override(self):
+        out = json.loads(run("predict", "--previews", "1x11", "--source", "sunflower=47", "--json"))
+        self.assertEqual(out["game"]["preview_source_cost"], 47)
+        self.assertEqual(out["offset_after_previews"], 33404)
+        self.assertIn("243 candidates", run("pool", "--preview", "evolution", "--preview-cost", "47"))
+        explicit = json.loads(run("predict", "--previews", "1", "--source", "sunflower=47",
+                                  "--preview-cost", "50", "--json"))
+        self.assertEqual(explicit["offset_after_previews"], 2874)
+
     def test_predict_level_with_cell_kinds(self):
         text = run("predict", "--level", "memory-lane-s33-6-hard", "--activate", "3-2",
                    "--plant", "sunflower=50@2-1", "--plant", "seashroom=0@3-2:beach_water")

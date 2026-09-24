@@ -13,6 +13,7 @@ python3 -m evolution predict --game-version 4.2.2 --previews 1x3
 `predict` replays a stated route and prints what the game shows: a full restart, a sequence of previews, optionally some extra engine outputs, then an activation in a level.
 
 - `--previews 1x6,4` lists the preview ranks in order; the default is none.
+- `--preview-cost COST` sets the preview Sunflowers' effective cost. Without it, `predict` and `plan` use a listed `--source sunflower=COST`, then fall back to 50. An inline `--plant sunflower=COST@CELL` changes only that level source.
 - `--offset N` adds N raw engine outputs consumed between the previews and the level.
 - `--level ID` names a description in `data/levels`, or a path to one.
 - `--rank 1|4` is the artifact rank of the activation; rank 4 needs `--activate`.
@@ -66,6 +67,25 @@ A level description gives each cell's usual kind. The kinds are `ground`, `beach
 ## Previews
 
 A rank-1 preview evolves nine Sunflowers from the evolution pool; a rank-4 preview evolves three, places three Lily Pads, and spawns six plants from the spawn pool. Both pools come from the plant data of the version in use, and `pool --preview evolution|spawn` lists them. Each consumes a data-dependent but exactly replayable number of outputs. `predict --previews 1,4` prints what one rank-1 preview and then one rank-4 preview show after a fresh launch, and the offset the stream reaches after each.
+
+Preview Sunflowers use their effective cost, which can differ from 50. For example,
+`predict --game-version 4.2.2 --previews 1x11 --preview-cost 47` uses cost 47 without
+adding Sunflower to the level's sources. The equivalent Python input is
+`Game("4.2.2", preview_source_cost=47)`. The chosen value is retained in the JSON
+output's `game.preview_source_cost` and in the conditions. Candidate costs remain
+their declared values.
+
+After rank-1 preview selections, placing Draftodil shuffles the three on-board
+plant objects in its display row. This uses the shared stream and includes any
+rejected random values; it is not a fixed two-output adjustment. Finish each
+preview's placement effects before starting the next preview or entering a level.
+Each preview reports `selection_end` and `end`; the latter includes these effects
+and is the position used for the next action.
+
+A rank-4 preview that generates Draftodil is currently rejected because its row
+population at placement is not modeled. Use rank-1 previews for such a route.
+Rank-4 level activations remain supported: their reported `stream_end` is the
+end of selection, and this tool predicts one level activation after the previews.
 
 `plan` reports the whole route it assumed as `preview_sequence`: the fixed `--previews` prefix followed by the counted previews of `--preview-rank`. Replay a recipe with exactly that sequence. The artifact screen opens on rank 1, so a route a player can follow starts with a rank-1 preview; the tool does not enforce that, so give `--previews 1` when counting rank-4 previews.
 

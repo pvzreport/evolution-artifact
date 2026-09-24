@@ -14,8 +14,7 @@ def results(rows):
 
 
 class PredictTest(unittest.TestCase):
-    """Every expectation below was read from the game, version CAPTURED_ON: a capture, a forecast saved before play
-    and then matched, or a prediction written before play and reported matched."""
+    """Recorded outcomes and focused model boundaries; comments distinguish offline probes from gameplay checks."""
 
     @classmethod
     def setUpClass(cls):
@@ -33,6 +32,45 @@ class PredictTest(unittest.TestCase):
                          ["nekotail", "goldmagnet", "passionflower", "kiwifruit", "gluttonydragon",
                           "chomper", "electricitea", "agave", "duckpear"])
         self.assertEqual(out["offset_after_previews"], 2874)
+
+    def test_discounted_previews_include_placement_draws(self):
+        # Recorded consecutive previews: all sources cost 47. Draftodil's
+        # placement changes the first two choices of the following preview.
+        game = Game(CAPTURED_ON, preview_source_cost=47)
+        out = scenario(game, [1] * 11)
+        tenth, eleventh = out["previews"][9:11]
+        self.assertEqual(tenth["results"][3]["result"], "draftodil")
+        self.assertEqual((tenth["selection_end"], tenth["end"]), (30333, 30335))
+        self.assertEqual([r["candidates"] for r in tenth["results"]], [243] * 9)
+        self.assertEqual(results(eleventh["results"][:2]), ["gatlingpea", "egretflower"])
+        self.assertEqual((eleventh["results"][0]["start"], eleventh["end"]), (30335, 33404))
+
+    def test_discounted_preview_route_to_one_activation(self):
+        game = Game(CAPTURED_ON, preview_source_cost=47)
+        order = [("wallnut", 50, (1, 3)), ("puffshroom", 0, (1, 2)),
+                 ("puffshroom", 0, (2, 1)), ("wallnut", 50, (2, 2)),
+                 ("puffshroom", 0, (2, 3)), ("puffshroom", 0, (3, 1)),
+                 ("puffshroom", 0, (3, 2)), ("puffshroom", 0, (1, 1)),
+                 ("wallnut", 50, (3, 3))]
+        out = scenario(game, [1] * 24, load_level("arthurs-challenge"),
+                       [Planting(*p) for p in order], (2, 2))
+        self.assertEqual(out["level_entry_offset"], 72725)
+        self.assertEqual(results(out["results"]), ["fireshroom", "cthulhuactinia", "monotropa",
+                         "sweetpotato", "draftodil", "nekotail", "happyleek", "paphiopedilum", "inferno"])
+        # This API ends at selection, before the final activation's placement effects.
+        self.assertEqual(out["stream_end"], 75697)
+
+    def test_rank4_preview_rejects_unknown_draftodil_row_population(self):
+        with self.assertRaisesRegex(ValueError, "Rank-4 preview generates Draftodil"):
+            self.previews.run(Stream(), 400, 4)
+
+    def test_preview_row_shuffle_consumes_rejected_values(self):
+        # Offline probe: after selection, the first two masked values are 3
+        # (rejected for a three-object row) and 2. The final swap needs one more.
+        game = Game(CAPTURED_ON, preview_source_cost=47)
+        rows, end = game.previews.run(Stream(), 239256, 1)
+        self.assertEqual(sum(r["result"] == "draftodil" for r in rows), 1)
+        self.assertEqual((rows[-1]["end"], end), (242315, 242318))
 
     def test_fresh_launch_egypt13_grid(self):
         # Captured twice in fresh processes: nine Wall-nuts planted 1-1 to 3-3 in order, activation at 2-2.
@@ -63,8 +101,11 @@ class PredictTest(unittest.TestCase):
                      Planting("cabbagepult", 100, (1, 1)), Planting("cabbagepult", 100, (3, 1)),
                      Planting("cactus", 175, (2, 1))]
         out = self.run_scenario([1] * 27, "pennys-pursuit-dark", plantings, (2, 2))
-        self.assertEqual(results(out["results"]),
-                         ["wintersweet", "horsebean", "convallariachemist", "electriccurrant", "convallariachemist"])
+        # The two requested cells were verified; the other cells were forecasts.
+        # Placement draws in the last preview change an unverified cell.
+        by_cell = {row["cell"]: row["result"] for row in out["results"]}
+        self.assertEqual(by_cell[(1, 1)], "convallariachemist")
+        self.assertEqual(by_cell[(1, 3)], "convallariachemist")
 
     def test_beach_flooded_capture_from_offset_zero(self):
         # Captured 2026-09-19 with columns 3 and 4 under water; the stream was at offset 0.

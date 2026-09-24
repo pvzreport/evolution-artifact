@@ -48,6 +48,18 @@ class SearchTest(unittest.TestCase):
         for row in match["processing_order"]:
             self.assertEqual(row["kind"], "beach_shore" if row["cell"][0] == 3 else "ground")
 
+    def test_search_continues_after_discounted_preview_effects(self):
+        game = Game(CAPTURED_ON, preview_source_cost=47)
+        level = load_level("arthurs-challenge")
+        result = search_recipe(game, level, [("parsnip", (2, 2))], {"wallnut": 50},
+                               min_previews=10, max_previews=10, max_sources=1)
+        match = result["match"]
+        self.assertIsNotNone(match)
+        self.assertEqual(match["level_entry_offset"], 30335)
+        plantings = [Planting(p["source"], p["cost"], p["cell"]) for p in match["planting_order"]]
+        replay = scenario(game, match["preview_sequence"], level, plantings, (2, 2))
+        self.assertEqual(replay["results"][0]["result"], "parsnip")
+
     def test_wanted_plant_on_a_plank_cell_uses_the_plank_pool(self):
         result = self.search("pirate1", [("exorcislily", (6, 4))], {"puffshroom": 0, "sunflower": 50},
                              activation=(5, 4), max_previews=20)

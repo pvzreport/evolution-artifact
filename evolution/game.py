@@ -12,17 +12,18 @@ from .tiles import tile_kinds
 
 
 class Game:
-    def __init__(self, version=None):
-        """version: a game version with plant data in data/plants; by default the newest."""
+    def __init__(self, version=None, preview_source_cost=None):
+        """A version's data and the preview Sunflowers' effective cost (default: preview data)."""
         self.plants = load_plants(version)
         self.version = self.plants["game"]["version"]
         self.platform = self.plants["game"]["platform"]
         self.kinds = tile_kinds(self.plants)
-        self.previews = Previews(self.plants, self.kinds)
+        self.previews = Previews(self.plants, self.kinds, source_cost=preview_source_cost)
 
     def pools(self, level):
         """Every candidate list of one level under this version's plant data."""
         return Pools(self.plants, self.kinds, level, self.previews.spawn_max_cost)
 
     def describe(self):
-        return {"version": self.version, "platform": self.platform}
+        return {"version": self.version, "platform": self.platform,
+                "preview_source_cost": self.previews.evolution_source_cost}

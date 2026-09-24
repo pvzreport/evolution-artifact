@@ -113,7 +113,7 @@ def _print_previews(rows):
             line += "; water cells: %s x%d" % (singles[0], len(singles))
         if spawns:
             line += "; spawns in order: " + ", ".join(spawns)
-        end = preview["results"][-1]["end"] if preview["results"] else None
+        end = preview["end"]
         print(line + " (stream at %s after)" % end)
 
 
@@ -132,7 +132,8 @@ def _describe_row(row):
 
 
 def cmd_predict(args):
-    game = Game(args.game_version)
+    sources = dict(args.source or [])
+    game = Game(args.game_version, args.preview_cost if args.preview_cost is not None else sources.get("sunflower"))
     sequence = parse_sequence(args.previews)
     level = load_level(args.level) if args.level else None
     activation = parse_cell(args.activate) if args.activate else None
@@ -146,7 +147,7 @@ def cmd_predict(args):
     for entry in args.plant or []:
         cost = entry["cost"]
         if cost is None:
-            cost = dict(args.source or []).get(entry["source"])
+            cost = sources.get(entry["source"])
         if cost is None:
             raise ValueError("No effective cost for %s: write ALIAS=COST@CELL or add --source ALIAS=COST" % entry["source"])
         plantings.append(Planting(entry["source"], cost, entry["cell"], entry["kind"]))
@@ -174,9 +175,12 @@ def cmd_predict(args):
 
 
 def cmd_plan(args):
-    game = Game(args.game_version)
+    sources = merge_sources(args.source)
+    sunflower = sources.get("sunflower")
+    sunflower_cost = sunflower[0] if isinstance(sunflower, tuple) else sunflower
+    game = Game(args.game_version, args.preview_cost if args.preview_cost is not None else sunflower_cost)
     level = load_level(args.level)
-    result = search_recipe(game, level, args.want, merge_sources(args.source), parse_cell(args.activate),
+    result = search_recipe(game, level, args.want, sources, parse_cell(args.activate),
                            overrides=dict(args.cell or []), rank=args.rank, prefix=parse_sequence(args.previews),
                            preview_rank=args.preview_rank, min_previews=args.min_previews,
                            max_previews=args.max_previews, offset=args.offset, max_sources=args.max_sources,
@@ -217,7 +221,7 @@ def cmd_plan(args):
 
 
 def cmd_pool(args):
-    game = Game(args.game_version)
+    game = Game(args.game_version, args.preview_cost)
     if args.preview:
         pool = game.previews.pools[args.preview]
         print("Preview %s pool, game %s: %d candidates" % (args.preview, game.version, len(pool)))
@@ -245,6 +249,8 @@ def main(argv=None):
     data = argparse.ArgumentParser(add_help=False)
     data.add_argument("--game-version", choices=game_versions(),
                       help="Game version whose plant data to use (default: the newest)")
+    data.add_argument("--preview-cost", type=int, metavar="COST",
+                      help="Effective preview Sunflower cost; overrides --source sunflower, otherwise defaults to 50")
 
     predict = commands.add_parser("predict", parents=[data], help="Replay a stated scenario and print what the game shows")
     predict.add_argument("--previews", default="", help="Preview ranks in order, for example 1x6 or 1,4 (default: none)")
