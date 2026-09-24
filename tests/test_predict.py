@@ -191,6 +191,34 @@ class PredictTest(unittest.TestCase):
                                                            "objects": 3, "start": 27173, "end": 27175}])
         self.assertEqual(by_cell(out["previews"][11]["results"])[(5, 3)], "darkmatter_dragonfruit")
 
+    def test_bare_pad_in_a_draftodil_row_played_check(self):
+        # Forecast saved before play on 2026-09-24 and matched on the device after a fresh launch at cost 47, ranks
+        # 1,1,1,1,1,4,1,1,1,4,1. Preview 10 spawned a Draftodil at 4-2 and a bare Lily Pad at 5-2, and preview 11
+        # showed geraniifencer at 5-3: the result of one draw, because the row then held only the source at 3-2 and
+        # the Draftodil, the bare pad not among its objects (thundersnapdragon would have followed two draws).
+        out = self.run_scenario([1, 1, 1, 1, 1, 4, 1, 1, 1, 4, 1], None, [], None, preview_cost=47)
+        tenth = out["previews"][9]
+        spawns = {row["cell"]: row["result"] for row in tenth["results"] if row["action"] == "spawn" and not row["beneath"]}
+        self.assertEqual((spawns[(4, 2)], spawns[(5, 2)]), ("draftodil", "lilypad"))
+        self.assertEqual(tenth["effects"], [{"action": "shuffle", "plant": "draftodil", "cell": (4, 2), "objects": 2,
+                                             "start": 27291, "end": 27292}])
+        self.assertEqual(by_cell(out["previews"][10]["results"])[(5, 3)], "geraniifencer")
+
+    def test_rejected_values_in_a_row_shuffle_played_check(self):
+        # Forecast saved before play on 2026-09-24 and matched on the device after a fresh launch at cost 47, ranks
+        # 1,1,1,1,4,1,4,4,1,1,4,1,4,1. Preview 13 spawned Draftodils at 4-1 and 4-2. The one at 4-2 is added first
+        # and shuffles three objects in two draws; the one at 4-1 then shuffles three objects in four draws, the
+        # engine rejecting two values. Preview 14 showed longmalily at 5-3, the result after those six draws
+        # (orchidmage would have followed four, marigold five).
+        out = self.run_scenario([1, 1, 1, 1, 4, 1, 4, 4, 1, 1, 4, 1, 4, 1], None, [], None, preview_cost=47)
+        thirteenth = out["previews"][12]
+        spawns = {row["cell"]: row["result"] for row in thirteenth["results"] if row["action"] == "spawn" and not row["beneath"]}
+        self.assertEqual((spawns[(4, 1)], spawns[(4, 2)]), ("draftodil", "draftodil"))
+        self.assertEqual(thirteenth["effects"],
+                         [{"action": "shuffle", "plant": "draftodil", "cell": (4, 2), "objects": 3, "start": 31499, "end": 31501},
+                          {"action": "shuffle", "plant": "draftodil", "cell": (4, 1), "objects": 3, "start": 31501, "end": 31505}])
+        self.assertEqual(by_cell(out["previews"][13]["results"])[(5, 3)], "longmalily")
+
     def test_pad_over_a_dry_shore_cell_played_check(self):
         # Played 2026-09-19 after a fresh launch, tide out: Puff-shrooms at 2-1, at 3-1 on bare shore, and at 3-2
         # on a Lily Pad; activation at 2-2. Reported chestnut, bloomerang, agave: the pad kind's results only.

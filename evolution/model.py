@@ -19,13 +19,13 @@ fixtures under tests/fixtures replay the captures named below.
   the display board).
 - Placing a Draftodil shuffles the plant objects of its row with the shared engine, so
   the effects can move the stream: one output per object beyond the first, with the
-  engine's rejection rule as in any shuffle. A Lily Pad beneath a plant is not one of
-  the objects, a replaced source is gone, and the Draftodil itself is counted
-  (display-board captures with a Draftodil at 4-3 and at 3-3, follow-up A at 4-2, an
-  Arthur's Challenge activation at 2-3, and played checks in every display row). A bare
-  Lily Pad is assumed not to count either, a rejected value inside a row shuffle has not
-  been observed, and no other plant's placement has drawn in any capture. The count
-  needs every plant in the row, which is known on the display board; a level activation
+  engine's rejection rule as in any shuffle. A Lily Pad, bare or beneath a plant, is
+  not one of the objects, a replaced source is gone, and the Draftodil itself is
+  counted (display-board captures with a Draftodil at 4-3 and at 3-3, follow-up A at
+  4-2, an Arthur's Challenge activation at 2-3, played checks in every display row, a
+  played check with a bare Lily Pad in the row, and one whose second shuffle rejected
+  two values). No other plant's placement has drawn in any capture. The count needs
+  every plant in the row, which is known on the display board; a level activation
   reports its selection end and leaves these draws to the caller.
 """
 
