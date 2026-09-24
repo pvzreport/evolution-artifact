@@ -48,6 +48,20 @@ class SearchTest(unittest.TestCase):
         for row in match["processing_order"]:
             self.assertEqual(row["kind"], "beach_shore" if row["cell"][0] == 3 else "ground")
 
+    def test_counted_previews_include_placement_draws(self):
+        # Captured: after ten rank-1 previews with Sunflowers at cost 47 the stream stands at 30335, two draws past
+        # the tenth preview's selections. A recipe counting those previews enters the level there.
+        level = load_level("arthurs-challenge")
+        result = self.search(level, [("parsnip", (2, 2))], {"wallnut": 50}, min_previews=10, max_previews=10,
+                             max_sources=1, preview_cost=47)
+        match = result["match"]
+        self.assertIsNotNone(match)
+        self.assertEqual((match["level_entry_offset"], result["preview_cost"]), (30335, 47))
+        plantings = [Planting(p["source"], p["cost"], p["cell"]) for p in match["planting_order"]]
+        replay = scenario(self.game, match["preview_sequence"], level, plantings, (2, 2), preview_cost=47)
+        self.assertEqual(replay["level_entry_offset"], 30335)
+        self.assertEqual(replay["results"][0]["result"], "parsnip")
+
     def test_wanted_plant_on_a_plank_cell_uses_the_plank_pool(self):
         result = self.search("pirate1", [("exorcislily", (6, 4))], {"puffshroom": 0, "sunflower": 50},
                              activation=(5, 4), max_previews=20)

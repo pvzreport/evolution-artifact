@@ -10,12 +10,24 @@ fixtures under tests/fixtures replay the captures named below.
   candidates it admits costing at most the preview file's spawn_max_cost. An occupied
   cell admits nothing, except that an occupied shore or water cell admits a Lily Pad
   beneath its plant, a one-candidate shuffle that consumes no outputs (captures 1 to 10,
-  follow-ups A and Cactus).
+  follow-ups A and Cactus, the display-board captures).
 - Effects then run in reverse selection order, and each selected plant is re-checked
   against its cell's kind at that moment: a Lily Pad placed earlier turns its cell into
   beach_pad, which rejects some replacements, and a second Lily Pad on one cell is
-  dropped (follow-ups B and Cactus). The `placed` flag of a row records the outcome.
+  dropped (follow-ups B and Cactus). The `placed` flag of a row records the outcome. A
+  rejected replacement still removes its source, leaving the bare pad (played check on
+  the display board).
+- Placing a Draftodil shuffles the plant objects of its row with the shared engine, so
+  the effects can move the stream: the shuffle draws like any other, one output per
+  object beyond the first plus any rejected values. A Lily Pad is not a plant object
+  for this count, a replaced source is gone, and the Draftodil itself is counted
+  (display-board captures with a Draftodil at 4-3 and at 3-3, follow-up A at 4-2, an
+  Arthur's Challenge activation at 2-3, and played checks in every display row). The
+  count needs every plant in the row, which is known on the display board; a level
+  activation reports its selection end and leaves these draws to the caller.
 """
+
+from collections import Counter
 
 from .level import LILYPAD, format_cell
 from .plants import declared_costs, stage_allows
@@ -24,14 +36,17 @@ from .tiles import NONE
 
 PAD = "beach_pad"
 RANKS = (1, 4)
+ROW_SHUFFLERS = ("draftodil",)
 
 _CONDITIONS = [
     "Start after a full process restart (seed 5489, offset 0).",
-    "Run exactly the listed previews, each one complete, and nothing else that uses the artifact "
-    "before entering the level.",
+    "Run exactly the listed previews, each one complete with its placement effects, and nothing else that "
+    "uses the artifact before entering the level.",
     "Accepted modeling assumption: entering or restarting a level consumes no shared-engine outputs.",
     "Same level as described, sources at the listed effective cost (no discounts unless included), "
     "activate once while every source remains and before any automatic spawning.",
+    "Activate before any plant on the board produces sun: one capture recorded shared-engine outputs "
+    "from sun creation after the selections.",
     "Each cell's kind must match the board at activation: Beach cells right of the coast are shore when dry, "
     "water when flooded without a pad, and pad whenever a Lily Pad is present, bare or occupied. "
     "Keep terrain and supports unchanged until the effects finish, apart from the predicted additions.",
@@ -40,10 +55,13 @@ _CONDITIONS = [
 ]
 
 
-def conditions(game):
-    """What a prediction assumes: the game version of its plant data, then the fixed conditions."""
+def conditions(game, preview_cost=None):
+    """What a prediction assumes: the game version of its plant data, the preview cost, then the fixed conditions."""
+    previews = game.previews
     return ["The game runs version %s, the version of the plant data used (read from the %s package)."
-            % (game.version, game.platform)] + _CONDITIONS
+            % (game.version, game.platform),
+            "The previews' %s sources have effective cost %d." % (previews.source, previews.cost(preview_cost))
+            ] + _CONDITIONS
 
 
 class Planting:
@@ -220,20 +238,50 @@ def activate(board, pools, plantings, rank, stream, offset):
     return place(rows, kind_of, pools.kinds), offset
 
 
+def placement_draws(rows, population, stream, offset):
+    """The shared-engine draws of the placement effects, in effect order, and the offset after them.
+
+    `population` maps a row number to the plant objects standing in it before the effects, Lily Pads
+    excluded and the sources included. Each effect row records a placed row-shuffling plant, the
+    objects its row held at that moment, and the offsets its shuffle spanned.
+    """
+    count = Counter(population)
+    effects = []
+    for row in reversed(rows):
+        cell, plant = row["cell"], row["result"]
+        if plant is None:
+            continue
+        if row["action"] == "evolve":
+            count[cell[1]] -= 1
+        if not row["placed"] or plant == LILYPAD:
+            continue
+        count[cell[1]] += 1
+        if plant in ROW_SHUFFLERS:
+            objects = count[cell[1]]
+            _, end = stream.shuffle(range(objects), offset)
+            effects.append({"action": "shuffle", "plant": plant, "cell": tuple(cell), "objects": objects,
+                            "start": offset, "end": end})
+            offset = end
+    return effects, offset
+
+
 def scenario(game, sequence=(), level=None, plantings=(), activation=None, overrides=None, offset=0, rank=1,
-             stream=None):
+             stream=None, preview_cost=None):
     """Replay previews, optional extra raw outputs, then an optional activation, from a fresh process,
-    under one game version's data."""
+    under one game version's data. `preview_cost` is the previews' effective source cost; the default
+    is the source's declared cost."""
     if offset < 0:
         raise ValueError("The extra offset cannot be negative")
     stream = stream or shared()
-    preview_rows, after_previews = game.previews.advance(stream, 0, list(sequence))
+    cost = game.previews.cost(preview_cost)
+    preview_rows, after_previews = game.previews.advance(stream, 0, list(sequence), cost)
     entry = after_previews + offset
     results, end = [], entry
     if level:
         board = Board(level, overrides, activation)
         results, end = activate(board, game.pools(level), plantings, rank, stream, entry)
-    return {"game": game.describe(), "previews": preview_rows, "offset_after_previews": after_previews,
-            "extra_offset": offset, "level": level.describe() if level else None, "level_entry_offset": entry,
+    return {"game": game.describe(), "preview_cost": cost, "previews": preview_rows,
+            "offset_after_previews": after_previews, "extra_offset": offset,
+            "level": level.describe() if level else None, "level_entry_offset": entry,
             "activation": {"column": activation[0], "row": activation[1]} if activation else None, "rank": rank,
-            "results": results, "stream_end": end, "conditions": conditions(game)}
+            "results": results, "stream_end": end, "conditions": conditions(game, cost)}

@@ -41,19 +41,21 @@ def parse_spec(spec):
 
 def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=None, rank=1, prefix=(),
                   preview_rank=1, min_previews=0, max_previews=99, offset=0, max_sources=9, budget=30000,
-                  stream=None):
+                  stream=None, preview_cost=None):
     """Fewest previews of `preview_rank` after the fixed `prefix`, then fewest sources, placing every want.
 
     game: the game version whose data the recipe is for. wants: list of (plant, cell). sources:
     {alias: cost} or {alias: (cost, [kinds])} when a source may only be planted on cells of those
     kinds. overrides: {cell: kind} for this activation. offset: extra raw outputs consumed between
-    the previews and the level. budget: shuffles tried per preview count.
+    the previews and the level. budget: shuffles tried per preview count. preview_cost: the previews'
+    effective source cost; the default is the source's declared cost.
     """
     if rank not in RANKS:
         raise ValueError("Supported activation ranks are 1 and 4")
     if min_previews < 0 or max_previews < min_previews or budget < 1 or max_sources < 0 or offset < 0:
         raise ValueError("Require 0 <= min_previews <= max_previews, max_sources >= 0, offset >= 0 and a positive budget")
     previews = game.previews
+    cost = previews.cost(preview_cost)
     prefix = list(prefix)
     for preview in prefix + [preview_rank]:
         if preview not in previews.ranks():
@@ -93,11 +95,11 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
                      "kinds": o["kinds"], "candidates": len(o["pool"])} for o in options],
         "unusable_sources": unusable, "prefix": prefix, "preview_rank": preview_rank, "min_previews": min_previews,
         "max_previews": max_previews, "extra_offset": offset, "max_sources": max_sources, "budget": budget,
-        "budget_exhausted": [],
-        "conditions": conditions(game), "match": None,
+        "budget_exhausted": [], "preview_cost": cost,
+        "conditions": conditions(game, cost), "match": None,
     }
     searcher = _Search(stream, pools, board, kind_of, usable, options, wants, required, spawnable, rank, budget)
-    _, position = previews.advance(stream, 0, prefix)
+    _, position = previews.advance(stream, 0, prefix, cost)
     for count in range(max_previews + 1):
         if count >= min_previews:
             entry = position + offset
@@ -109,7 +111,7 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
                 result["match"] = _recipe(count, prefix + [preview_rank] * count, entry, rows)
                 return result
         if count < max_previews:
-            _, position = previews.run(stream, position, preview_rank)
+            _, _, _, position = previews.run(stream, position, preview_rank, cost)
     return result
 
 

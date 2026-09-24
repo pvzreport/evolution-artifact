@@ -66,7 +66,7 @@ class CliTest(unittest.TestCase):
         self.assertIn("rank-4 Evolution", text)
         text = run("plan", "--level", "egypt13", "--want", "eagleclaw@2-1", "--source", "wallnut=50", "--previews", "1",
                    "--preview-rank", "4", "--min-previews", "1", "--max-previews", "1", "--max-sources", "1")
-        self.assertIn("Run these previews, each one complete: 1,4.", text)
+        self.assertIn("Run these previews, each one complete, with sunflower at effective cost 50: 1,4.", text)
         self.assertIn("eagleclaw  <- wanted", text)
 
     def test_repeated_source_flags_widen_the_kinds(self):
@@ -75,6 +75,19 @@ class CliTest(unittest.TestCase):
         self.assertEqual(sorted(k for o in plan["options"] if o["sources"] == ["puffshroom"] for k in o["kinds"]), ["beach_shore", "ground"])
         self.assert_error(["plan", "--level", "egypt13", "--want", "kiwifruit@1-1", "--source", "wallnut=50", "--source", "wallnut=75"],
                           "two costs")
+
+    def test_preview_cost_reaches_previews_and_pools(self):
+        # Captured: eleven rank-1 previews with Sunflowers at cost 47 end at 33404, the tenth placing a Draftodil at
+        # 4-3 that shuffles three plant objects; the cost-47 evolution pool has 243 entries.
+        out = json.loads(run("predict", "--previews", "1x11", "--preview-cost", "47", "--json"))
+        self.assertEqual((out["preview_cost"], out["offset_after_previews"]), (47, 33404))
+        self.assertEqual(out["previews"][9]["effects"][0]["objects"], 3)
+        self.assertIn("draftodil at 4-3 shuffles 3 plant objects (2 draws)", run("predict", "--previews", "1x11", "--preview-cost", "47"))
+        self.assertIn("243 candidates", run("pool", "--preview", "evolution", "--cost", "47"))
+        error = io.StringIO()
+        with contextlib.redirect_stderr(error):
+            run("predict", "--level", "dark1", "--activate", "2-2", "--previews", "1", "--plant", "sunflower=47@1-1")
+        self.assertIn("pass --preview-cost", error.getvalue())
 
     def test_pool_listing(self):
         text = run("pool", "--level", "pirate1", "--kind", "pirate_plank", "--cost", "0")

@@ -1,18 +1,25 @@
 {
- "note": "What one preview on the artifact screen does to the shared stream. The display board's candidate lists are reproduced by the stage rule evaluated as beach on a shore-kind cell; the evolution pool is also reproduced with egypt, since the two stages differ only below the cost cut. Cells are COLUMN-ROW on the display board, in processing order.",
+ "note": "The artifact screen's previews are activations on its display board. A preview plants the source on the listed cells, in that order, and activates at the activation cell: the sources are evolved newest first, and at rank 4 the spawn pass then visits the 3x3 around the activation cell, adding a Lily Pad beneath each source and a spawn on each free cell. The board's candidate lists are reproduced by the stage rule evaluated as beach on a shore-kind cell. The source's effective cost is a route input; the declared cost is the default. spawn_max_cost is the rank-4 spawn cost cut, on this board and in a level. Cells are COLUMN-ROW.",
  "board": {"name": "artifact screen display board", "stage": "beach", "kind": "beach_shore", "bans": []},
- "evolution_source_cost": 50,
+ "activation": "4-2",
+ "source": "sunflower",
  "spawn_max_cost": 100,
  "ranks": {
   "1": {
-   "description": "Nine Sunflowers evolved, one shuffle of the evolution pool each",
-   "steps": [{"shuffle": "evolution", "cells": ["5-3", "5-2", "5-1", "4-3", "4-2", "4-1", "3-3", "3-2", "3-1"]}],
-   "measured": [{"game_version": "4.2.2", "capture_sha256": "e9998db6111e3ce4ebd4203f03e2cd5fab439f207627b54ddc53f67f15b1e151", "note": "one preview after a fresh launch, 2,874 outputs"}]
+   "description": "Nine Sunflowers on the 3x3 around 4-2, processed 5-3, 5-2, 5-1, 4-3, 4-2, 4-1, 3-3, 3-2, 3-1",
+   "sources": ["3-1", "3-2", "3-3", "4-1", "4-2", "4-3", "5-1", "5-2", "5-3"],
+   "measured": [
+    {"game_version": "4.2.2", "capture_sha256": "e9998db6111e3ce4ebd4203f03e2cd5fab439f207627b54ddc53f67f15b1e151", "note": "one preview after a fresh launch, source cost 50, 2,874 outputs"},
+    {"game_version": "4.2.2", "capture_sha256": "c1dd6d4bdc303504bb44bcf32bc1a5bd076bce945d9dc94d8341371301b21f55", "note": "previews 10 and 11 of a route at source cost 47, 6,142 outputs from the position the model gave for the nine reported previews before them; a Draftodil placed at 4-3 shuffled the three plant objects of its row inside its add call"}
+   ]
   },
   "4": {
-   "description": "Three Sunflowers evolved, then three water cells that always receive a Lily Pad (a one-entry shuffle consumes nothing), then six spawns from the spawn pool",
-   "steps": [{"shuffle": "evolution", "cells": ["3-3", "3-2", "3-1"]}, {"shuffle": "single", "count": 3, "plant": "lilypad"}, {"shuffle": "spawn", "count": 6}],
-   "measured": [{"game_version": "4.2.2", "capture_sha256": "832ba7992a8c87d586240723274b393b8f3b2bff08ead851fda4cd1a347d6f1a", "note": "two complete previews and the three evolutions of a third, 3,717 outputs, all with this structure; the spawn cells were not recorded"}]
+   "description": "Three Sunflowers in column 3, processed 3-3, 3-2, 3-1; the spawn pass adds a Lily Pad beneath each of them and a spawn on 4-1, 4-2, 4-3, 5-1, 5-2, 5-3",
+   "sources": ["3-1", "3-2", "3-3"],
+   "measured": [
+    {"game_version": "4.2.2", "capture_sha256": "832ba7992a8c87d586240723274b393b8f3b2bff08ead851fda4cd1a347d6f1a", "note": "two complete previews and the three evolutions of a third at source cost 50, 3,717 outputs; the spawn cells were not recorded"},
+    {"game_version": "4.2.2", "capture_sha256": "2e698af9e94086adc0d44ddda1bb7d408f86e592abb33bd35f63041619dd3727", "note": "a fresh-launch route of seven rank-1 and six rank-4 previews at source cost 47, all 30,010 outputs: the pads and spawn cells, the add order (spawns 5-3 to 4-1, pads 3-3 to 3-1, replacements 3-1 to 3-3), and a Draftodil replacing the source at 3-3 that shuffled three plant objects, the pad beneath it not among them"}
+   ]
   }
  }
 }
