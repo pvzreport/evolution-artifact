@@ -1,0 +1,19 @@
+{
+ "id": "arthurs-challenge",
+ "name": "Arthur's Challenge (Dark Ages Endless)",
+ "stage": "dark",
+ "default_kind": "ground",
+ "bans": [
+  "sunflower",
+  "twinsunflower",
+  "sunshroom",
+  "imitater",
+  "birthsunflower",
+  "primalsunflower"
+ ],
+ "notes": "Ground baseline. Set standing gravestones and other blocked cells to none for the activation; use ground after they are removed.",
+ "provenance": {
+  "kind": "capture",
+  "note": "Stage and seed-bank bans checked in game version 4.2.2. Dynamic obstacles are supplied per activation."
+ }
+}

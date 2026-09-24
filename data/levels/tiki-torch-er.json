@@ -1,0 +1,47 @@
+{
+ "id": "tiki-torch-er",
+ "name": "Tiki Torch-er (Big Wave Beach Endless)",
+ "stage": "beach",
+ "default_kind": "ground",
+ "bans": [
+  "sunflower",
+  "twinsunflower",
+  "sunshroom",
+  "imitater",
+  "birthsunflower",
+  "primalsunflower",
+  "rhubarbarian"
+ ],
+ "cells": {
+  "5-1": "beach_water",
+  "6-1": "beach_water",
+  "7-1": "beach_water",
+  "8-1": "beach_water",
+  "9-1": "beach_water",
+  "5-2": "beach_water",
+  "6-2": "beach_water",
+  "7-2": "beach_water",
+  "8-2": "beach_water",
+  "9-2": "beach_water",
+  "5-3": "beach_water",
+  "6-3": "beach_water",
+  "7-3": "beach_water",
+  "8-3": "beach_water",
+  "9-3": "beach_water",
+  "5-4": "beach_water",
+  "6-4": "beach_water",
+  "7-4": "beach_water",
+  "8-4": "beach_water",
+  "9-4": "beach_water",
+  "5-5": "beach_water",
+  "6-5": "beach_water",
+  "7-5": "beach_water",
+  "8-5": "beach_water",
+  "9-5": "beach_water"
+ },
+ "notes": "Columns 1 to 4 are dry ground. Columns 5 to 9 default to flooded cells without Lily Pads. For the activation, use beach_pad wherever a Lily Pad is present and beach_shore wherever the tide has left dry sand.",
+ "provenance": {
+  "kind": "capture",
+  "note": "Stage and seed-bank bans checked in game version 4.2.2. The observed shoreline is between columns 4 and 5; water coverage and Lily Pads can be overridden per activation."
+ }
+}

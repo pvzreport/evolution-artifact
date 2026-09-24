@@ -61,7 +61,7 @@ python3 -m evolution plan --level egypt13 --want eagleclaw@2-1 --source wallnut=
 
 Cells are written COLUMN-ROW, one-based, column first: `3-1` is the third column of the first row. The activation area is the 3x3 around the activation cell, clipped at the board's edges, and the rank-4 pass visits it down each column and then to the right.
 
-A level description gives each cell's usual kind. The kinds are `ground`, `beach_shore` (a Beach cell right of the coast while dry, with no Lily Pad), `beach_pad` (a Lily Pad, bare or carrying an ordinary plant, over water or over dry shore), `beach_water` (a flooded cell with no Lily Pad), `pirate_plank`, and `none` (a cell that cannot hold a plant, such as a standing gravestone or open water beside the planks). The tide and the pads are not stored, so give them per activation: `--plant puffshroom=0@3-1:beach_pad` or `--cell 3-1=beach_water`. A destroyed gravestone is `--cell 3-1=ground`. The `--plant` list holds the sources above any pad; the pad itself is a kind, not a plant.
+A level description gives each cell's usual kind. The kinds are `ground`, `beach_shore` (a Beach cell right of the coast while dry, with no Lily Pad), `beach_pad` (a Lily Pad, bare or carrying an ordinary plant, over water or over dry shore), `beach_water` (a flooded cell with no Lily Pad), `pirate_plank`, and `none` (a cell that cannot hold a plant, such as a standing gravestone or open water beside the planks). These are defaults, so override the tide and pads for the activation: `--plant puffshroom=0@3-1:beach_pad` or `--cell 3-1=beach_water`. A destroyed gravestone is `--cell 3-1=ground`. The `--plant` list holds the sources above any pad; the pad itself is a kind, not a plant.
 
 ## Previews
 
