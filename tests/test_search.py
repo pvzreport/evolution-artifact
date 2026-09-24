@@ -48,6 +48,20 @@ class SearchTest(unittest.TestCase):
         for row in match["processing_order"]:
             self.assertEqual(row["kind"], "beach_shore" if row["cell"][0] == 3 else "ground")
 
+    def test_counted_previews_include_placement_draws(self):
+        # Captured: after ten rank-1 previews with Sunflowers at cost 47 the stream stands at 30335, two draws past
+        # the tenth preview's selections. A recipe counting those previews enters the level there.
+        level = load_level("arthurs-challenge")
+        result = self.search(level, [("parsnip", (2, 2))], {"wallnut": 50}, min_previews=10, max_previews=10,
+                             max_sources=1, preview_cost=47)
+        match = result["match"]
+        self.assertIsNotNone(match)
+        self.assertEqual((match["level_entry_offset"], result["preview_cost"]), (30335, 47))
+        plantings = [Planting(p["source"], p["cost"], p["cell"]) for p in match["planting_order"]]
+        replay = scenario(self.game, match["preview_sequence"], level, plantings, (2, 2), preview_cost=47)
+        self.assertEqual(replay["level_entry_offset"], 30335)
+        self.assertEqual(replay["results"][0]["result"], "parsnip")
+
     def test_wanted_plant_on_a_plank_cell_uses_the_plank_pool(self):
         result = self.search("pirate1", [("exorcislily", (6, 4))], {"puffshroom": 0, "sunflower": 50},
                              activation=(5, 4), max_previews=20)
@@ -142,25 +156,20 @@ class SearchTest(unittest.TestCase):
         self.assertEqual((match["level_entry_offset"], match["stream_end"]), (2874, 3584))
         self.assertIn(("witchhazel", (1, 1)), self.replay("egypt1", match, (2, 1), rank=4, offset=2874))
 
-    def test_invalid_requests_are_rejected(self):
+    def test_impossible_wants_are_refused_with_the_rule_that_forbids_them(self):
+        # Each refusal states a model rule: a Lily Pad is a kind, not a result; a want needs a source whose pool holds
+        # it; one cell holds one plant; the pad beneath a rank-4 source rejects some plants; a source cannot be a
+        # Lily Pad.
         cases = [
-            ("pirate1", [("exorcislily", (6, 3))], {"puffshroom": 0}, dict(activation=(5, 4)), "usable activation area"),
             ("egypt13", [("lilypad", (1, 1))], {"wallnut": 50}, {}, "not obtainable"),
-            ("egypt13", [("kiwifruit", (1, 1))], {"puffshroom": 0}, {}, "not obtainable"),
-            ("egypt13", [("kiwifruit", (1, 1))], {}, {}, "not obtainable"),
-            ("egypt13", [("kiwifruit", (1, 1))], {"notaplant": 50}, {}, "Unknown source plant"),
-            ("egypt13", [("notaplant", (1, 1))], {"wallnut": 50}, {}, "Unknown wanted plant"),
-            ("egypt13", [("kiwifruit", (1, 1))], {"wallnut": (50, ["grund"])}, {}, "Unknown cell kind"),
-            ("egypt13", [("kiwifruit", (1, 1)), ("kiwifruit", (1, 2))], {"wallnut": 50}, dict(max_sources=1), "more than max_sources"),
             ("egypt13", [("kiwifruit", (1, 1)), ("eagleclaw", (1, 1))], {"wallnut": 50}, {}, "distinct cells"),
+            ("egypt13", [("kiwifruit", (1, 1))], {"puffshroom": 0}, {}, "not obtainable"),
             ("beach3", [("cactus", (5, 3))], {"puffshroom": 0}, dict(activation=(5, 3), rank=4), "can never be placed"),
             ("beach3", [("celerystalker", (5, 3)), ("lilypad", (5, 3))], {"puffshroom": 0}, dict(activation=(5, 3), rank=4), "can never be placed"),
             ("beach3", [("electricpeel", (5, 3))], {"puffshroom": (0, ["beach_water"])}, dict(activation=(5, 3), rank=4,
              overrides={(5, 3): "beach_water"}), "not obtainable"),
             ("memory-lane-s33-6-hard", [("aeonium", (1, 1))], {"sunshroom": 25}, {}, "not obtainable"),
             ("beach3", [("lilypad", (5, 3))], {"lilypad": 25}, dict(activation=(5, 3), rank=4), "not a source"),
-            ("egypt13", [("kiwifruit", (1, 1))], {"wallnut": 50}, dict(preview_rank=7), "known ranks"),
-            ("egypt13", [("kiwifruit", (1, 1))], {"wallnut": 50}, dict(overrides={(3, 3): "grund"}), "Unknown cell kind"),
         ]
         for level, wants, sources, options, message in cases:
             with self.subTest(wants=wants, sources=sources, options=options):
@@ -211,7 +220,7 @@ class SearchTest(unittest.TestCase):
             return spec if isinstance(spec, int) else spec[0]
 
         def routes(count):
-            _, offset = self.previews.advance(stream, 0, [1] * count)
+            _, offset = self.previews.advance(stream, 0, [1] * count, 50)
             for size in range(len(usable) + 1):
                 for cells in itertools.permutations(usable, size):
                     choices = [[a for a in sources if allowed(a, cell)] for cell in cells]

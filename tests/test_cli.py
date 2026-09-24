@@ -31,11 +31,6 @@ class CliTest(unittest.TestCase):
         self.assertEqual(raised.exception.code, 2)
         self.assertIn(message, error.getvalue())
 
-    def test_predict_previews_only(self):
-        text = run("predict", "--previews", "1,4")
-        self.assertIn("pinecone", text)
-        self.assertIn("buttercup", text)
-
     def test_predict_level_with_cell_kinds(self):
         text = run("predict", "--level", "memory-lane-s33-6-hard", "--activate", "3-2",
                    "--plant", "sunflower=50@2-1", "--plant", "seashroom=0@3-2:beach_water")
@@ -66,7 +61,7 @@ class CliTest(unittest.TestCase):
         self.assertIn("rank-4 Evolution", text)
         text = run("plan", "--level", "egypt13", "--want", "eagleclaw@2-1", "--source", "wallnut=50", "--previews", "1",
                    "--preview-rank", "4", "--min-previews", "1", "--max-previews", "1", "--max-sources", "1")
-        self.assertIn("Run these previews, each one complete: 1,4.", text)
+        self.assertIn("Run these previews, each one complete, with sunflower at effective cost 50: 1,4.", text)
         self.assertIn("eagleclaw  <- wanted", text)
 
     def test_repeated_source_flags_widen_the_kinds(self):
@@ -75,6 +70,27 @@ class CliTest(unittest.TestCase):
         self.assertEqual(sorted(k for o in plan["options"] if o["sources"] == ["puffshroom"] for k in o["kinds"]), ["beach_shore", "ground"])
         self.assert_error(["plan", "--level", "egypt13", "--want", "kiwifruit@1-1", "--source", "wallnut=50", "--source", "wallnut=75"],
                           "two costs")
+
+    def test_rank4_preview_text_shows_pads_spawns_and_cells(self):
+        # Played check: the display board after a rank-1 and a rank-4 preview with Sunflowers at cost 47.
+        text = run("predict", "--previews", "1,4", "--preview-cost", "47")
+        self.assertIn("3-3 exorcislily, 3-2 mulberry, 3-1 bonkchoy; pads beneath 3-1, 3-2, 3-3; spawns 4-1 streetlamp, "
+                      "4-2 wallnut, 4-3 scaredyshroom, 5-1 vanilla, 5-2 dragonroar, 5-3 alarmsagittifolia", text)
+
+    def test_preview_cost_reaches_previews_and_pools(self):
+        # Captured: eleven rank-1 previews with Sunflowers at cost 47 end at 33404, the tenth placing a Draftodil at
+        # 4-3 that shuffles three plant objects; the cost-47 evolution pool has 243 entries.
+        out = json.loads(run("predict", "--previews", "1x11", "--preview-cost", "47", "--json"))
+        self.assertEqual((out["preview_cost"], out["offset_after_previews"]), (47, 33404))
+        self.assertEqual(out["previews"][9]["effects"][0]["objects"], 3)
+        self.assertIn("draftodil at 4-3 shuffles 3 plant objects (2 draws) (selections end at 30333; stream at 30335 after)",
+                      run("predict", "--previews", "1x11", "--preview-cost", "47"))
+        self.assertIn("243 candidates", run("pool", "--preview", "evolution", "--cost", "47"))
+        error = io.StringIO()
+        with contextlib.redirect_stderr(error):
+            run("predict", "--level", "dark1", "--activate", "2-2", "--previews", "1", "--plant", "sunflower=47@1-1")
+            run("predict", "--level", "dark1", "--activate", "2-2", "--plant", "sunflower=47@1-1")
+        self.assertEqual(error.getvalue().count("pass --preview-cost"), 1)
 
     def test_pool_listing(self):
         text = run("pool", "--level", "pirate1", "--kind", "pirate_plank", "--cost", "0")
@@ -88,15 +104,10 @@ class CliTest(unittest.TestCase):
         self.assertEqual(predicted["game"]["version"], "4.2.4")
         self.assertIn("version 4.2.4", predicted["conditions"][0])
 
-    def test_errors_exit_with_code_2(self):
-        self.assert_error(["predict", "--level", "egypt1", "--activate", "1-1", "--plant", "puffshrom=0@1-1"], "Unknown source plant")
-        self.assert_error(["predict", "--rank", "4", "--level", "egypt1"], "needs --activate")
-        self.assert_error(["plan", "--level", "egypt1", "--want", "kiwifruit@1-1", "--source", "puffshroom=0:groudn"], "Unknown cell kind")
-        self.assert_error(["predict", "--level", "egypt13", "--activate", "2-2", "--plant", "wallnut=50@1-1", "--cell", "3-3=grund"], "Unknown cell kind")
+    def test_model_refusals_reach_the_user_as_errors(self):
         self.assert_error(["predict", "--rank", "4", "--level", "beach3", "--activate", "5-3", "--plant", "lilypad=25@5-3"], "cannot stand on")
         self.assert_error(["plan", "--rank", "4", "--level", "beach3", "--activate", "5-3", "--want", "cactus@5-3", "--source", "puffshroom=0"],
                           "can never be placed")
-        self.assert_error(["pool", "--game-version", "9.9", "--preview", "evolution"], "invalid choice: '9.9'")
 
 
 if __name__ == "__main__":

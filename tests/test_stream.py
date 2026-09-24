@@ -5,7 +5,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from evolution.shuffle import Mt19937, random_shuffle
-from evolution.stream import Stream, shared
+from evolution.stream import Stream
 
 
 class StreamTest(unittest.TestCase):
@@ -26,11 +26,6 @@ class StreamTest(unittest.TestCase):
                 expected = random_shuffle(pool, engine)
                 result, end = stream.shuffle(pool, offset)
                 self.assertEqual((result, end), (expected, engine.draws), (offset, size))
-
-    def test_shared_stream_is_one_object_per_seed(self):
-        self.assertIs(shared(), shared())
-        self.assertIsNot(shared(), shared(1))
-        self.assertEqual(shared().output(0), 3499211612)
 
 
 if __name__ == "__main__":
