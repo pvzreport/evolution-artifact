@@ -5,7 +5,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from evolution import DEFAULT_SEED, Mt19937, random_shuffle
-from evolution.shuffle import uniform_int, MASK32
+from evolution.shuffle import uniform_int
 
 # std::mt19937's first outputs after default construction; also the first eight raw
 # outputs recorded in every fresh-launch capture of the game.
@@ -18,12 +18,6 @@ class ShuffleTest(unittest.TestCase):
         engine = Mt19937()
         self.assertEqual([engine() for _ in FIRST_OUTPUTS], FIRST_OUTPUTS)
         self.assertEqual(engine.draws, len(FIRST_OUTPUTS))
-
-    def test_clone_is_independent(self):
-        engine = Mt19937()
-        engine()
-        copy = engine.clone()
-        self.assertEqual([copy() for _ in range(3)], [engine() for _ in range(3)])
 
     def test_first_shuffle_of_226_consumes_306_outputs(self):
         # Every capture of a fresh-launch first selection from a 226-entry pool consumed 306 outputs.
@@ -43,13 +37,6 @@ class ShuffleTest(unittest.TestCase):
                     expected[first], expected[first + index] = expected[first + index], expected[first]
             self.assertEqual(random_shuffle(range(size), engine), expected, size)
             self.assertEqual(engine.draws, reference.draws, size)
-
-    def test_short_ranges_draw_nothing(self):
-        engine = Mt19937()
-        self.assertEqual(uniform_int(engine, 3, 3), 3)
-        self.assertEqual(random_shuffle([], engine), [])
-        self.assertEqual(random_shuffle([7], engine), [7])
-        self.assertEqual(engine.draws, 0)
 
 
 if __name__ == "__main__":

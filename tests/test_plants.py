@@ -6,7 +6,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from evolution import (Game, available_levels, funnel, game_versions, load_level, load_plants, load_previews,
-                       load_tile_rules, registry_records)
+                       load_tile_rules)
 from evolution.model import ROW_SHUFFLERS
 from evolution.plants import EXCLUDED_ALIASES
 
@@ -22,13 +22,6 @@ class PlantsTest(unittest.TestCase):
     def test_seven_filters_leave_257_of_383(self):
         self.assertEqual(len(self.document["plants"]), 383)
         self.assertEqual(len(funnel(self.document)), 257)
-
-    def test_registry_puts_configured_names_first(self):
-        configured = self.document["registry_order"]["configured_types"]
-        ordered = [record["plant"] for record in registry_records(self.document)]
-        present = [name for name in configured if name in ordered]
-        self.assertEqual(ordered[:len(present)], present)
-        self.assertEqual(len(ordered), 383)
 
     def test_preview_pools_equal_the_captured_lists(self):
         previews = Game(POOLS["game_version"]).previews

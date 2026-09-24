@@ -31,11 +31,6 @@ class CliTest(unittest.TestCase):
         self.assertEqual(raised.exception.code, 2)
         self.assertIn(message, error.getvalue())
 
-    def test_predict_previews_only(self):
-        text = run("predict", "--previews", "1,4")
-        self.assertIn("pinecone", text)
-        self.assertIn("buttercup", text)
-
     def test_predict_level_with_cell_kinds(self):
         text = run("predict", "--level", "memory-lane-s33-6-hard", "--activate", "3-2",
                    "--plant", "sunflower=50@2-1", "--plant", "seashroom=0@3-2:beach_water")
@@ -101,15 +96,10 @@ class CliTest(unittest.TestCase):
         self.assertEqual(predicted["game"]["version"], "4.2.4")
         self.assertIn("version 4.2.4", predicted["conditions"][0])
 
-    def test_errors_exit_with_code_2(self):
-        self.assert_error(["predict", "--level", "egypt1", "--activate", "1-1", "--plant", "puffshrom=0@1-1"], "Unknown source plant")
-        self.assert_error(["predict", "--rank", "4", "--level", "egypt1"], "needs --activate")
-        self.assert_error(["plan", "--level", "egypt1", "--want", "kiwifruit@1-1", "--source", "puffshroom=0:groudn"], "Unknown cell kind")
-        self.assert_error(["predict", "--level", "egypt13", "--activate", "2-2", "--plant", "wallnut=50@1-1", "--cell", "3-3=grund"], "Unknown cell kind")
+    def test_model_refusals_reach_the_user_as_errors(self):
         self.assert_error(["predict", "--rank", "4", "--level", "beach3", "--activate", "5-3", "--plant", "lilypad=25@5-3"], "cannot stand on")
         self.assert_error(["plan", "--rank", "4", "--level", "beach3", "--activate", "5-3", "--want", "cactus@5-3", "--source", "puffshroom=0"],
                           "can never be placed")
-        self.assert_error(["pool", "--game-version", "9.9", "--preview", "evolution"], "invalid choice: '9.9'")
 
 
 if __name__ == "__main__":

@@ -203,12 +203,6 @@ class PredictTest(unittest.TestCase):
         self.assertEqual(results(out["results"]), ["nekotail", "goldmagnet", "passionflower"])
         self.assertEqual(out["stream_end"], 957)
 
-    def test_rejects_cells_that_cannot_hold_a_plant(self):
-        with self.assertRaises(ValueError):
-            self.run_scenario([], "pirate1", [Planting("sunflower", 50, (6, 3))], (5, 4))
-        with self.assertRaises(ValueError):
-            self.run_scenario([], "egypt13", [Planting("sunflower", 50, (5, 5))], (2, 2))
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -27,14 +27,6 @@ class Mt19937:
         self.index = 624
         self.draws = 0
 
-    def clone(self):
-        """An independent engine at this exact position."""
-        copy = Mt19937.__new__(Mt19937)
-        copy.state = list(self.state)
-        copy.index = self.index
-        copy.draws = self.draws
-        return copy
-
     def __call__(self):
         if self.index >= 624:
             for index in range(624):
