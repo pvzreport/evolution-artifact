@@ -9,21 +9,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from evolution.cli import main
 
-CAPTURED_ON = "4.2.2"  # the version whose captures fix the results asserted below
-
 
 def run(*argv):
-    """A command, with the plant data of CAPTURED_ON unless argv names a game version."""
-    argv = list(argv)
-    if "--game-version" not in argv:
-        argv[1:1] = ["--game-version", CAPTURED_ON]
+    """What a command prints."""
     out = io.StringIO()
     with contextlib.redirect_stdout(out):
-        main(argv)
+        main(list(argv))
     return out.getvalue()
 
 
 class CliTest(unittest.TestCase):
+    """The commands run on the bundled plant data, of game version 4.2.4. An expectation was read from the game only
+    where its comment says so; the others are the model's values on that data, which the command must print."""
+
     def assert_error(self, argv, message):
         error = io.StringIO()
         with contextlib.redirect_stderr(error), self.assertRaises(SystemExit) as raised:
@@ -34,14 +32,14 @@ class CliTest(unittest.TestCase):
     def test_predict_level_with_cell_kinds(self):
         text = run("predict", "--level", "memory-lane-s33-6-hard", "--activate", "3-2",
                    "--plant", "sunflower=50@2-1", "--plant", "seashroom=0@3-2:beach_water")
-        self.assertIn("beach_water", text)
-        self.assertIn("17 candidates", text)
+        self.assertIn("(beach_water, 19 candidates)", text)
 
     def test_predict_rank4_shows_blocked_placements(self):
-        text = run("predict", "--rank", "4", "--level", "beach3", "--previews", "1x11", "--activate", "5-3",
+        # After thirteen previews the Sunflower at 4-2 evolves into a Snap Pea, which the Lily Pad added beneath it rejects.
+        text = run("predict", "--rank", "4", "--level", "beach3", "--previews", "1x13", "--activate", "5-3",
                    "--plant", "puffshroom=0@5-3", "--plant", "sunflower=50@6-4", "--plant", "sunflower=50@4-2")
-        self.assertIn("cactus (placement blocked)", text)
-        self.assertIn("Selection stream ends at 32923.", text)
+        self.assertIn("4-2 sunflower, cost 50 (beach_shore, 226 candidates) -> snappea (placement blocked)", text)
+        self.assertIn("Selection stream ends at 38734.", text)
 
     def test_plan_recipe_replays_through_predict(self):
         plan = json.loads(run("plan", "--rank", "4", "--level", "egypt13", "--want", "kiwifruit@2-1",
@@ -73,20 +71,20 @@ class CliTest(unittest.TestCase):
                           "two costs")
 
     def test_rank4_preview_text_shows_pads_spawns_and_cells(self):
-        # Played check: the display board after a rank-1 and a rank-4 preview with Sunflowers at cost 47.
+        # Captured on 4.2.4: a rank-1 and a rank-4 preview with Sunflowers at cost 47 end at 4643.
         text = run("predict", "--previews", "1,4", "--preview-cost", "47")
-        self.assertIn("3-3 exorcislily, 3-2 mulberry, 3-1 bonkchoy; pads beneath 3-1, 3-2, 3-3; spawns 4-1 streetlamp, "
-                      "4-2 wallnut, 4-3 scaredyshroom, 5-1 vanilla, 5-2 dragonroar, 5-3 alarmsagittifolia", text)
+        self.assertIn("3-3 deodarcedar, 3-2 beercoconut, 3-1 dmdragonfruit; pads beneath 3-1, 3-2, 3-3; spawns 4-1 cthulhuactinia, "
+                      "4-2 bramble, 4-3 scaredyshroom, 5-1 streetlamp, 5-2 moonflower, 5-3 aloes (stream at 4643 after)", text)
 
     def test_preview_cost_reaches_previews_and_pools(self):
-        # Captured: eleven rank-1 previews with Sunflowers at cost 47 end at 33404, the tenth placing a Draftodil at
-        # 4-3 that shuffles three plant objects; the cost-47 evolution pool has 243 entries.
-        out = json.loads(run("predict", "--previews", "1x11", "--preview-cost", "47", "--json"))
-        self.assertEqual((out["preview_cost"], out["offset_after_previews"]), (47, 33404))
-        self.assertEqual(out["previews"][9]["effects"][0]["objects"], 3)
-        self.assertIn("draftodil at 4-3 shuffles 3 plant objects (2 draws) (selections end at 30333; stream at 30335 after)",
-                      run("predict", "--previews", "1x11", "--preview-cost", "47"))
-        self.assertIn("243 candidates", run("pool", "--preview", "evolution", "--cost", "47"))
+        # Captured on 4.2.4: three rank-1 previews with Sunflowers at cost 47 end at 3135, 6140 and 9152.
+        out = json.loads(run("predict", "--previews", "1x3", "--preview-cost", "47", "--json"))
+        self.assertEqual((out["preview_cost"], [p["end"] for p in out["previews"]]), (47, [3135, 6140, 9152]))
+        # After five rank-1 previews, a rank-4 preview spawns a Draftodil at 4-3 whose row shuffle of three plant objects
+        # rejects one value.
+        self.assertIn("draftodil at 4-3 shuffles 3 plant objects (3 draws) (selections end at 16738; stream at 16741 after)",
+                      run("predict", "--previews", "1x5,4", "--preview-cost", "47"))
+        self.assertIn("244 candidates", run("pool", "--preview", "evolution", "--cost", "47"))
         error = io.StringIO()
         with contextlib.redirect_stderr(error):
             run("predict", "--level", "dark1", "--activate", "2-2", "--previews", "1", "--plant", "sunflower=47@1-1")
@@ -95,30 +93,22 @@ class CliTest(unittest.TestCase):
 
     def test_pool_listing(self):
         text = run("pool", "--level", "pirate1", "--kind", "pirate_plank", "--cost", "0")
-        self.assertIn("242 candidates", text)
-
-    def test_game_version_selects_the_plant_data(self):
-        text = run("pool", "--game-version", "4.2.4", "--preview", "evolution")
-        self.assertIn("game 4.2.4: 227 candidates", text)
-        self.assertTrue(text.rstrip().endswith("226  nagasalak"))
-        predicted = json.loads(run("predict", "--game-version", "4.2.4", "--previews", "1", "--json"))
-        self.assertEqual(predicted["game"]["version"], "4.2.4")
-        self.assertIn("version 4.2.4", predicted["conditions"][0])
+        self.assertIn("245 candidates", text)
 
     def test_level_entry_shuffles_reach_the_output(self):
         # Captured on 4.2.4: Dark Ages 21 shuffles three bags of ten at entry, 42 draws from a fresh launch.
-        text = run("predict", "--game-version", "4.2.4", "--rank", "4", "--level", "dark21", "--activate", "2-2")
+        text = run("predict", "--rank", "4", "--level", "dark21", "--activate", "2-2")
         self.assertIn("Entering the level shuffles gravestone bags of 10, 10, 10 objects (42 draws); "
                       "the activation starts at offset 42.", text)
         self.assertIn("Selection stream ends at 663.", text)
         self.assertIn("Entering the level draws nothing; the activation starts at offset 0.",
                       run("predict", "--rank", "4", "--level", "egypt13", "--activate", "2-2"))
-        plan = json.loads(run("plan", "--game-version", "4.2.4", "--rank", "4", "--level", "dark21", "--want", "groundcherry@1-1",
+        plan = json.loads(run("plan", "--rank", "4", "--level", "dark21", "--want", "groundcherry@1-1",
                               "--max-sources", "0", "--max-previews", "0", "--json"))
         self.assertEqual((plan["match"]["level_entry_offset"], plan["match"]["activation_offset"]), (0, 42))
         self.assertEqual([s["objects"] for s in plan["match"]["entry_effects"]], [10, 10, 10])
-        self.assertIn("the activation starts at 42", run("plan", "--game-version", "4.2.4", "--rank", "4", "--level", "dark21",
-                                                         "--want", "groundcherry@1-1", "--max-sources", "0", "--max-previews", "0"))
+        self.assertIn("the activation starts at 42", run("plan", "--rank", "4", "--level", "dark21", "--want", "groundcherry@1-1",
+                                                         "--max-sources", "0", "--max-previews", "0"))
 
     def test_model_refusals_reach_the_user_as_errors(self):
         self.assert_error(["predict", "--rank", "4", "--level", "beach3", "--activate", "5-3", "--plant", "lilypad=25@5-3"], "cannot stand on")

@@ -1,5 +1,5 @@
 {
- "note": "What a cell's planting checks reject, beyond the stage rule and the level's bans. Each kind was read from a debugger capture of the game's candidate lists; the capture is identified by the SHA-256 of its record and the game version it was taken on. The kinds are shared by every version of the plant data. The flooded kind admits by the declared CanLiveOnWaves flag instead of a stored list; the capture confirmed that flag. Intensive Carrot and Cob Cannon are rejected on every ordinary cell because their checks need board conditions no fresh planting meets (a revival record, two adjacent Kernel-pults).",
+ "note": "What a cell's planting checks reject, beyond the stage rule and the level's bans. Each kind was read from a debugger capture of the game's candidate lists; the capture is identified by the SHA-256 of its record and the game version it was taken on. The kinds are not tied to a version of the plant data. The flooded kind admits by the declared CanLiveOnWaves flag instead of a stored list; the capture confirmed that flag. Intensive Carrot and Cob Cannon are rejected on every ordinary cell because their checks need board conditions no fresh planting meets (a revival record, two adjacent Kernel-pults).",
  "kinds": {
   "ground": {
    "description": "Ordinary ground: Egypt, Dark Ages, Beach left of the coast, Pirate deck",

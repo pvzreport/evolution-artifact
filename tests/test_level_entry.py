@@ -4,8 +4,10 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from evolution import Game, Planting, Stream, enter_level, load_level, placement_draws, scenario
+from evolution import Planting, Stream, enter_level, load_level, placement_draws, scenario
+from projections import game_on
 
 CAPTURED_ON = "4.2.4"
 
@@ -23,7 +25,7 @@ class LevelEntryTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.game = Game(CAPTURED_ON)
+        cls.game = game_on(CAPTURED_ON)
 
     def test_entry_bags_consume_the_recorded_outputs(self):
         # Dark Ages 21 (bags 10, 10, 10) drew 42 outputs from offset 0; Dark Ages 19 (bags 3, 6, 3) drew 10 from 0 and
@@ -42,7 +44,7 @@ class LevelEntryTest(unittest.TestCase):
         # Captured on 4.2.2: in one process, a Pirate Seas 2 activation ended at 5269 and the next capture, in Dark Ages 4,
         # began at 5279 with ten unrecorded outputs between them. Entering Dark Ages 4 at 5269 draws exactly those ten,
         # and only the declared bag order does; the four spawns then replay to 5569.
-        out = scenario(Game("4.2.2"), [], load_level("dark4"), [], (9, 3), offset=5269, rank=4)
+        out = scenario(game_on("4.2.2"), [], load_level("dark4"), [], (9, 3), offset=5269, rank=4)
         self.assertEqual((out["level_entry_offset"], out["activation_offset"], out["stream_end"]), (5269, 5279, 5569))
         self.assertEqual([row["result"] for row in out["results"]], ["levitater", "burdockbatter", "icelotus", "marigold"])
 

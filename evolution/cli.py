@@ -1,4 +1,4 @@
-"""Command line: predict a stated scenario, plan a recipe, list a pool, build a version's plant data.
+"""Command line: predict a stated scenario, plan a recipe, list a pool, build the plant data.
 
   python3 -m evolution predict --previews 1,4
   python3 -m evolution predict --level memory-lane-s33-6-hard --previews 1x6 --activate 2-2 \\
@@ -9,23 +9,25 @@
   python3 -m evolution plan --rank 4 --level egypt13 --want kiwifruit@2-1 --want primalwallnut@3-3 --source wallnut=50
   python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --done 1x2 --style shorter
   python3 -m evolution pool --level pirate1 --kind pirate_plank --cost 0
-  python3 -m evolution pool --game-version 4.2.2 --preview evolution --cost 47
+  python3 -m evolution pool --preview evolution --cost 47
 """
 
 import argparse
 import json
 from pathlib import Path
+import re
 import sys
 
 from .build import build_plants
 from .game import Game
 from .level import format_cell, load_level, parse_cell
 from .model import Planting, scenario
-from .plants import PLANTS, VERSION, game_versions
+from .plants import PLANTS
 from .previews import parse_sequence
 from .search import STYLES, search_recipe
 
 PLATFORMS = ("iOS", "Android")
+VERSION = re.compile(r"\d+(\.\d+)+")
 
 
 def parse_planting(text):
@@ -86,7 +88,7 @@ def parse_override(text):
 
 
 def parse_version(text):
-    """A game version such as 4.2.4, which also names the plant file."""
+    """A game version such as 4.2.4."""
     if not VERSION.fullmatch(text):
         raise argparse.ArgumentTypeError("A game version is numbers separated by dots, for example 4.2.4")
     return text
@@ -169,7 +171,7 @@ def _describe_row(row):
 
 
 def cmd_predict(args):
-    game = Game(args.game_version)
+    game = Game()
     sequence = parse_sequence(args.previews)
     level = load_level(args.level) if args.level else None
     activation = parse_cell(args.activate) if args.activate else None
@@ -223,7 +225,7 @@ def _switches(style):
 
 
 def cmd_plan(args):
-    game = Game(args.game_version)
+    game = Game()
     level = load_level(args.level)
     sources = merge_sources(args.source)
     done = parse_sequence(args.done)
@@ -288,7 +290,7 @@ def cmd_plan(args):
 
 
 def cmd_pool(args):
-    game = Game(args.game_version)
+    game = Game()
     if args.cost is not None and args.cost < 0:
         raise ValueError("The source cost cannot be negative")
     if args.preview == "spawn":
@@ -309,10 +311,9 @@ def cmd_pool(args):
 
 def cmd_build_plants(args):
     document = build_plants(args.planttypes, args.propertysheets, args.artifact, args.game_version, args.platform)
-    output = PLANTS / (args.game_version + ".json")
-    output.write_text(json.dumps(document, indent=1, ensure_ascii=False) + "\n")
+    PLANTS.write_text(json.dumps(document, indent=1, ensure_ascii=False) + "\n")
     print("Wrote %s: game %s (%s), %d plant types, %d configured registry names, %d black-listed plants." % (
-        output, args.game_version, args.platform, len(document["plants"]),
+        PLANTS, args.game_version, args.platform, len(document["plants"]),
         len(document["registry_order"]["configured_types"] or ()), len(document["artifact"]["plant_black_list"])))
 
 
@@ -320,11 +321,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(prog="python3 -m evolution", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest="command", required=True)
-    data = argparse.ArgumentParser(add_help=False)
-    data.add_argument("--game-version", choices=game_versions(),
-                      help="Game version whose plant data to use (default: the newest)")
 
-    predict = commands.add_parser("predict", parents=[data], help="Replay a stated scenario and print what the game shows")
+    predict = commands.add_parser("predict", help="Replay a stated scenario and print what the game shows")
     predict.add_argument("--previews", default="", help="Preview ranks in order, for example 1x6 or 1,4 (default: none)")
     predict.add_argument("--preview-cost", type=int, metavar="COST",
                          help="Effective cost of the previews' Sunflowers (default: the declared cost)")
@@ -341,7 +339,7 @@ def main(argv=None):
     predict.add_argument("--json", action="store_true")
     predict.set_defaults(run=cmd_predict)
 
-    plan = commands.add_parser("plan", parents=[data], help="Find previews and a planting order that put wanted plants on wanted cells")
+    plan = commands.add_parser("plan", help="Find previews and a planting order that put wanted plants on wanted cells")
     plan.add_argument("--level", required=True, help="Level id from data/levels, or a path to a description")
     plan.add_argument("--rank", type=int, choices=(1, 4), default=1, help="Artifact rank of the activation (default: 1)")
     plan.add_argument("--want", type=parse_want, action="append", required=True, metavar="PLANT@CELL")
@@ -363,7 +361,7 @@ def main(argv=None):
     plan.add_argument("--json", action="store_true")
     plan.set_defaults(run=cmd_plan)
 
-    pool = commands.add_parser("pool", parents=[data], help="Print an ordered candidate pool")
+    pool = commands.add_parser("pool", help="Print an ordered candidate pool")
     pool.add_argument("--level", help="Level id or path")
     pool.add_argument("--kind", default="ground")
     pool.add_argument("--cost", type=int, help="Effective source cost: default 0 for a level pool, the declared cost for the "
@@ -371,7 +369,7 @@ def main(argv=None):
     pool.add_argument("--preview", choices=("evolution", "spawn"), help="A preview pool instead of a level pool")
     pool.set_defaults(run=cmd_pool)
 
-    build = commands.add_parser("build-plants", help="Build one game version's plant data from decoded game files into data/plants")
+    build = commands.add_parser("build-plants", help="Build the plant data from decoded game files, replacing data/plants.json")
     build.add_argument("planttypes", type=Path)
     build.add_argument("propertysheets", type=Path)
     build.add_argument("artifact", type=Path)

@@ -298,7 +298,7 @@ def placement_draws(rows, population, stream, offset):
 def scenario(game, sequence=(), level=None, plantings=(), activation=None, overrides=None, offset=0, rank=1,
              stream=None, preview_cost=None):
     """Replay previews, optional extra raw outputs, then an optional level entry and activation, from a
-    fresh process, under one game version's data. `preview_cost` is the previews' effective source cost;
+    fresh process, with the plant data of `game`. `preview_cost` is the previews' effective source cost;
     the default is the source's declared cost."""
     if offset < 0:
         raise ValueError("The extra offset cannot be negative")

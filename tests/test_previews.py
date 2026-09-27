@@ -4,8 +4,10 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from evolution import Game, scenario
+from evolution import scenario
+from projections import game_on
 
 FIXTURE = json.loads((Path(__file__).parent / "fixtures/preview-captures.json").read_text())
 
@@ -17,7 +19,7 @@ class PreviewCaptureTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.game = Game(FIXTURE["game_version"])
+        cls.game = game_on(FIXTURE["game_version"])
 
     def test_captured_previews_replay(self):
         keys = ("action", "result", "candidates", "start", "end", "placed")

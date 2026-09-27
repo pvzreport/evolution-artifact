@@ -25,12 +25,13 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from evolution import Board, Game, load_level, parse_cell, search_recipe
+from evolution import Board, load_level, parse_cell, search_recipe
 from evolution.level import LILYPAD
 from evolution.model import check_board, enter_level, place, select, selection_row
 from evolution.search import _check_wants, _options, _spawnable
 from evolution.stream import shared
 from evolution.tiles import NONE
+from projections import game_on
 
 FIXTURE = Path(__file__).parent / "fixtures" / "search-equality.json"
 ROW_KEYS = ("action", "cell", "kind", "source", "cost", "candidates", "result", "runners_up", "start", "end", "placed",
@@ -257,7 +258,7 @@ _GAMES = {}
 
 def _game(version):
     if version not in _GAMES:
-        _GAMES[version] = Game(version)
+        _GAMES[version] = game_on(version)
     return _GAMES[version]
 
 

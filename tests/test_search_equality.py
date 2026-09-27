@@ -6,7 +6,8 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from evolution import Game, load_level, search_recipe
+from evolution import load_level, search_recipe
+from projections import game_on
 from reference_search import FIXTURE, case_request, digest, reference_rows
 
 # Requests whose reference search takes milliseconds per entry: one or two options.
@@ -27,7 +28,7 @@ class SearchEqualityTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.fixture = json.loads(FIXTURE.read_text())
-        cls.game = Game(cls.fixture["game_version"])
+        cls.game = game_on(cls.fixture["game_version"])
 
     def test_recipes_equal_the_reference(self):
         for case in self.fixture["cases"]:

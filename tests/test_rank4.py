@@ -5,10 +5,12 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from collections import Counter
 
-from evolution import Board, Game, Planting, Stream, activate, load_level, parse_cell, placement_draws, scenario
+from evolution import Board, Planting, Stream, activate, load_level, parse_cell, placement_draws, scenario
+from projections import game_on
 
 FIXTURES = Path(__file__).parent / "fixtures"
 CAPTURES = [json.loads((FIXTURES / name).read_text()) for name in ("rank4-captures.json", "rank4-followups.json")]
@@ -22,7 +24,7 @@ class Rank4Test(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        games = {version: Game(version) for version in {fixture["game_version"] for fixture in CAPTURES}}
+        games = {version: game_on(version) for version in {fixture["game_version"] for fixture in CAPTURES}}
         cls.cases = [(games[fixture["game_version"]], case) for fixture in CAPTURES for case in fixture["cases"]]
 
     def test_captured_selections_and_placement_calls(self):

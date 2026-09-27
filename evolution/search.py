@@ -57,7 +57,7 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
                   max_previews=100, offset=0, max_sources=9, max_states=MAX_STATES, stream=None, preview_cost=None):
     """The shortest preview route of `style` continuing the `done` previews, with the recipe that places every want.
 
-    game: the game version whose data the recipe is for. wants: list of (plant, cell). sources:
+    game: the Game whose plant data the recipe is for. wants: list of (plant, cell). sources:
     {alias: cost} or {alias: (cost, [kinds])} when a source may only be planted on cells of those
     kinds. overrides: {cell: kind} for this activation. done: the ranks of the previews already run
     since a full restart, in order. style: "simple" (at most one rank switch), "shorter" (at most
