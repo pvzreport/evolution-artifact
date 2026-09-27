@@ -62,7 +62,6 @@
  "notes": "Columns 1 to 2 never flood. Columns 3 to 9 are shore cells when dry; the tide is a scheduled level event. For a flooded cell give beach_water (no pad) or beach_pad (plant on a Lily Pad) for that activation. The shore column is observed.",
  "provenance": {
   "kind": "declared",
-  "exporter": "tools/export_level.py",
   "resources": [
    {
     "path": "PACKAGES/LEVELS/PVZ1_S33_6_H.json",

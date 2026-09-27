@@ -30,7 +30,6 @@
  "notes": "Deck columns 1 to 5. Planks on rows 1, 2, 3, 4 from column 6; other rows are open water there. The plank rows are declared; the deck edge is observed.",
  "provenance": {
   "kind": "declared",
-  "exporter": "tools/export_level.py",
   "resources": [
    {
     "path": "PACKAGES/LEVELS/PIRATE2.json",

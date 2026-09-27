@@ -15,7 +15,6 @@
  "notes": "Gravestones declared at level start on 6-2, 7-1, 7-5, 8-1, 8-4 hold no plant while they stand; give ground for that activation once one has been destroyed.",
  "provenance": {
   "kind": "declared",
-  "exporter": "tools/export_level.py",
   "resources": [
    {
     "path": "PACKAGES/LEVELS/EGYPT5.json",
