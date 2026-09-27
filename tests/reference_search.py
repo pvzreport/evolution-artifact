@@ -2,23 +2,30 @@
 
 At one activation start it walks every sequence of pool options breadth first, fewest sources
 first, and returns the first sequence it accepts. It is the package's search as it stood with an
-unlimited budget: the same options, capacity rule and acceptance, with no memo on shuffles and no
-merging, so its first accepted sequence is the recipe by definition. It is too slow for routine
-use; tests/fixtures/search-equality.json holds its recipes at fixed entry positions.
+unlimited budget: the same options, the same capacity check per option and the same acceptance,
+with no merging, so its first accepted sequence is the recipe by definition. Its shuffles go
+through a memo keyed by pool and offset, which changes no result because a shuffle is a pure
+function of both; without it the reference is several times slower.
 
-    python3 tests/reference_search.py            recompute every recipe in the fixture
-    python3 tests/reference_search.py --check    recompute them and report any that differ
+tests/fixtures/search-equality.json lists the requests and holds the reference's recipes at level
+entries drawn for each of them, as its note describes.
+
+    python3 tests/reference_search.py generate   draw the entries of every request and record the reference's recipes,
+                                                 comparing the package's search at every draw
+    python3 tests/reference_search.py check      recompute every recorded recipe and report any that differ
 """
 
 from collections import Counter
 import hashlib
 import json
 from pathlib import Path
+import random
 import sys
+import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from evolution import Board, Game, load_level, parse_cell
+from evolution import Board, Game, load_level, parse_cell, search_recipe
 from evolution.level import LILYPAD
 from evolution.model import check_board, enter_level, place, select, selection_row
 from evolution.search import _check_wants, _options, _spawnable
@@ -28,6 +35,7 @@ from evolution.tiles import NONE
 FIXTURE = Path(__file__).parent / "fixtures" / "search-equality.json"
 ROW_KEYS = ("action", "cell", "kind", "source", "cost", "candidates", "result", "runners_up", "start", "end", "placed",
             "beneath", "sources", "wanted")
+DRAWN_BELOW = 1000000
 
 
 def case_request(case):
@@ -40,6 +48,12 @@ def case_request(case):
     overrides = {parse_cell(cell): kind for cell, kind in case.get("cells", {}).items()}
     return (case["level"], parse_cell(case["activation"]), wants, sources, case["rank"], overrides or None,
             case["max_sources"])
+
+
+def draws(case):
+    """The level-entry positions drawn for a case, in order."""
+    rng = random.Random(case["name"])
+    return [rng.randrange(DRAWN_BELOW) for _ in range(case["draws"])]
 
 
 def digest(rows):
@@ -63,10 +77,24 @@ def reference_rows(game, case, entry):
     options, _ = _options(pools, sources, kind_of, usable, rank)
     spawnable = _spawnable(wants, pools, kind_of, rank)
     required = Counter(plant for (plant, cell), ok in spawnable.items() if not ok)
-    stream = shared()
+    stream = MemoStream(shared())
     _, start = enter_level(level, stream, entry)
     search = ReferenceSearch(stream, pools, board, kind_of, usable, options, wants, required, spawnable, rank)
     return search.run(start, min(max_sources, len(usable)))
+
+
+class MemoStream:
+    """A stream whose shuffles are memoised by pool and offset. The shuffled lists are shared, and nothing mutates them."""
+
+    def __init__(self, stream):
+        self.stream, self.memo = stream, {}
+
+    def shuffle(self, values, offset):
+        key = (id(values), offset)
+        hit = self.memo.get(key)
+        if hit is None or hit[0] is not values:
+            hit = self.memo[key] = (values,) + tuple(self.stream.shuffle(values, offset))
+        return hit[1], hit[2]
 
 
 class ReferenceSearch:
@@ -227,36 +255,83 @@ class ReferenceSearch:
 _GAMES = {}
 
 
-def _expectation(job):
-    version, case, entry = job
+def _game(version):
     if version not in _GAMES:
         _GAMES[version] = Game(version)
-    rows = reference_rows(_GAMES[version], case, entry)
-    return [entry, None if rows is None else sum(1 for row in rows if row["action"] == "evolve"), digest(rows)]
+    return _GAMES[version]
 
 
-def main(argv=None):
+def _entry(rows):
+    """What the fixture records of a recipe: its number of sources and its hash, or two nulls."""
+    return [None if rows is None else sum(1 for row in rows if row["action"] == "evolve"), digest(rows)]
+
+
+def _reference(job):
+    """The reference's recipe at one entry, and with `compare` whether the package's search returns the same one."""
+    version, case, entry, compare = job
+    game = _game(version)
+    began = time.perf_counter()
+    expected = _entry(reference_rows(game, case, entry))
+    seconds = time.perf_counter() - began
+    same = None
+    if compare:
+        level_id, activation, wants, sources, rank, overrides, max_sources = case_request(case)
+        match = search_recipe(game, load_level(level_id), wants, sources, activation, overrides=overrides, rank=rank,
+                              max_previews=0, offset=entry, max_sources=max_sources)["match"]
+        same = _entry(None if match is None else match["processing_order"]) == expected
+    return case["name"], entry, expected, same, seconds
+
+
+def _run(jobs):
+    """Every job's result, computed in parallel, keyed by case name and entry."""
     from multiprocessing import Pool
-    argv = sys.argv[1:] if argv is None else argv
-    check = "--check" in argv
-    fixture = json.loads(FIXTURE.read_text())
-    jobs = [(fixture["game_version"], case, entry[0]) for case in fixture["cases"] for entry in case["entries"]]
+    results = {}
     with Pool() as pool:
-        results = iter(pool.map(_expectation, jobs, chunksize=1))
+        for name, entry, expected, same, seconds in pool.imap_unordered(_reference, jobs, chunksize=1):
+            results[(name, entry)] = (expected, same, seconds)
+    return results
+
+
+def generate(fixture):
+    """Draw every case's entries, run the reference at each draw, and keep the first random_entries draws and the later
+    draws at which it found a recipe, at most found_entries of them. The package's search is compared at every draw.
+
+    Returns the exit status and every draw's result, keyed by case name and entry."""
+    version = fixture["game_version"]
+    jobs = [(version, case, entry, True) for case in fixture["cases"] for entry in dict.fromkeys(draws(case))]
+    jobs.sort(key=lambda job: -len(job[1]["sources"]) ** job[1]["max_sources"])  # the largest trees first
+    results = _run(jobs)
+    total = equal = 0
+    for case in fixture["cases"]:
+        drawn = list(dict.fromkeys(draws(case)))
+        head, tail = drawn[:case["random_entries"]], drawn[case["random_entries"]:]
+        found = [entry for entry in tail if results[(case["name"], entry)][0][0] is not None][:case["found_entries"]]
+        case["entries"] = [[entry] + results[(case["name"], entry)][0] for entry in head + found]
+        same = sum(1 for entry in drawn if results[(case["name"], entry)][1])
+        seconds = sum(results[(case["name"], entry)][2] for entry in drawn)
+        recipes = sum(1 for entry in drawn if results[(case["name"], entry)][0][0] is not None)
+        print("%s: %d draws, %d with a recipe, package equal at %d, reference %.2f s per draw"
+              % (case["name"], len(drawn), recipes, same, seconds / len(drawn)), flush=True)
+        total += len(drawn)
+        equal += same
+    print("The package's search equals the reference at %d of %d draws" % (equal, total))
+    return (0 if equal == total else 1), results
+
+
+def check(fixture):
+    """Recompute every recorded entry with the reference and report any that differ."""
+    version = fixture["game_version"]
+    jobs = [(version, case, entry[0], False) for case in fixture["cases"] for entry in case["entries"]]
+    results = _run(jobs)
     differences = 0
     for case in fixture["cases"]:
-        fresh = [next(results) for _ in case["entries"]]
-        if check:
-            for old, new in zip(case["entries"], fresh):
-                if old != new:
-                    differences += 1
-                    print("%s: entry %d recorded %s, reference gives %s" % (case["name"], old[0], old[1:], new[1:]))
-        case["entries"] = fresh
-    if check:
-        print("%d of %d recorded recipes differ from the reference" % (differences, len(jobs)))
-        return 1 if differences else 0
-    FIXTURE.write_text(dump(fixture))
-    return 0
+        for entry in case["entries"]:
+            fresh = results[(case["name"], entry[0])][0]
+            if entry[1:] != fresh:
+                differences += 1
+                print("%s: entry %d recorded %s, reference gives %s" % (case["name"], entry[0], entry[1:], fresh))
+    print("%d of %d recorded recipes differ from the reference" % (differences, len(jobs)))
+    return 1 if differences else 0
 
 
 def dump(fixture):
@@ -273,6 +348,19 @@ def dump(fixture):
         lines.append("  }" + ("," if index < len(fixture["cases"]) - 1 else ""))
     lines += [" ]", "}"]
     return "\n".join(lines) + "\n"
+
+
+def main(argv=None):
+    argv = sys.argv[1:] if argv is None else argv
+    if argv not in (["generate"], ["check"]):
+        print(__doc__.split("\n\n")[-1])
+        return 2
+    fixture = json.loads(FIXTURE.read_text())
+    if argv == ["check"]:
+        return check(fixture)
+    status, _ = generate(fixture)
+    FIXTURE.write_text(dump(fixture))
+    return status
 
 
 if __name__ == "__main__":
