@@ -32,9 +32,8 @@ that length, the one with the fewest sources, then the fewest rank switches, the
 in rank order (rank 1 before rank 4). The recipe is replayed through `activate`, which gives
 the rows it returns.
 
-A source whose pool is empty transforms into nothing, but at rank 4 it still occupies its
-cell and so moves the spawns; all such sources form one option, planned only after every
-real source of a sequence, which keeps each sequence unique.
+A source whose pool is empty transforms into nothing and draws nothing, but at rank 4 it
+still occupies its cell and so moves the spawns; all such sources form one option.
 """
 
 from collections import Counter
@@ -139,8 +138,8 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
         _, planned, switches, entry, entered, start, rows = best
         rows = _replay(board, pools, rank, stream, start, rows)
         result["match"] = _recipe(done, planned, switches, entry, entered, start, rows)
-    previews_run = result["match"]["preview_sequence"] if result["match"] else done or max_previews
-    result["conditions"] = conditions(game, cost, bool(previews_run))
+    previews_run = bool(result["match"]["preview_sequence"]) if result["match"] else bool(done) or max_previews > 0
+    result["conditions"] = conditions(game, cost, previews_run)
     return result
 
 
@@ -270,19 +269,18 @@ class _Search:
                             for index in range(len(board.area) + 1)]
         capacity = Counter(kind_of[cell] for cell in usable)
         # Options that may stand on the same kinds of cell are interchangeable once their results are drawn, so a state
-        # counts them together: one group per kinds list, with the option whose pool is empty apart, since only it may
-        # follow itself. A state is (end, uses, made): uses holds a digit per group, its number of sources, and made a
-        # digit per group and wanted plant, how many of that plant the group produced, counted up to the number wanted.
+        # counts them together, one group per kinds list. A state is (end, uses, made): uses holds a digit per group, its
+        # number of sources, and made a digit per group and wanted plant, how many of that plant the group produced,
+        # counted up to the number wanted.
         groups = []
         self.group_of = []
         for option in options:
-            group = (tuple(option["kinds"]), bool(option["pool"]))
-            if group not in groups:
-                groups.append(group)
-            self.group_of.append(groups.index(group))
-        self.empty = next((index for index, (_, real) in enumerate(groups) if not real), None)
+            kinds = tuple(option["kinds"])
+            if kinds not in groups:
+                groups.append(kinds)
+            self.group_of.append(groups.index(kinds))
         self.use_weight, self.use_radix, weight = [], [], 1
-        for kinds, _ in groups:
+        for kinds in groups:
             self.use_weight.append(weight)
             self.use_radix.append(sum(capacity[kind] for kind in kinds) + 1)
             weight *= self.use_radix[-1]
@@ -302,7 +300,7 @@ class _Search:
         self.limits = []
         for size in range(1, len(kinds) + 1):
             for chosen in combinations(kinds, size):
-                members = [index for index, (own, _) in enumerate(groups) if set(own) <= set(chosen)]
+                members = [index for index, own in enumerate(groups) if set(own) <= set(chosen)]
                 if members:
                     self.limits.append((members, sum(capacity[kind] for kind in chosen)))
         self.spawn_pools, distinct = {}, []
@@ -375,11 +373,8 @@ class _Search:
     def _child_options(self, use):
         """The options a state with these use counts may add, with the use counts after each."""
         counts = [use // weight % radix for weight, radix in zip(self.use_weight, self.use_radix)]
-        blocked = self.empty is not None and counts[self.empty] > 0
         children = []
         for option, group in enumerate(self.group_of):
-            if blocked and group != self.empty:
-                continue
             counts[group] += 1
             if all(sum(counts[member] for member in members) <= cells for members, cells in self.limits):
                 children.append((option, use + self.use_weight[group]))
