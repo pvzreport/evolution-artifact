@@ -246,12 +246,12 @@ def cmd_plan(args):
     after = " after the done previews %s" % format_sequence(done) if done else ""
     print("Routes of the %s style (%s), up to %s%s: %s searched." % (
         args.style, _switches(args.style), _count(result["max_previews"], "preview"), after,
-        _count(result["entries_searched"], "distinct entry position")))
+        _count(result["entry_positions_searched"], "distinct entry position")))
     for capped in result["state_cap_reached"]:
-        print("The state cap (%d) was reached at level entry %d after the previews %s: recipes with %s or more there "
-              "were not searched, so a shorter route or fewer sources may exist." % (
-                  result["max_states"], capped["level_entry_offset"], format_sequence(capped["preview_sequence"]),
-                  _count(capped["sources"], "source")))
+        print("The state cap (%d) stopped the search at level entry %d, after the previews %s, among recipes of %s: "
+              "recipes with that many sources or more were not all tried there, so a shorter route or fewer sources "
+              "may exist." % (result["max_states"], capped["level_entry_offset"],
+                              format_sequence(capped["preview_sequence"]), _count(capped["sources"], "source")))
     match = result["match"]
     if match is None:
         print("No recipe within %s of the %s style%s and up to %s." % (

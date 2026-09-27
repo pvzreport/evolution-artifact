@@ -248,7 +248,7 @@ class SearchTest(unittest.TestCase):
                                          [[row[k] for k in keys] for row in allowed[planned][1]["processing_order"]])
                     else:
                         self.assertIsNone(match)
-                    self.assertEqual(result["entries_searched"],
+                    self.assertEqual(result["entry_positions_searched"],
                                      len({end for planned, (end, _) in allowed.items() if len(planned) <= length}))
 
     def test_every_position_within_the_limit_is_searched_once(self):
@@ -270,7 +270,7 @@ class SearchTest(unittest.TestCase):
                     ends.add(position)
                 result = self.search("egypt1", wants, {}, rank=4, max_sources=0, done=done, style=style, max_previews=limit)
                 self.assertIsNone(result["match"])
-                self.assertEqual(result["entries_searched"], len(ends))
+                self.assertEqual(result["entry_positions_searched"], len(ends))
 
     @staticmethod
     def every_route(done, limit, most=None):

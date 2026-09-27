@@ -1,4 +1,4 @@
-"""Plan a recipe: which previews to run, then which sources to plant on which cells.
+"""Plan a recipe: which previews to run after a full restart, then which sources to plant on which cells.
 
 An activation's outcome depends on two independent things. Transformation results depend
 only on the sequence of pools shuffled, in processing order, from the offset the activation
@@ -8,26 +8,29 @@ adds a zero-draw Lily Pad on each occupied shore or water cell.
 
 At one activation start the search walks sequences of pool options breadth first, fewest
 sources first; sources with the same pool are one option, whatever their aliases or costs.
-Everything below a sequence depends only on its state: the position its last shuffle ended
-at, how many times it used each option, and how many of each wanted plant each option
-produced, counted up to the number wanted. The walk keeps the first sequence that reaches
-each state and drops the others, so it returns the recipe that walking every sequence
-returns: the fewest sources, and among those the first sequence in option order. A
-sequence grows only while its sources fit the cells their options may stand on, counted
-per cell kind. Whenever a state's results cover every wanted plant that no spawn could
-provide, the area is walked in its order deciding each cell occupied or free while
-carrying the spawn offset, so a free wanted cell whose draw misses ends that branch at
-once. At a leaf, a matching assigns the steps to the occupied cells by kind, reserving a
-wanted cell for the step that produced its plant, and the rows are accepted only when
-every wanted plant is placed. Shuffles are memoised by position and pool. A found recipe
-is replayed through `activate` before it is returned.
+Whenever a sequence's results cover every wanted plant that no spawn could provide, the area
+is walked in its order deciding each cell occupied or free while carrying the spawn offset,
+so a free wanted cell whose draw misses ends that branch at once. At a leaf, a matching
+assigns the steps to the occupied cells by kind, reserving a wanted cell for the step that
+produced its plant, and the steps are accepted only when every wanted plant is placed.
 
-Preview routes are searched by length. A route continues from the previews already run
-since a full restart, and a route with previews starts with rank 1, the preview that
-plays when the artifact is tapped. Routes that reach the same stream position are merged,
-and each new position is searched once. The shortest route of the chosen style with a
-recipe wins; among routes of that length, fewer sources, then fewer rank switches, then
-the first route in rank order (rank 1 before rank 4).
+Whether a sequence or any sequence grown from it is accepted depends only on its state: the
+position its last shuffle ended at and, for each group of options that may stand on the same
+kinds of cell, how many sources the group holds and how many of each wanted plant they
+produced, counted up to the number wanted. The walk keeps the first sequence to reach each
+state and drops the others, so it returns the sequence that walking every sequence returns:
+the fewest sources, then the first in option order. A sequence grows only while its sources
+fit the cells, counted per cell kind. Shuffles are memoised by position and pool, spawns by
+pool and offset. The states stored at one start are capped as a memory guard, and a start
+at which the cap stopped the search is reported.
+
+A route is the sequence of previews run after a full restart; the first is the rank-1
+preview that plays when the artifact is tapped. Routes continuing the previews already run
+are tried in increasing length, and routes that reach the same stream position share one
+search there. The shortest route of the chosen style that has a recipe wins; among routes of
+that length, the one with the fewest sources, then the fewest rank switches, then the first
+in rank order (rank 1 before rank 4). The recipe is replayed through `activate`, which gives
+the rows it returns.
 
 A source whose pool is empty transforms into nothing, but at rank 4 it still occupies its
 cell and so moves the spawns; all such sources form one option, planned only after every
@@ -38,7 +41,7 @@ from collections import Counter
 from itertools import combinations
 
 from .level import LILYPAD, format_cell
-from .model import PAD, RANKS, Board, activate, check_board, conditions, enter_level, place, selection_row
+from .model import PAD, RANKS, Board, Planting, activate, check_board, conditions, enter_level, place, selection_row
 from .stream import shared
 from .tiles import NONE
 
@@ -53,19 +56,18 @@ def parse_spec(spec):
 
 def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=None, rank=1, done=(), style="simple",
                   max_previews=100, offset=0, max_sources=9, max_states=MAX_STATES, stream=None, preview_cost=None):
-    """The shortest preview route of `style` after the `done` previews with a recipe placing every want.
+    """The shortest preview route of `style` continuing the `done` previews, with the recipe that places every want.
 
     game: the game version whose data the recipe is for. wants: list of (plant, cell). sources:
     {alias: cost} or {alias: (cost, [kinds])} when a source may only be planted on cells of those
-    kinds. overrides: {cell: kind} for this activation. done: the ranks of the previews already
-    run since a full restart, in order. style: "simple" (at most one rank switch), "shorter" (at
-    most three) or "shortest" (any number); a switch counts whenever a planned preview's rank
-    differs from the one before it, the last done preview included. max_previews: the most
-    previews planned after the done ones. offset: extra raw outputs consumed between the previews
-    and the level, before the level's own entry shuffles. max_states: the most search states kept
-    at one entry position, a memory guard; an entry that reaches it is listed in
-    state_cap_reached. preview_cost: the previews' effective source cost; the default is the
-    source's declared cost.
+    kinds. overrides: {cell: kind} for this activation. done: the ranks of the previews already run
+    since a full restart, in order. style: "simple" (at most one rank switch), "shorter" (at most
+    three) or "shortest" (any number); a switch counts whenever a planned preview's rank differs
+    from the preview before it, the last done preview included. max_previews: the most previews
+    planned after the done ones. offset: extra raw outputs consumed between the previews and the
+    level, before the level's own entry shuffles. max_states: the most search states stored at one
+    entry position. preview_cost: the previews' effective source cost; the default is the source's
+    declared cost.
     """
     if rank not in RANKS:
         raise ValueError("Supported activation ranks are 1 and 4")
@@ -76,7 +78,7 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
     previews = game.previews
     cost = previews.cost(preview_cost)
     done = list(done)
-    if done and done[0] != 1:
+    if done[:1] not in ([], [1]):
         raise ValueError("The first preview after a restart is rank 1, the one that plays when the artifact is tapped")
     for preview in sorted(set(done) | ({1, 4} if max_previews else set())):
         previews.plantings(preview, cost)
@@ -114,33 +116,31 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
                      "kinds": o["kinds"], "candidates": len(o["pool"])} for o in options],
         "unusable_sources": unusable, "done": done, "style": style, "max_previews": max_previews,
         "extra_offset": offset, "max_sources": max_sources, "max_states": max_states, "preview_cost": cost,
-        "entries_searched": 0, "state_cap_reached": [], "conditions": None, "match": None,
+        "entry_positions_searched": 0, "state_cap_reached": [], "conditions": None, "match": None,
     }
-    request = _Request(stream, pools, board, kind_of, usable, options, wants, required, spawnable, rank, max_states)
-    routes = _Routes(previews, stream, cost, done, STYLES[style], max_previews)
+    search = _Search(stream, pools, board, kind_of, usable, options, wants, required, spawnable, rank, max_states)
     best = None
-    for entries in routes.lengths():
+    for entries in _routes(previews, stream, cost, done, STYLES[style], max_previews):
         for position, planned, switches in entries:
             if best is not None and best[0] == 0:
-                break
+                break  # no route of this length can use fewer sources
             entry = position + offset
             entered, start = enter_level(level, stream, entry)
-            sequence, capped = request.search(start, max_sources if best is None else best[0] - 1)
-            result["entries_searched"] += 1
+            rows, capped = search.run(start, max_sources if best is None else best[0] - 1)
+            result["entry_positions_searched"] += 1
             if capped is not None:
                 result["state_cap_reached"].append({"preview_sequence": done + planned, "level_entry_offset": entry,
                                                     "activation_offset": start, "sources": capped})
-            if sequence is not None:
-                best = (len(sequence), planned, switches, entry, entered, start, sequence)
+            if rows is not None:
+                best = (sum(1 for row in rows if row["action"] == "evolve"), planned, switches, entry, entered, start, rows)
         if best is not None:
             break
     if best is not None:
-        _, planned, switches, entry, entered, start, sequence = best
-        rows = request.rows(sequence, start)
-        _verify(board, pools, rank, stream, start, rows)
+        _, planned, switches, entry, entered, start, rows = best
+        rows = _replay(board, pools, rank, stream, start, rows)
         result["match"] = _recipe(done, planned, switches, entry, entered, start, rows)
-    route_has_previews = bool(result["match"]["preview_sequence"]) if best is not None else bool(done) or max_previews > 0
-    result["conditions"] = conditions(game, cost, route_has_previews)
+    previews_run = result["match"]["preview_sequence"] if result["match"] else done or max_previews
+    result["conditions"] = conditions(game, cost, bool(previews_run))
     return result
 
 
@@ -198,80 +198,65 @@ def _options(pools, sources, kind_of, usable, rank):
     return sorted(by_pool.values(), key=lambda o: (-len(o["pool"]), o["kinds"])), unusable
 
 
-class _Routes:
-    """Preview routes after the done previews, by length, merged on the stream position they reach.
+def _routes(previews, stream, cost, done, max_switches, max_previews):
+    """For each planned length from 0 up, the entry positions no shorter route reaches, in preference order, each as
+    (position, planned ranks, switches) with its preferred route: the fewest switches, then the first in rank order.
 
-    A route's future depends on its position, its last rank and the switches it has used, so a route is
-    dropped when another route reached the same position with the same last rank and no more switches, by
-    fewer previews or, at the same length, first by switches and then by rank order. With no limit on
-    switches, the first route to reach a position with a last rank covers every later one.
+    A route's future depends only on its position, its last rank and the switches it has used. A route is therefore
+    dropped when another reached the same position with the same last rank and no more switches, in fewer previews or
+    earlier in preference order; with no limit on switches, the first route to reach them covers every later one.
     """
+    ends = {}
 
-    def __init__(self, previews, stream, cost, done, max_switches, max_previews):
-        self.previews, self.stream, self.cost = previews, stream, cost
-        self.max_switches, self.max_previews = max_switches, max_previews
-        _, self.origin = previews.advance(stream, 0, done, cost)
-        self.last = done[-1] if done else None
-        self._after = {}
+    def after(position, rank):
+        if (position, rank) not in ends:
+            ends[(position, rank)] = previews.run(stream, position, rank, cost)["end"]
+        return ends[(position, rank)]
 
-    def after(self, position, rank):
-        """The stream position after one complete preview of this rank."""
-        key = (position, rank)
-        if key not in self._after:
-            self._after[key] = self.previews.run(self.stream, position, rank, self.cost)["end"]
-        return self._after[key]
-
-    def lengths(self):
-        """For each planned length from 0 up, the positions no shorter route reached, in tie-break order, each as
-        (position, planned ranks, switches) with its first route by fewest switches, then rank order."""
-        positions, lasts, switches, parents = [self.origin], [self.last], [0], [-1]
-        best = {(self.origin, self.last): 0}
-        known = {self.origin}
-        frontier = [0]
-        yield [(self.origin, [], 0)]
-        for _ in range(self.max_previews):
-            children = []
-            for order, index in enumerate(frontier):
-                last = lasts[index]
-                for rank in (1, 4):
-                    if last is None and rank != 1:
-                        continue
-                    count = switches[index] + (last is not None and rank != last)
-                    if self.max_switches is None or count <= self.max_switches:
-                        children.append((count, order, rank, index))
-            children.sort()
-            kept, entries = [], []
-            for count, order, rank, index in children:
-                position = self.after(positions[index], rank)
-                rival = count if self.max_switches is not None else 0
-                if best.get((position, rank), rival + 1) <= rival:
-                    continue
-                best[(position, rank)] = rival
-                positions.append(position)
-                lasts.append(rank)
-                switches.append(count)
-                parents.append(index)
-                kept.append((order, rank, len(positions) - 1))
-                if position not in known:
-                    known.add(position)
-                    entries.append((position, self._route(len(positions) - 1, parents, lasts), count))
-            kept.sort()
-            frontier = [index for _, _, index in kept]
-            yield entries
-            if not frontier:
-                return
-
-    @staticmethod
-    def _route(index, parents, lasts):
-        ranks = []
-        while parents[index] >= 0:
-            ranks.append(lasts[index])
-            index = parents[index]
-        return ranks[::-1]
+    origin = previews.advance(stream, 0, done, cost)[1]
+    # A route is (position, last rank, switches, planned ranks as a linked list, newest first); a frontier holds the
+    # routes of one length in rank order.
+    frontier = [(origin, done[-1] if done else None, 0, None)]
+    fewest = {(origin, frontier[0][1]): 0}
+    known = {origin}
+    yield [(origin, [], 0)]
+    for _ in range(max_previews):
+        children = []
+        for order, (position, last, switches, ranks) in enumerate(frontier):
+            for rank in (1, 4) if last is not None else (1,):
+                count = switches + (last is not None and rank != last)
+                if max_switches is None or count <= max_switches:
+                    children.append((count, order, rank, position, ranks))
+        children.sort(key=lambda child: child[:3])
+        kept, entries = [], []
+        for count, order, rank, position, ranks in children:
+            position, ranks = after(position, rank), (rank, ranks)
+            rival = count if max_switches is not None else 0
+            if fewest.get((position, rank), rival + 1) <= rival:
+                continue
+            fewest[(position, rank)] = rival
+            kept.append((order, rank, (position, rank, count, ranks)))
+            if position not in known:
+                known.add(position)
+                entries.append((position, _unlink(ranks), count))
+        kept.sort(key=lambda route: route[:2])
+        frontier = [route for _, _, route in kept]
+        yield entries
+        if not frontier:
+            return
 
 
-class _Request:
-    """The search at one activation start, with everything that does not depend on the start prepared once."""
+def _unlink(ranks):
+    """A linked list of ranks, newest first, as a list in preview order."""
+    planned = []
+    while ranks is not None:
+        rank, ranks = ranks
+        planned.append(rank)
+    return planned[::-1]
+
+
+class _Search:
+    """The recipe search at one activation start; everything that does not depend on the start is prepared once."""
 
     def __init__(self, stream, pools, board, kind_of, usable, options, wants, required, spawnable, rank, max_states):
         self.stream, self.pools, self.area, self.kind_of, self.usable = stream, pools, board.area, kind_of, usable
@@ -281,73 +266,70 @@ class _Request:
         self.wants_at = {}
         for plant, cell in wants:
             self.wants_at.setdefault(cell, []).append(plant)
-        self.capacity = Counter(kind_of[cell] for cell in usable)
         self.usable_from = [sum(1 for cell in board.area[index:] if kind_of[cell] != NONE)
                             for index in range(len(board.area) + 1)]
-        # A state is (end, uses, made). Options that may stand on the same kinds are interchangeable when steps are
-        # assigned to cells, so they share digits: uses holds one digit per such group, its use count, and made one
-        # digit per group and wanted plant, how many of that plant the group produced, counted up to the number
-        # wanted. The option with an empty pool is a group of its own, since only it may follow itself.
+        capacity = Counter(kind_of[cell] for cell in usable)
+        # Options that may stand on the same kinds of cell are interchangeable once their results are drawn, so a state
+        # counts them together: one group per kinds list, with the option whose pool is empty apart, since only it may
+        # follow itself. A state is (end, uses, made): uses holds a digit per group, its number of sources, and made a
+        # digit per group and wanted plant, how many of that plant the group produced, counted up to the number wanted.
         groups = []
         self.group_of = []
         for option in options:
-            name = (tuple(option["kinds"]), bool(option["pool"]))
-            if name not in groups:
-                groups.append(name)
-            self.group_of.append(groups.index(name))
-        self.group_kinds = [kinds for kinds, _ in groups]
-        self.empty = next((groups.index(name) for name in groups if not name[1]), None)
-        wanted = Counter(plant for plant, _ in wants)
-        plants = sorted(wanted)
-        self.plant_index = {plant: index for index, plant in enumerate(plants)}
+            group = (tuple(option["kinds"]), bool(option["pool"]))
+            if group not in groups:
+                groups.append(group)
+            self.group_of.append(groups.index(group))
+        self.empty = next((index for index, (_, real) in enumerate(groups) if not real), None)
         self.use_weight, self.use_radix, weight = [], [], 1
-        for kinds in self.group_kinds:
-            radix = sum(self.capacity[kind] for kind in kinds) + 1
+        for kinds, _ in groups:
             self.use_weight.append(weight)
-            self.use_radix.append(radix)
-            weight *= radix
+            self.use_radix.append(sum(capacity[kind] for kind in kinds) + 1)
+            weight *= self.use_radix[-1]
+        wanted = Counter(plant for plant, _ in wants)
+        self.plant_index = {plant: index for index, plant in enumerate(sorted(wanted))}
         self.made_digit, weight = [], 1
         for _ in groups:
             digits = []
-            for plant in plants:
+            for plant in sorted(wanted):
                 digits.append((weight, wanted[plant]))
                 weight *= wanted[plant] + 1
             self.made_digit.append(digits)
         self.needed = [(self.plant_index[plant], count) for plant, count in required.items()]
-        # Sources fit the cells when, for every group of kinds, the sources whose options stand only on those kinds
-        # are no more than the group's cells (Hall's condition for assigning sources to cells by kind).
-        kinds = sorted(self.capacity)
+        # Sources fit the cells when, for every set of cell kinds, the sources whose options stand only on kinds of that
+        # set are no more than its cells (Hall's condition for assigning sources to cells by kind).
+        kinds = sorted(capacity)
         self.limits = []
         for size in range(1, len(kinds) + 1):
             for chosen in combinations(kinds, size):
-                members = [group for group, own in enumerate(self.group_kinds) if set(own) <= set(chosen)]
+                members = [index for index, (own, _) in enumerate(groups) if set(own) <= set(chosen)]
                 if members:
-                    self.limits.append((members, sum(self.capacity[kind] for kind in chosen)))
+                    self.limits.append((members, sum(capacity[kind] for kind in chosen)))
         self.spawn_pools, distinct = {}, []
-        for cell in board.area:
-            if kind_of[cell] != NONE:
-                for occupied in (False, True):
-                    pool = pools.spawn(kind_of[cell], occupied)
-                    if pool not in distinct:
-                        distinct.append(pool)
-                    self.spawn_pools[(cell, occupied)] = (pool, distinct.index(pool))
+        for cell in usable:
+            for occupied in (False, True):
+                pool = pools.spawn(kind_of[cell], occupied)
+                if pool not in distinct:
+                    distinct.append(pool)
+                self.spawn_pools[(cell, occupied)] = (pool, distinct.index(pool))
         self.spawn_count = len(distinct)
         self._children, self._covered = {}, {}
         self._shuffles, self._spawns = {}, {}
 
-    def search(self, start, max_sources):
-        """The option sequence of the first accepted recipe at this activation start, fewest sources first, or None;
-        and the number of sources at which the state cap stopped the search, or None if it did not."""
+    def run(self, start, max_sources):
+        """The rows of the first accepted recipe at this activation start, fewest sources first, or None; and the number of
+        sources at which the state cap stopped the search, or None if it did not. The rows have no runners-up."""
         self._shuffles, self._spawns = {}, {}
-        if not self.required and self._evaluate([], start) is not None:
-            return [], None
+        if not self.required:
+            rows = self._evaluate([], start)
+            if rows is not None:
+                return rows, None
         ends, uses, made, parents, chosen = [start], [0], [0], [-1], [-1]
         low, high = 0, 1
         count = len(self.options)
         pools = [option["pool"] for option in self.options]
-        plant_index = self.plant_index
         made_digit = [self.made_digit[group] for group in self.group_of]
-        memo, first = self._shuffles, self.stream.first
+        plant_index, memo, first = self.plant_index, self._shuffles, self.stream.first
         for depth in range(1, max_sources + 1):
             seen = set()
             for index in range(low, high):
@@ -382,29 +364,13 @@ class _Request:
                     if covered is None:
                         covered = self._covers(child_made)
                     if covered:
-                        sequence = _sequence(len(ends) - 1, parents, chosen)
-                        if self._evaluate(self._path(sequence, start), child_end) is not None:
-                            return sequence, None
+                        rows = self._evaluate(self._path(len(ends) - 1, parents, chosen, start), child_end)
+                        if rows is not None:
+                            return rows, None
             low, high = high, len(ends)
             if low == high:
                 break
         return None, None
-
-    def rows(self, sequence, start):
-        """The accepted rows of an option sequence at this start, with the runners-up of every shuffle."""
-        path = self._path(sequence, start)
-        rows = self._evaluate(path, path[-1]["end"] if path else start)
-        if rows is None:
-            raise RuntimeError("The search returned a recipe that it does not accept")
-        for row in rows:
-            if row["result"] is not None:
-                pool = (self.pools.transformation(row["kind"], row["cost"]) if row["action"] == "evolve"
-                        else self.pools.spawn(row["kind"], row["beneath"]))
-                shuffled, end = self.stream.shuffle(pool, row["start"])
-                if (shuffled[0], end) != (row["result"], row["end"]):
-                    raise RuntimeError("A memoised shuffle differs from the replayed one")
-                row["runners_up"] = shuffled[1:5]
-        return rows
 
     def _child_options(self, use):
         """The options a state with these use counts may add, with the use counts after each."""
@@ -428,21 +394,22 @@ class _Request:
         self._covered[product] = covered
         return covered
 
-    def _path(self, sequence, start):
-        """The steps of an option sequence from a start, from the memoised shuffles."""
+    def _path(self, index, parents, chosen, start):
+        """The steps of the sequence that first reached a state, from the memoised shuffles."""
+        sequence = []
+        while parents[index] >= 0:
+            sequence.append(chosen[index])
+            index = parents[index]
         path, position = [], start
-        for option in sequence:
-            pool = self.options[option]["pool"]
-            key = position * len(self.options) + option
-            if key not in self._shuffles:
-                self._shuffles[key] = self.stream.first(pool, position)
-            result, end = self._shuffles[key]
-            path.append({"option": option, "candidates": len(pool), "result": result, "start": position, "end": end})
+        for option in reversed(sequence):
+            result, end = self._shuffles[position * len(self.options) + option]
+            path.append({"option": option, "candidates": len(self.options[option]["pool"]), "result": result,
+                         "start": position, "end": end})
             position = end
         return path
 
     def _evaluate(self, path, position):
-        """Rows of an accepted recipe for this pool sequence, or None; runners-up are left empty."""
+        """Rows of an accepted recipe for this pool sequence, or None."""
         if self.rank == 1:
             cells = self._match(path, self.usable, spare=len(self.usable) - len(path))
             return self._accept(path, cells, []) if cells is not None else None
@@ -552,23 +519,17 @@ class _Request:
         return rows
 
 
-def _sequence(index, parents, chosen):
-    """The options chosen on the way to a state, first to last."""
-    options = []
-    while parents[index] >= 0:
-        options.append(chosen[index])
-        index = parents[index]
-    return options[::-1]
-
-
-def _verify(board, pools, rank, stream, start, rows):
-    """Replay the recipe through the activation model; a difference would be a defect of the search."""
-    from .model import Planting
+def _replay(board, pools, rank, stream, start, rows):
+    """The recipe's rows as `activate` computes them, with every shuffle's runners-up and the search's notes on sources and
+    wants. A replay that differs from the rows the search accepted would be a defect of the search."""
     plantings = [Planting(row["source"], row["cost"], row["cell"]) for row in reversed(rows) if row["action"] == "evolve"]
     replay, _ = activate(board, pools, plantings, rank, stream, start)
-    keys = ("action", "cell", "kind", "result", "candidates", "start", "end", "placed", "runners_up")
+    keys = ("action", "cell", "kind", "source", "cost", "candidates", "result", "start", "end", "placed", "beneath")
     if [tuple(row[k] for k in keys) for row in replay] != [tuple(row[k] for k in keys) for row in rows]:
         raise RuntimeError("The search accepted a recipe that does not replay")
+    for row, searched in zip(replay, rows):
+        row["sources"], row["wanted"] = searched["sources"], searched["wanted"]
+    return replay
 
 
 def _recipe(done, planned, switches, entry, entered, start, rows):
