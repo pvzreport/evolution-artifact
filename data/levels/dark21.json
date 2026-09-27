@@ -1,0 +1,52 @@
+{
+ "id": "dark21",
+ "name": "Dark Ages 21 (story, Last Stand)",
+ "stage": "dark",
+ "default_kind": "ground",
+ "bans": [
+  "sunflower",
+  "twinsunflower",
+  "sunshroom",
+  "sunbean",
+  "puffshroom",
+  "iceburg",
+  "gravebuster",
+  "toadstool",
+  "goldleaf",
+  "stallia",
+  "primalsunflower",
+  "moonflower",
+  "goldbloom",
+  "birthsunflower",
+  "imppear"
+ ],
+ "cells": {
+  "5-1": "none",
+  "5-5": "none",
+  "6-1": "none",
+  "6-5": "none",
+  "7-2": "none",
+  "7-3": "none",
+  "7-4": "none"
+ },
+ "entry_shuffles": [
+  10,
+  10,
+  10
+ ],
+ "notes": "Gravestones declared at level start on 5-1, 5-5, 6-1, 6-5, 7-2, 7-3, 7-4 hold no plant while they stand; give ground for that activation once one has been destroyed. Entering the level shuffles gravestone bags of 10, 10 and 10 objects with the shared engine, in that order, before anything is planted.",
+ "provenance": {
+  "kind": "declared",
+  "exporter": "tools/export_level.py",
+  "resources": [
+   {
+    "path": "PACKAGES/LEVELS/DARK21.json",
+    "sha256": "03ad13997feb48d5ee69d988236eeca552b34e294f481e5ae7d34c4f7904274e"
+   },
+   {
+    "path": "PACKAGES/LEVELMODULES.json",
+    "sha256": "104bcd4e760bb2be68113d9b5abbc07f8576446b91e17f50e812df67495c9196"
+   }
+  ]
+ }
+}

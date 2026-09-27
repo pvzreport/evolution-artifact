@@ -5,7 +5,8 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from evolution import Game, available_levels, load_level
+from evolution import Game, Level, available_levels, load_level
+from evolution.level import LEVELS
 
 POOLS = json.loads((Path(__file__).resolve().parent / "fixtures/pools.json").read_text())
 FIXTURES = POOLS["pools"]
@@ -23,6 +24,15 @@ class LevelTest(unittest.TestCase):
             self.assertIn(level.default_kind, self.kinds)
             for kind in level.cells.values():
                 self.assertIn(kind, self.kinds)
+
+    def test_every_description_states_its_entry_shuffles(self):
+        for name in available_levels():
+            self.assertIn("entry_shuffles", json.loads((LEVELS / (name + ".json")).read_text()), name)
+        self.assertEqual({name: load_level(name).entry_shuffles for name in available_levels() if load_level(name).entry_shuffles},
+                         {"dark4": [3, 3, 4], "dark19": [3, 6, 3], "dark21": [10, 10, 10]})
+        for bad in ([3, -1], [2.5], ["3"], [True], 10, None, "3,3,4"):
+            with self.assertRaisesRegex(ValueError, "entry_shuffles"):
+                Level({"stage": "dark", "entry_shuffles": bad})
 
     def test_model_reproduces_every_captured_list_in_order(self):
         for name, group in FIXTURES.items():

@@ -1,8 +1,8 @@
 """Plan a recipe: which sources to plant on which cells, after which previews.
 
 An activation's outcome depends on two independent things. Transformation results depend
-only on the sequence of pools shuffled, in processing order, from the level's starting
-offset, never on cells. At rank 4 the spawn pass then depends only on which cells are
+only on the sequence of pools shuffled, in processing order, from the offset the activation
+starts at, after the level's entry shuffles, never on cells. At rank 4 the spawn pass then depends only on which cells are
 occupied: it shuffles once per free cell in area order and adds a zero-draw Lily Pad on
 each occupied shore or water cell.
 
@@ -25,7 +25,7 @@ real source of a sequence, which keeps each sequence unique.
 from collections import Counter
 
 from .level import LILYPAD, format_cell
-from .model import PAD, RANKS, Board, activate, check_board, conditions, place, select, selection_row
+from .model import PAD, RANKS, Board, activate, check_board, conditions, enter_level, place, select, selection_row
 from .stream import shared
 from .tiles import NONE
 
@@ -47,8 +47,9 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
     game: the game version whose data the recipe is for. wants: list of (plant, cell). sources:
     {alias: cost} or {alias: (cost, [kinds])} when a source may only be planted on cells of those
     kinds. overrides: {cell: kind} for this activation. offset: extra raw outputs consumed between
-    the previews and the level. budget: shuffles tried per preview count. preview_cost: the previews'
-    effective source cost; the default is the source's declared cost.
+    the previews and the level, before the level's own entry shuffles. budget: shuffles tried per
+    preview count. preview_cost: the previews' effective source cost; the default is the source's
+    declared cost.
     """
     if rank not in RANKS:
         raise ValueError("Supported activation ranks are 1 and 4")
@@ -101,12 +102,13 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
     for count in range(max_previews + 1):
         if count >= min_previews:
             entry = position + offset
-            rows, exhausted = searcher.run(entry, max_sources)
+            entered, start = enter_level(level, stream, entry)
+            rows, exhausted = searcher.run(start, max_sources)
             if exhausted:
                 result["budget_exhausted"].append(count)
             if rows is not None:
-                _verify(board, pools, rank, stream, entry, rows)
-                result["match"] = _recipe(count, prefix + [preview_rank] * count, entry, rows)
+                _verify(board, pools, rank, stream, start, rows)
+                result["match"] = _recipe(count, prefix + [preview_rank] * count, entry, entered, start, rows)
                 return result
         if count < max_previews:
             position = previews.run(stream, position, preview_rank, cost)["end"]
@@ -182,20 +184,20 @@ class _Search:
         self.shuffles = 0
         self.spawns = {}
 
-    def run(self, entry, max_sources):
-        """The accepted rows at this entry offset, or None; the flag says the budget ran out."""
+    def run(self, start, max_sources):
+        """The accepted rows for an activation starting at this offset, or None; the flag says the budget ran out."""
         self.shuffles, self.spawns = 0, {}
         try:
-            return self._run(entry, max_sources), False
+            return self._run(start, max_sources), False
         except _Exhausted:
             return None, True
 
-    def _run(self, entry, max_sources):
+    def _run(self, start, max_sources):
         if not self.required:
-            rows = self._evaluate([], entry)
+            rows = self._evaluate([], start)
             if rows is not None:
                 return rows
-        frontier = [(entry, [], Counter())]
+        frontier = [(start, [], Counter())]
         for _ in range(max_sources):
             following = []
             for position, steps, used in frontier:
@@ -337,21 +339,21 @@ class _Search:
         return rows
 
 
-def _verify(board, pools, rank, stream, entry, rows):
+def _verify(board, pools, rank, stream, start, rows):
     """Replay the recipe through the activation model; a difference would be a defect of the search."""
     from .model import Planting
     plantings = [Planting(row["source"], row["cost"], row["cell"]) for row in reversed(rows) if row["action"] == "evolve"]
-    replay, _ = activate(board, pools, plantings, rank, stream, entry)
+    replay, _ = activate(board, pools, plantings, rank, stream, start)
     keys = ("action", "cell", "kind", "result", "candidates", "start", "end", "placed")
     if [tuple(row[k] for k in keys) for row in replay] != [tuple(row[k] for k in keys) for row in rows]:
         raise RuntimeError("The search accepted a recipe that does not replay")
 
 
-def _recipe(preview_count, sequence, entry, rows):
+def _recipe(preview_count, sequence, entry, entered, start, rows):
     for position, row in enumerate(rows, start=1):
         row["position"] = position
     sources = [row for row in rows if row["action"] == "evolve"]
     planting = [dict(row, step=index) for index, row in enumerate(reversed(sources), start=1)]
     return {"preview_count": preview_count, "preview_sequence": sequence, "level_entry_offset": entry,
-            "source_count": len(sources), "processing_order": rows, "planting_order": planting,
-            "stream_end": rows[-1]["end"] if rows else entry}
+            "entry_effects": entered, "activation_offset": start, "source_count": len(sources),
+            "processing_order": rows, "planting_order": planting, "stream_end": rows[-1]["end"] if rows else start}

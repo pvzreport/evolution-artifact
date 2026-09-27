@@ -19,6 +19,7 @@
   "birthsunflower",
   "imppear"
  ],
+ "entry_shuffles": [],
  "provenance": {
   "kind": "declared",
   "exporter": "tools/export_level.py",

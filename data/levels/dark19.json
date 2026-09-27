@@ -1,0 +1,38 @@
+{
+ "id": "dark19",
+ "name": "Dark Ages 19 (story)",
+ "stage": "dark",
+ "default_kind": "ground",
+ "bans": [],
+ "cells": {
+  "3-2": "none",
+  "4-5": "none",
+  "5-1": "none",
+  "6-1": "none",
+  "6-3": "none",
+  "6-5": "none",
+  "8-2": "none",
+  "9-3": "none",
+  "9-4": "none"
+ },
+ "entry_shuffles": [
+  3,
+  6,
+  3
+ ],
+ "notes": "Gravestones declared at level start on 3-2, 4-5, 5-1, 8-2, 9-3, 9-4 hold no plant while they stand; give ground for that activation once one has been destroyed. The level protects magnetshroom at 6-1, 6-3 and 6-5; the artifact skips a protected plant as a source, and its cell holds no other plant while it stands. Entering the level shuffles gravestone bags of 3, 6 and 3 objects with the shared engine, in that order, before anything is planted.",
+ "provenance": {
+  "kind": "declared",
+  "exporter": "tools/export_level.py",
+  "resources": [
+   {
+    "path": "PACKAGES/LEVELS/DARK19.json",
+    "sha256": "dfd6499683a9582cf43eb92ab83c7f3d4065ec3e9a6246cc790e6d5ee761f139"
+   },
+   {
+    "path": "PACKAGES/LEVELMODULES.json",
+    "sha256": "104bcd4e760bb2be68113d9b5abbc07f8576446b91e17f50e812df67495c9196"
+   }
+  ]
+ }
+}

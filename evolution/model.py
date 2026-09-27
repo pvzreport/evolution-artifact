@@ -23,10 +23,20 @@ fixtures under tests/fixtures replay the captures named below.
   not one of the objects, a replaced source is gone, and the Draftodil itself is
   counted (display-board captures with a Draftodil at 4-3 and at 3-3, follow-up A at
   4-2, an Arthur's Challenge activation at 2-3, played checks in every display row, a
-  played check with a bare Lily Pad in the row, and one whose second shuffle rejected
-  two values). No other plant's placement has drawn in any capture. The count needs
-  every plant in the row, which is known on the display board; a level activation
-  reports its selection end and leaves these draws to the caller.
+  played check with a bare Lily Pad in the row, one whose second shuffle rejected two
+  values, and a Dark Ages 19 activation whose row held two plants outside the 3x3). No
+  other plant's placement has drawn in any capture. The count needs every plant in the
+  row, which is known on the display board; a level activation reports its selection
+  end and leaves these draws to the caller.
+- Entering a level draws from the shared engine when its wave list references
+  gravestone-spawning wave actions: as the level loads, each such action is built in
+  wave order and its bag of gravestones is shuffled once, so its description lists the
+  bag sizes as `entry_shuffles` and `enter_level` replays them before the activation
+  (fresh-launch captures in Dark Ages 21 and 19, whose entries drew 42, 10 and 9
+  outputs as replayed, an earlier Dark Ages 4 capture whose entry drew the replayed 8,
+  and the 10 outputs between two consecutive captures of one process, which are the
+  Dark Ages 4 entry from where the earlier capture ended). Every other captured level
+  consumed nothing at entry; those with a decoded definition declare no such action.
 """
 
 from collections import Counter
@@ -44,7 +54,8 @@ _CONDITIONS = [
     "Start after a full process restart (seed 5489, offset 0).",
     "Run exactly the listed previews, each one complete with its placement effects, and nothing else that "
     "uses the artifact before entering the level.",
-    "Accepted modeling assumption: entering or restarting a level consumes no shared-engine outputs.",
+    "Enter the level once, after the previews and any stated extra outputs, and do not restart it: its entry runs the "
+    "gravestone-bag shuffles its description lists, and nothing else uses the shared engine before the activation.",
     "Same level as described, sources at the listed effective cost (no discounts unless included), "
     "activate once while every source remains and before any automatic spawning.",
     "Activate promptly after planting and read the results at once: in one capture, outputs from outside "
@@ -243,6 +254,20 @@ def activate(board, pools, plantings, rank, stream, offset):
     return place(rows, kind_of, pools.kinds), offset
 
 
+def enter_level(level, stream, offset):
+    """The shared-engine draws of entering a level, in order, and the offset after them.
+
+    Each effect row records one gravestone bag of the level's `entry_shuffles`: the number of objects it
+    holds and the offsets its shuffle spanned. A level that lists none returns no rows and the same offset.
+    """
+    effects = []
+    for objects in level.entry_shuffles:
+        _, end = stream.shuffle(range(objects), offset)
+        effects.append({"action": "shuffle", "objects": objects, "start": offset, "end": end})
+        offset = end
+    return effects, offset
+
+
 def placement_draws(rows, population, stream, offset):
     """The shared-engine draws of the placement effects, in effect order, and the offset after them.
 
@@ -272,21 +297,23 @@ def placement_draws(rows, population, stream, offset):
 
 def scenario(game, sequence=(), level=None, plantings=(), activation=None, overrides=None, offset=0, rank=1,
              stream=None, preview_cost=None):
-    """Replay previews, optional extra raw outputs, then an optional activation, from a fresh process,
-    under one game version's data. `preview_cost` is the previews' effective source cost; the default
-    is the source's declared cost."""
+    """Replay previews, optional extra raw outputs, then an optional level entry and activation, from a
+    fresh process, under one game version's data. `preview_cost` is the previews' effective source cost;
+    the default is the source's declared cost."""
     if offset < 0:
         raise ValueError("The extra offset cannot be negative")
     stream = stream or shared()
     cost = game.previews.cost(preview_cost)
     preview_rows, after_previews = game.previews.advance(stream, 0, list(sequence), cost)
     entry = after_previews + offset
-    results, end = [], entry
+    entry_effects, start, results, end = [], entry, [], entry
     if level:
+        entry_effects, start = enter_level(level, stream, entry)
         board = Board(level, overrides, activation)
-        results, end = activate(board, game.pools(level), plantings, rank, stream, entry)
+        results, end = activate(board, game.pools(level), plantings, rank, stream, start)
     return {"game": game.describe(), "preview_cost": cost, "previews": preview_rows,
             "offset_after_previews": after_previews, "extra_offset": offset,
             "level": level.describe() if level else None, "level_entry_offset": entry,
+            "entry_effects": entry_effects, "activation_offset": start,
             "activation": {"column": activation[0], "row": activation[1]} if activation else None, "rank": rank,
             "results": results, "stream_end": end, "conditions": conditions(game, cost, bool(sequence))}
