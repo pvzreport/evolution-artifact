@@ -12,7 +12,7 @@
   "primalsunflower"
  ],
  "entry_shuffles": [],
- "notes": "Ground baseline. Set standing gravestones and other blocked cells to none for the activation; use ground after they are removed. Entry shuffles: none. A capture after 24 previews started exactly where the previews left the stream.",
+ "notes": "Ground baseline. Set standing gravestones and other blocked cells to none for the activation; use ground after they are removed. Entry shuffles: none. Captures after 24 and after 3 previews started exactly where the previews left the stream.",
  "provenance": {
   "kind": "capture",
   "note": "Stage and seed-bank bans checked in game version 4.2.2. Dynamic obstacles are supplied per activation."

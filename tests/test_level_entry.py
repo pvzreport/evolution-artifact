@@ -16,9 +16,10 @@ def by_cell(rows):
 
 class LevelEntryTest(unittest.TestCase):
     """Entering a level whose wave list references gravestone-spawning wave actions shuffles each action's bag once,
-    in wave order, with the shared engine. Every expectation below was read from the game, version CAPTURED_ON unless
-    stated: three fresh-launch activations in Dark Ages 21 and 19 whose recordings also hold the entry outputs, and the
-    entry outputs of two earlier Dark Ages 4 recordings."""
+    in wave order, with the shared engine; a level whose definition declares none consumes nothing. Every expectation
+    below was read from the game, version CAPTURED_ON unless stated: three fresh-launch activations in Dark Ages 21
+    and 19 whose recordings also hold the entry outputs, the entry outputs of two earlier Dark Ages 4 recordings, and
+    a recipe planned for Arthur's Challenge, which has no such action, played as written."""
 
     @classmethod
     def setUpClass(cls):
@@ -83,6 +84,31 @@ class LevelEntryTest(unittest.TestCase):
         self.assertEqual(by_cell(out["results"]), {(7, 3): "wintersweet", (5, 3): "akee"})
         with self.assertRaisesRegex(ValueError, "cannot hold a plant"):
             scenario(self.game, [], level, plantings + [Planting("magnetshroom", 100, (6, 3))], (6, 4))
+
+    def test_arthurs_challenge_planned_recipe_starts_where_the_previews_end(self):
+        # Forecast by `plan` before play (two Draftodils wanted at 1-1 and 1-2) and matched in the game: three rank-1
+        # previews with Sunflowers at cost 47, then Arthur's Challenge, whose definition declares no gravestone action,
+        # so the recording holds no output between the previews and the first level selection and the activation
+        # starts at 9152, where the previews end; then the seven sources in this order and rank 1 at 2-2. All 34
+        # selections matched, and so did the add order and the two Draftodils' row shuffles: one output for the 1-1
+        # Draftodil, whose row held it and the source still standing at 3-1, and two for the 1-2 Draftodil in a row of
+        # three. Outputs from outside the artifact followed a few seconds after the effects.
+        order = [("wallnut", 50, (1, 1)), ("wallnut", 50, (2, 2)), ("puffshroom", 0, (2, 3)), ("puffshroom", 0, (3, 1)),
+                 ("puffshroom", 0, (1, 2)), ("peashooter", 100, (3, 2)), ("puffshroom", 0, (3, 3))]
+        plantings = [Planting(*p) for p in order]
+        out = scenario(self.game, [1, 1, 1], load_level("arthurs-challenge"), plantings, (2, 2), preview_cost=47)
+        self.assertEqual([p["end"] for p in out["previews"]], [3135, 6140, 9152])
+        self.assertEqual(sum(len(p["effects"]) for p in out["previews"]), 0)
+        self.assertEqual((out["level_entry_offset"], out["entry_effects"], out["activation_offset"]), (9152, [], 9152))
+        self.assertEqual([(row["cell"], row["result"], row["candidates"]) for row in out["results"]],
+                         [((3, 3), "lotusshooter", 251), ((3, 2), "actinostemma", 198), ((1, 2), "draftodil", 251),
+                          ((3, 1), "guardshroom", 251), ((2, 3), "coconutcannon", 251), ((2, 2), "peonychi", 227),
+                          ((1, 1), "draftodil", 227)])
+        self.assertEqual(out["stream_end"], 11455)
+        effects, end = placement_draws(out["results"], Counter(p.cell[1] for p in plantings), Stream(), out["stream_end"])
+        self.assertEqual([(e["cell"], e["objects"], e["start"], e["end"]) for e in effects],
+                         [((1, 1), 2, 11455, 11456), ((1, 2), 3, 11456, 11458)])
+        self.assertEqual(end, 11458)
 
 
 if __name__ == "__main__":
