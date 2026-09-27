@@ -7,7 +7,6 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from evolution import Board, Game, Level, Planting, Stream, activate, load_level, scenario, search_recipe, shared
-from evolution.search import STYLES
 from evolution.tiles import NONE
 
 CAPTURED_ON = "4.2.2"  # the version whose captures fix the preview counts and offsets asserted below
@@ -198,16 +197,32 @@ class SearchTest(unittest.TestCase):
             self.search("egypt13", [("eagleclaw", (2, 1))], {"wallnut": 50}, done=[4, 1])
 
     def test_a_search_stopped_by_the_state_cap_is_reported(self):
-        # Two Kernel-pults at this entry need seven sources. With room for four states the search stops while adding
-        # two-source states: the entry is listed with the number of sources among whose recipes it stopped, and no
-        # recipe is claimed there.
+        # Two Kernel-pults at this entry need seven sources. The start is a stored state, so with room for two the
+        # search stores one one-source sequence and stops at the second: the entry is listed with the number of sources
+        # among whose recipes it stopped, and no recipe is claimed there.
         wants, sources = [("kernelpult", (1, 1)), ("kernelpult", (3, 3))], {"wallnut": 50, "puffshroom": 0}
         full = self.search("egypt1", wants, sources, max_previews=0, offset=13958)
-        capped = self.search("egypt1", wants, sources, max_previews=0, offset=13958, max_states=4)
+        capped = self.search("egypt1", wants, sources, max_previews=0, offset=13958, max_states=2)
         self.assertEqual((full["match"]["source_count"], full["state_cap_reached"]), (7, []))
         self.assertIsNone(capped["match"])
         self.assertEqual(capped["state_cap_reached"], [{"preview_sequence": [], "level_entry_offset": 13958,
-                                                        "activation_offset": 13958, "sources": 2}])
+                                                        "activation_offset": 13958, "sources": 1}])
+
+    def test_the_preview_cost_is_a_condition_only_of_routes_with_previews(self):
+        # A recipe whose route has no previews does not depend on the previews' cost; without a recipe, the cost is
+        # stated whenever the search planned previews.
+        line = "The previews' sunflower sources have effective cost 50."
+        aeoniums = [("aeonium", (1, 1)), ("aeonium", (1, 3))], {"sunflower": 50, "puffshroom": 0}
+        three = [("kernelpult", (1, 1)), ("peashooter", (2, 2)), ("burdockbatter", (3, 3))], {}
+        cases = [
+            (self.search("memory-lane-s33-6-hard", *aeoniums, max_previews=12), True),
+            (self.search("egypt13", [("whitemelon", (1, 1))], {}, rank=4, max_sources=0, max_previews=3), False),
+            (self.search("egypt1", *three, rank=4, max_sources=0, max_previews=2), True),
+            (self.search("egypt1", *three, rank=4, max_sources=0, max_previews=0), False),
+        ]
+        for result, stated in cases:
+            with self.subTest(match=result["match"] and result["match"]["preview_sequence"], max_previews=result["max_previews"]):
+                self.assertEqual(line in result["conditions"], stated)
 
     def test_routes_agree_with_a_brute_force_over_every_route(self):
         """Every route of up to a few previews is searched on its own. For each style, the route search must return the
@@ -230,7 +245,7 @@ class SearchTest(unittest.TestCase):
                 match = self.search(level, wants, sources, activation, rank=rank, done=done + planned, max_previews=0,
                                     max_sources=most)["match"]
                 outcomes[tuple(planned)] = (self.previews.advance(shared(), 0, done + planned, 50)[1], match)
-            for style, switches in STYLES.items():
+            for style, switches in (("simple", 1), ("shorter", 3), ("shortest", None)):
                 with self.subTest(level=level.id, rank=rank, done=done, style=style):
                     allowed = {planned: outcome for planned, outcome in outcomes.items()
                                if switches is None or self.switches(done, planned) <= switches}
@@ -257,11 +272,12 @@ class SearchTest(unittest.TestCase):
         # occur in these ranges.
         wants = [("kernelpult", (1, 1)), ("peashooter", (2, 2)), ("burdockbatter", (3, 3))]
         after = {}
-        for style, done, limit in (("simple", [], 30), ("simple", [1, 4], 30), ("shorter", [], 12), ("shortest", [1], 9)):
+        for style, switches, done, limit in (("simple", 1, [], 30), ("simple", 1, [1, 4], 30), ("shorter", 3, [], 12),
+                                             ("shortest", None, [1], 9)):
             with self.subTest(style=style, done=done):
                 origin = self.previews.advance(shared(), 0, done, 50)[1]
                 ends = set()
-                for planned in self.every_route(done, limit, STYLES[style]):
+                for planned in self.every_route(done, limit, switches):
                     position = origin
                     for rank in planned:
                         if (position, rank) not in after:
