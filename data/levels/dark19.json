@@ -23,7 +23,6 @@
  "notes": "Gravestones declared at level start on 3-2, 4-5, 5-1, 8-2, 9-3, 9-4 hold no plant while they stand; give ground for that activation once one has been destroyed. The level protects magnetshroom at 6-1, 6-3 and 6-5; the artifact skips a protected plant as a source, and its cell holds no other plant while it stands. Entering the level shuffles gravestone bags of 3, 6 and 3 objects with the shared engine, in that order, before anything is planted.",
  "provenance": {
   "kind": "declared",
-  "exporter": "tools/export_level.py",
   "resources": [
    {
     "path": "PACKAGES/LEVELS/DARK19.json",

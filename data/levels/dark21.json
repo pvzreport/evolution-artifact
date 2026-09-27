@@ -37,7 +37,6 @@
  "notes": "Gravestones declared at level start on 5-1, 5-5, 6-1, 6-5, 7-2, 7-3, 7-4 hold no plant while they stand; give ground for that activation once one has been destroyed. Entering the level shuffles gravestone bags of 10, 10 and 10 objects with the shared engine, in that order, before anything is planted.",
  "provenance": {
   "kind": "declared",
-  "exporter": "tools/export_level.py",
   "resources": [
    {
     "path": "PACKAGES/LEVELS/DARK21.json",
