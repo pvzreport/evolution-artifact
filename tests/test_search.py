@@ -6,14 +6,16 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from evolution import Board, Game, Level, Planting, Stream, activate, load_level, scenario, search_recipe
+from evolution import Board, Game, Level, Planting, Stream, activate, load_level, scenario, search_recipe, shared
+from evolution.search import STYLES
 from evolution.tiles import NONE
 
 CAPTURED_ON = "4.2.2"  # the version whose captures fix the preview counts and offsets asserted below
 
 
 class SearchTest(unittest.TestCase):
-    """Every recipe must replay through `scenario` to the rows it promised, and the search must agree with a brute force."""
+    """Every recipe must replay through `scenario` to the rows it promised, and the search must agree with brute forces
+    over plantings and over preview routes."""
 
     @classmethod
     def setUpClass(cls):
@@ -45,7 +47,7 @@ class SearchTest(unittest.TestCase):
         result = self.search("memory-lane-s33-6-hard", wants, {"sunflower": 50, "puffshroom": 0}, max_previews=12)
         match = result["match"]
         self.assertIsNotNone(match)
-        self.assertEqual((match["preview_sequence"], result["budget_exhausted"]), ([1] * 6, []))
+        self.assertEqual((match["preview_sequence"], result["state_cap_reached"]), ([1] * 6, []))
         self.assertTrue(set(wants) <= self.replay("memory-lane-s33-6-hard", match, (2, 2)))
         for row in match["processing_order"]:
             self.assertEqual(row["kind"], "beach_shore" if row["cell"][0] == 3 else "ground")
@@ -54,20 +56,20 @@ class SearchTest(unittest.TestCase):
         # Dark Ages 19 shuffles bags of 3, 6 and 3 at entry; a recipe found after previews and extra outputs must start
         # where those shuffles end and replay from there through the route a player follows.
         result = self.search("dark19", [("draftodil", (2, 4))], {"puffshroom": 0, "wallnut": 50}, activation=(2, 4),
-                             prefix=[1], min_previews=0, max_previews=3, max_sources=6, offset=3, preview_cost=47, budget=300000)
+                             done=[1], max_previews=3, max_sources=6, offset=3, preview_cost=47)
         match = result["match"]
         self.assertIsNotNone(match)
-        self.assertEqual((match["preview_count"], match["source_count"], match["level_entry_offset"], match["activation_offset"]),
-                         (1, 6, 6137, 6148))
+        self.assertEqual((match["preview_sequence"], match["source_count"], match["level_entry_offset"], match["activation_offset"]),
+                         ([1, 1], 6, 6137, 6148))
         self.assertEqual([e["objects"] for e in match["entry_effects"]], [3, 6, 3])
         self.assertEqual(match["processing_order"][0]["start"], match["activation_offset"])
         self.assertIn(("draftodil", (2, 4)), self.replay("dark19", match, (2, 4), offset=3, preview_cost=47))
 
-    def test_counted_previews_include_placement_draws(self):
+    def test_done_previews_include_placement_draws(self):
         # Captured: after ten rank-1 previews with Sunflowers at cost 47 the stream stands at 30335, two draws past
-        # the tenth preview's selections. A recipe counting those previews enters the level there.
+        # the tenth preview's selections. A recipe after those previews enters the level there.
         level = load_level("arthurs-challenge")
-        result = self.search(level, [("parsnip", (2, 2))], {"wallnut": 50}, min_previews=10, max_previews=10,
+        result = self.search(level, [("parsnip", (2, 2))], {"wallnut": 50}, done=[1] * 10, max_previews=0,
                              max_sources=1, preview_cost=47)
         match = result["match"]
         self.assertIsNotNone(match)
@@ -95,13 +97,12 @@ class SearchTest(unittest.TestCase):
             if "puffshroom" in row["sources"]:
                 self.assertEqual(row["kind"], "ground")
 
-    def test_preview_prefix_then_counted_previews_of_another_rank(self):
+    def test_done_previews_of_both_ranks(self):
         # One rank-1 preview then one rank-4 preview end at offset 4,292 (forecast matched in the game).
-        result = self.search("egypt13", [("eagleclaw", (2, 1))], {"wallnut": 50}, prefix=[1], preview_rank=4,
-                             min_previews=1, max_previews=1, max_sources=1)
+        result = self.search("egypt13", [("eagleclaw", (2, 1))], {"wallnut": 50}, done=[1, 4], max_previews=0, max_sources=1)
         match = result["match"]
         self.assertIsNotNone(match)
-        self.assertEqual((match["preview_sequence"], match["level_entry_offset"]), ([1, 4], 4292))
+        self.assertEqual((match["preview_sequence"], match["planned_previews"], match["level_entry_offset"]), ([1, 4], [], 4292))
         self.assertIn(("eagleclaw", (2, 1)), self.replay("egypt13", match, (2, 2)))
 
     def test_two_tallnuts_across_ground_and_shore(self):
@@ -110,7 +111,7 @@ class SearchTest(unittest.TestCase):
         for rank in (1, 4):
             with self.subTest(rank=rank):
                 result = self.search("beach3", wants, {"sunflower": 50, "puffshroom": 0}, activation=(4, 2),
-                                     rank=rank, min_previews=10, max_previews=10)
+                                     rank=rank, done=[1] * 10, max_previews=0)
                 self.assertIsNotNone(result["match"])
                 self.assertTrue(set(wants) <= self.replay("beach3", result["match"], (4, 2), rank=rank))
 
@@ -120,7 +121,7 @@ class SearchTest(unittest.TestCase):
         result = self.search("egypt13", wants, {"wallnut": 50}, rank=4, max_previews=0)
         match = result["match"]
         self.assertIsNotNone(match)
-        self.assertEqual((match["preview_count"], match["source_count"]), (0, 8))
+        self.assertEqual((match["preview_sequence"], match["source_count"]), ([], 8))
         self.assertTrue(set(wants) <= self.replay("egypt13", match, (2, 2), rank=4))
 
     def test_empty_area_and_capture_1(self):
@@ -191,8 +192,107 @@ class SearchTest(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, message):
                     self.search(level, wants, sources, **options)
 
-    def test_search_agrees_with_a_brute_force_on_small_boards(self):
-        """On tiny boards the space of routes is enumerable: the search must return the same fewest previews and sources."""
+    def test_a_route_starts_with_the_rank_1_preview(self):
+        # Tapping the artifact plays a rank-1 preview, so previews run since a restart cannot begin with rank 4.
+        with self.assertRaisesRegex(ValueError, "rank 1"):
+            self.search("egypt13", [("eagleclaw", (2, 1))], {"wallnut": 50}, done=[4, 1])
+
+    def test_a_search_stopped_by_the_state_cap_is_reported(self):
+        # Two Kernel-pults at this entry need seven sources. With room for four states the search stops while adding
+        # two-source states: the entry is listed with the number of sources from which it was not searched, and no
+        # recipe is claimed there.
+        wants, sources = [("kernelpult", (1, 1)), ("kernelpult", (3, 3))], {"wallnut": 50, "puffshroom": 0}
+        full = self.search("egypt1", wants, sources, max_previews=0, offset=13958)
+        capped = self.search("egypt1", wants, sources, max_previews=0, offset=13958, max_states=4)
+        self.assertEqual((full["match"]["source_count"], full["state_cap_reached"]), (7, []))
+        self.assertIsNone(capped["match"])
+        self.assertEqual(capped["state_cap_reached"], [{"preview_sequence": [], "level_entry_offset": 13958,
+                                                        "activation_offset": 13958, "sources": 2}])
+
+    def test_routes_agree_with_a_brute_force_over_every_route(self):
+        """Every route of up to a few previews is searched on its own. For each style, the route search must return the
+        shortest allowed route with a recipe, then the fewest sources, the fewest rank switches and the first in rank
+        order, with that route's own recipe, and must search each position the allowed routes reach once."""
+        aeoniums = ("memory-lane-s33-6-hard", [("aeonium", (1, 1)), ("aeonium", (1, 3))], {"sunflower": 50, "puffshroom": 0}, (2, 2))
+        kernelpults = ("beach3", [("kernelpult", (3, 1)), ("kernelpult", (5, 3))], {"wallnut": 50, "puffshroom": 0}, (4, 2))
+        cases = [
+            (aeoniums, 1, [], 6, 9),  # the styles differ in length, and switches decide the simple route
+            (aeoniums, 1, [1, 4], 4, 9),  # switches count from the last done preview
+            (kernelpults, 4, [], 6, 9),  # routes of the shortest length differ in switches
+            (kernelpults, 1, [], 5, 9),  # no recipe within the limit
+            (("pirate1", [("aeonium", (6, 1))], {"wallnut": 50, "puffshroom": 0, "potatomine": 25}, (6, 2)), 1, [1], 4, 5),
+            (("pirate1", [("starfruit", (5, 1))], {"wallnut": 50}, (6, 2)), 1, [1, 4], 4, 6),
+        ]  # in the last two, fewer sources outweigh a switch, and one switch beats three routes that come first in order
+        for (level, wants, sources, activation), rank, done, limit, most in cases:
+            level = load_level(level)
+            outcomes = {}
+            for planned in self.every_route(done, limit):
+                match = self.search(level, wants, sources, activation, rank=rank, done=done + planned, max_previews=0,
+                                    max_sources=most)["match"]
+                outcomes[tuple(planned)] = (self.previews.advance(shared(), 0, done + planned, 50)[1], match)
+            for style, switches in STYLES.items():
+                with self.subTest(level=level.id, rank=rank, done=done, style=style):
+                    allowed = {planned: outcome for planned, outcome in outcomes.items()
+                               if switches is None or self.switches(done, planned) <= switches}
+                    found = sorted((len(planned), match["source_count"], self.switches(done, planned), planned)
+                                   for planned, (_, match) in allowed.items() if match)
+                    result = self.search(level, wants, sources, activation, rank=rank, done=done, style=style,
+                                         max_previews=limit, max_sources=most)
+                    match, length = result["match"], found[0][0] if found else limit
+                    if found:
+                        _, count, switched, planned = found[0]
+                        self.assertEqual((match["preview_sequence"], match["planned_previews"], match["source_count"],
+                                          match["switches"]), (done + list(planned), list(planned), count, switched))
+                        keys = ("action", "cell", "result", "start", "end", "placed")
+                        self.assertEqual([[row[k] for k in keys] for row in match["processing_order"]],
+                                         [[row[k] for k in keys] for row in allowed[planned][1]["processing_order"]])
+                    else:
+                        self.assertIsNone(match)
+                    self.assertEqual(result["entries_searched"],
+                                     len({end for planned, (end, _) in allowed.items() if len(planned) <= length}))
+
+    def test_every_position_within_the_limit_is_searched_once(self):
+        # Three spawns that almost never coincide: no route has a recipe, so each style must search every position its
+        # routes reach, and each only once, however many routes reach it. Positions reached with both last ranks
+        # occur in these ranges.
+        wants = [("kernelpult", (1, 1)), ("peashooter", (2, 2)), ("burdockbatter", (3, 3))]
+        after = {}
+        for style, done, limit in (("simple", [], 30), ("simple", [1, 4], 30), ("shorter", [], 12), ("shortest", [1], 9)):
+            with self.subTest(style=style, done=done):
+                origin = self.previews.advance(shared(), 0, done, 50)[1]
+                ends = set()
+                for planned in self.every_route(done, limit, STYLES[style]):
+                    position = origin
+                    for rank in planned:
+                        if (position, rank) not in after:
+                            after[(position, rank)] = self.previews.run(shared(), position, rank, 50)["end"]
+                        position = after[(position, rank)]
+                    ends.add(position)
+                result = self.search("egypt1", wants, {}, rank=4, max_sources=0, done=done, style=style, max_previews=limit)
+                self.assertIsNone(result["match"])
+                self.assertEqual(result["entries_searched"], len(ends))
+
+    @staticmethod
+    def every_route(done, limit, most=None):
+        """Every rank sequence of up to `limit` previews after the done ones with at most `most` rank switches, counted
+        from the last done preview; a route with previews starts with rank 1."""
+        def extend(route, last, switches):
+            yield route
+            if len(route) < limit:
+                for rank in (1, 4):
+                    count = switches + (last is not None and rank != last)
+                    if (last is not None or rank == 1) and (most is None or count <= most):
+                        yield from extend(route + [rank], rank, count)
+        return extend([], done[-1] if done else None, 0)
+
+    @staticmethod
+    def switches(done, planned):
+        ranks = done[-1:] + list(planned)
+        return sum(1 for before, after in zip(ranks, ranks[1:]) if before != after)
+
+    def test_each_entry_agrees_with_a_brute_force_on_small_boards(self):
+        """On tiny boards every planting is enumerable: after each number of rank-1 previews the search must find the
+        fewest sources that place the wants, or report none."""
         rng = random.Random(20260923)
         stream = Stream()
         boards = [
@@ -203,7 +303,7 @@ class SearchTest(unittest.TestCase):
                    "cells": {"2-1": "pirate_plank", "3-1": "none"}}),
         ]
         source_pool = {"puffshroom": 0, "sunflower": 50, "seashroom": (0, ["beach_water"]), "wintermelon": 500}
-        checked = 0
+        checked = found = 0
         for _ in range(60):
             level, rank = rng.choice(boards), rng.choice((1, 4))
             activation = (rng.randint(1, level.width), rng.randint(1, level.height))
@@ -214,18 +314,23 @@ class SearchTest(unittest.TestCase):
             if rank == 1 and all(alias == "wintermelon" for alias in sources):
                 continue
             truth, wants = self.brute_force(level, board, pools, usable, sources, rank, rng, stream)
-            if truth is None:
+            if wants is None:
                 continue
-            result = self.search(level, wants, sources, activation, rank=rank, max_previews=3, max_sources=len(usable))
-            match = result["match"]
-            self.assertIsNotNone(match, (wants, sources, rank, activation))
-            self.assertEqual((match["preview_count"], match["source_count"]), truth, (wants, sources, rank, activation))
-            self.assertTrue(set(wants) <= self.replay(level, match, activation, rank=rank))
+            for count, fewest in enumerate(truth):
+                result = self.search(level, wants, sources, activation, rank=rank, done=[1] * count, max_previews=0,
+                                     max_sources=len(usable))
+                match = result["match"]
+                self.assertEqual(match["source_count"] if match else None, fewest, (wants, sources, rank, activation, count))
+                if match:
+                    self.assertTrue(set(wants) <= self.replay(level, match, activation, rank=rank))
+                    found += 1
             checked += 1
         self.assertGreaterEqual(checked, 25)
+        self.assertGreaterEqual(found, 25)
 
     def brute_force(self, level, board, pools, usable, sources, rank, rng, stream):
-        """Pick wants from a random route so a recipe exists, then find the fewest previews and sources for them."""
+        """Pick wants from a random planting so a recipe exists, then the fewest sources placing them after 0 to 3
+        rank-1 previews (None where no planting does)."""
         def allowed(alias, cell):
             spec, kind = sources[alias], board.kind_at(cell)
             return (isinstance(spec, int) or kind in spec[1]) and pools.plantable(alias, kind)
@@ -234,29 +339,25 @@ class SearchTest(unittest.TestCase):
             spec = sources[alias]
             return spec if isinstance(spec, int) else spec[0]
 
-        def routes(count):
+        def plantings(count):
             _, offset = self.previews.advance(stream, 0, [1] * count, 50)
             for size in range(len(usable) + 1):
                 for cells in itertools.permutations(usable, size):
                     choices = [[a for a in sources if allowed(a, cell)] for cell in cells]
                     for aliases in itertools.product(*choices):
-                        plantings = [Planting(alias, cost(alias), cell) for alias, cell in zip(aliases, cells)]
-                        rows, _ = activate(board, pools, plantings, rank, stream, offset)
-                        yield count, size, {(row["result"], row["cell"]) for row in rows if row["placed"]}
+                        plan = [Planting(alias, cost(alias), cell) for alias, cell in zip(aliases, cells)]
+                        rows, _ = activate(board, pools, plan, rank, stream, offset)
+                        yield size, {(row["result"], row["cell"]) for row in rows if row["placed"]}
 
-        candidates = [placed for _, _, placed in routes(rng.randint(0, 2)) if placed]
+        candidates = [placed for _, placed in plantings(rng.randint(0, 2)) if placed]
         if not candidates:
             return None, None
         placed = rng.choice(candidates)
         wants = rng.sample(sorted(placed), min(len(placed), rng.randint(1, 2)))
         if len({cell for _, cell in wants}) != len(wants) and (rank == 1 or len(wants) != 2):
             wants = wants[:1]
-        for count in range(4):
-            for _, size, produced in routes(count):
-                if set(wants) <= produced:
-                    return (count, size), wants
-        return None, None
-
+        truth = [next((size for size, produced in plantings(count) if set(wants) <= produced), None) for count in range(4)]
+        return truth, wants
 
 if __name__ == "__main__":
     unittest.main()

@@ -59,9 +59,10 @@ class CliTest(unittest.TestCase):
         text = run("plan", "--rank", "4", "--level", "egypt13", "--want", "whitemelon@1-1", "--max-sources", "0", "--max-previews", "0")
         self.assertIn("leave the activation area empty", text)
         self.assertIn("rank-4 Evolution", text)
-        text = run("plan", "--level", "egypt13", "--want", "eagleclaw@2-1", "--source", "wallnut=50", "--previews", "1",
-                   "--preview-rank", "4", "--min-previews", "1", "--max-previews", "1", "--max-sources", "1")
-        self.assertIn("Run these previews, each one complete, with sunflower at effective cost 50: 1,4.", text)
+        text = run("plan", "--level", "egypt13", "--want", "eagleclaw@2-1", "--source", "wallnut=50", "--done", "1",
+                   "--style", "simple", "--max-previews", "1", "--max-sources", "1")
+        self.assertIn("Continue from the previews already run since a full relaunch: 1.", text)
+        self.assertIn("Run these further previews, each one complete, with sunflower at effective cost 50: 4.", text)
         self.assertIn("eagleclaw  <- wanted", text)
 
     def test_repeated_source_flags_widen_the_kinds(self):
