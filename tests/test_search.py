@@ -199,7 +199,7 @@ class SearchTest(unittest.TestCase):
 
     def test_a_search_stopped_by_the_state_cap_is_reported(self):
         # Two Kernel-pults at this entry need seven sources. With room for four states the search stops while adding
-        # two-source states: the entry is listed with the number of sources from which it was not searched, and no
+        # two-source states: the entry is listed with the number of sources among whose recipes it stopped, and no
         # recipe is claimed there.
         wants, sources = [("kernelpult", (1, 1)), ("kernelpult", (3, 3))], {"wallnut": 50, "puffshroom": 0}
         full = self.search("egypt1", wants, sources, max_previews=0, offset=13958)
@@ -222,7 +222,7 @@ class SearchTest(unittest.TestCase):
             (kernelpults, 1, [], 5, 9),  # no recipe within the limit
             (("pirate1", [("aeonium", (6, 1))], {"wallnut": 50, "puffshroom": 0, "potatomine": 25}, (6, 2)), 1, [1], 4, 5),
             (("pirate1", [("starfruit", (5, 1))], {"wallnut": 50}, (6, 2)), 1, [1, 4], 4, 6),
-        ]  # in the last two, fewer sources outweigh a switch, and one switch beats three routes that come first in order
+        ]  # in the last two, fewer sources outweigh a switch, and one switch beats three on a route first in rank order
         for (level, wants, sources, activation), rank, done, limit, most in cases:
             level = load_level(level)
             outcomes = {}
@@ -358,6 +358,7 @@ class SearchTest(unittest.TestCase):
             wants = wants[:1]
         truth = [next((size for size, produced in plantings(count) if set(wants) <= produced), None) for count in range(4)]
         return truth, wants
+
 
 if __name__ == "__main__":
     unittest.main()

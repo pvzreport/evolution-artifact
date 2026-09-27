@@ -39,5 +39,6 @@ class StreamTest(unittest.TestCase):
                 shuffled, end = full.shuffle(pool, offset)
                 self.assertEqual(fast.first(pool, offset), (shuffled[0] if shuffled else None, end), (size, offset))
 
+
 if __name__ == "__main__":
     unittest.main()
