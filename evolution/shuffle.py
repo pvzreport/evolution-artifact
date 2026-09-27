@@ -14,6 +14,7 @@ outputs), and the shuffle loop itself.
 MASK32 = 0xFFFFFFFF
 MASK64 = 0xFFFFFFFFFFFFFFFF
 DEFAULT_SEED = 5489  # std::mt19937::default_seed
+_MASKS = [0, 0]  # the draw mask of each span from 2 on, grown as larger spans are shuffled
 
 
 class Mt19937:
@@ -131,3 +132,30 @@ def random_shuffle(values, draw):
         first += 1
         distance -= 1
     return result
+
+
+def shuffle_first(values, outputs, position):
+    """Element 0 of `random_shuffle(values, ...)` drawing outputs[position], outputs[position + 1] and so on, and the
+    position after the loop, without building the permutation.
+
+    The loop fixes element 0 with its first accepted draw and never moves it again, so the rest of the loop only
+    consumes outputs. `outputs` holds raw 32-bit outputs; an IndexError means it holds too few. Spans are below 2**32.
+    """
+    size = len(values)
+    if size <= 1:
+        return (values[0] if size else None), position
+    masks = _MASKS
+    while len(masks) <= size:
+        masks.append((1 << (len(masks) - 1).bit_length()) - 1)
+    mask = masks[size]
+    while True:
+        index = outputs[position] & mask
+        position += 1
+        if index < size:
+            break
+    span = size - 1
+    while span > 1:
+        if (outputs[position] & masks[span]) < span:
+            span -= 1
+        position += 1
+    return values[index], position

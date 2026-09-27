@@ -9,7 +9,7 @@ positions in this sequence.
 
 from array import array
 
-from .shuffle import DEFAULT_SEED, Mt19937, random_shuffle
+from .shuffle import DEFAULT_SEED, Mt19937, random_shuffle, shuffle_first
 
 
 class Stream:
@@ -31,6 +31,16 @@ class Stream:
         """The permutation std::random_shuffle produces at this offset, and the offset after it."""
         cursor = _Cursor(self, offset)
         return random_shuffle(values, cursor), cursor.position
+
+    def first(self, values, offset):
+        """Element 0 of the permutation `shuffle` produces at this offset, and the offset after it."""
+        if offset < 0:
+            raise ValueError("A stream position cannot be negative")
+        while True:
+            try:
+                return shuffle_first(values, self._outputs, offset)
+            except IndexError:  # the loop read past the outputs drawn so far: draw more and run it again
+                self.output(max(offset, len(self._outputs)) + 2 * len(values) + 64)
 
 
 class _Cursor:
