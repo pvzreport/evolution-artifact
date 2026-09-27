@@ -1,7 +1,8 @@
-"""A level: its stage, its seed-bank bans, and the kind of each cell.
+"""A level: its stage, its seed-bank bans, the kind of each cell, and what its entry shuffles.
 
 A level description is a small JSON file holding declared values only: the stage name,
-the banned plants, the default cell kind, and the cells whose kind differs. The tide
+the banned plants, the default cell kind, the cells whose kind differs, and the sizes of
+the gravestone bags the level shuffles with the shared engine when it loads. The tide
 state of a Beach cell changes during play, so it is supplied per activation instead of
 stored here. Cells are written COLUMN-ROW, one-based, for example 3-1.
 """
@@ -40,6 +41,11 @@ class Level:
         for location, kind in [("default_kind", self.default_kind)] + [(format_cell(cell), kind) for cell, kind in self.cells.items()]:
             if not isinstance(kind, str):
                 raise ValueError("Cell kind at %s must be a string, got %r" % (location, kind))
+        shuffles = record.get("entry_shuffles", [])
+        if not isinstance(shuffles, list) or any(isinstance(n, bool) or not isinstance(n, int) or n < 0 for n in shuffles):
+            raise ValueError("entry_shuffles lists the object count of each gravestone bag the level shuffles at entry, "
+                             "non-negative integers in order; got %r" % (shuffles,))
+        self.entry_shuffles = list(shuffles)
         self.notes = record.get("notes", "")
 
     def kind_at(self, cell, overrides=None):
@@ -76,7 +82,8 @@ class Level:
     def describe(self):
         return {"id": self.id, "name": self.name, "stage": self.stage, "bans": self.bans,
                 "default_kind": self.default_kind, "width": self.width, "height": self.height,
-                "cells": {format_cell(cell): kind for cell, kind in sorted(self.cells.items())}}
+                "cells": {format_cell(cell): kind for cell, kind in sorted(self.cells.items())},
+                "entry_shuffles": list(self.entry_shuffles)}
 
 
 def available_levels():

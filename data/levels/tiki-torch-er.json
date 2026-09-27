@@ -39,7 +39,8 @@
   "8-5": "beach_water",
   "9-5": "beach_water"
  },
- "notes": "Columns 1 to 4 are dry ground. Columns 5 to 9 default to flooded cells without Lily Pads. For the activation, use beach_pad wherever a Lily Pad is present and beach_shore wherever the tide has left dry sand.",
+ "entry_shuffles": [],
+ "notes": "Columns 1 to 4 are dry ground. Columns 5 to 9 default to flooded cells without Lily Pads. For the activation, use beach_pad wherever a Lily Pad is present and beach_shore wherever the tide has left dry sand. Entry shuffles: none, assumed. Big Wave Beach has no gravestones, and no activation was captured in this level.",
  "provenance": {
   "kind": "capture",
   "note": "Stage and seed-bank bans checked in game version 4.2.2. The observed shoreline is between columns 4 and 5; water coverage and Lily Pads can be overridden per activation."

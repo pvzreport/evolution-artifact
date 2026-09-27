@@ -13,7 +13,12 @@
   "8-5": "none",
   "9-4": "none"
  },
- "notes": "Gravestones declared at level start on 5-1, 6-2, 6-4, 7-1, 8-2, 8-5, 9-4 hold no plant while they stand; give ground for that activation once one has been destroyed.",
+ "entry_shuffles": [
+  3,
+  3,
+  4
+ ],
+ "notes": "Gravestones declared at level start on 5-1, 6-2, 6-4, 7-1, 8-2, 8-5, 9-4 hold no plant while they stand; give ground for that activation once one has been destroyed. Entering the level shuffles gravestone bags of 3, 3 and 4 objects with the shared engine, in that order, before anything is planted.",
  "provenance": {
   "kind": "declared",
   "exporter": "tools/export_level.py",

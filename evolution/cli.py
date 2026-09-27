@@ -151,6 +151,16 @@ def _outcome(row):
     return outcome
 
 
+def _describe_entry(effects, start):
+    """What entering the level draws: its gravestone-bag shuffles, and the offset the activation starts from."""
+    if not effects:
+        return "Entering the level draws nothing; the activation starts at offset %d." % start
+    bags = ("a gravestone bag of %s" % _count(effects[0]["objects"], "object") if len(effects) == 1
+            else "gravestone bags of %s objects" % ", ".join(str(e["objects"]) for e in effects))
+    return "Entering the level shuffles %s (%s); the activation starts at offset %d." % (
+        bags, _count(start - effects[0]["start"], "draw"), start)
+
+
 def _describe_row(row):
     """One row as 'CELL: SOURCE -> RESULT' with the placement outcome."""
     source = "/".join(row.get("sources") or ([row["source"]] if row["source"] else [])) or "spawn"
@@ -194,6 +204,7 @@ def cmd_predict(args):
         print("Level %s (stage %s); rank-%d activation at %s; level entry at offset %d." % (
             level.name, level.stage, args.rank, format_cell(activation) if activation else "unspecified",
             result["level_entry_offset"]))
+        print("  " + _describe_entry(result["entry_effects"], result["activation_offset"]))
         for index, row in enumerate(result["results"], start=1):
             what = "%s, cost %d" % (row["source"], row["cost"]) if row["action"] == "evolve" else "rank-4 spawn"
             print("  processed %d: %s %s (%s, %d candidates) -> %s" % (
@@ -249,7 +260,8 @@ def cmd_plan(args):
         print("\nPredicted selections, in processing order:")
         for row in match["processing_order"]:
             print("   " + _describe_row(row) + ("  <- wanted" if row["wanted"] else ""))
-        print("\nStream: level entry at offset %d; selections end at %d." % (match["level_entry_offset"], match["stream_end"]))
+        print("\nStream: level entry at offset %d; the activation starts at %d; selections end at %d." % (
+            match["level_entry_offset"], match["activation_offset"], match["stream_end"]))
     print("\nConditions:")
     for line in result["conditions"]:
         print("  " + line)
@@ -296,7 +308,7 @@ def main(argv=None):
     predict.add_argument("--previews", default="", help="Preview ranks in order, for example 1x6 or 1,4 (default: none)")
     predict.add_argument("--preview-cost", type=int, metavar="COST",
                          help="Effective cost of the previews' Sunflowers (default: the declared cost)")
-    predict.add_argument("--offset", type=int, default=0, help="Extra raw engine outputs consumed before the level")
+    predict.add_argument("--offset", type=int, default=0, help="Extra raw engine outputs consumed between the previews and the level")
     predict.add_argument("--level", help="Level id from data/levels, or a path to a description")
     predict.add_argument("--rank", type=int, choices=(1, 4), default=1, help="Artifact rank of the activation (default: 1)")
     predict.add_argument("--activate", help="Activation cell COLUMN-ROW")

@@ -25,13 +25,15 @@ class SearchTest(unittest.TestCase):
             level = load_level(level)
         return search_recipe(self.game, level, wants, sources, activation, **options)
 
-    def replay(self, level, match, activation, overrides=None, rank=1, offset=0):
+    def replay(self, level, match, activation, overrides=None, rank=1, offset=0, preview_cost=None):
         """Replay a recipe exactly as a player would follow it, and check it delivers what it promised."""
         if isinstance(level, str):
             level = load_level(level)
         plantings = [Planting(s["source"], s["cost"], s["cell"]) for s in match["planting_order"]]
-        out = scenario(self.game, match["preview_sequence"], level, plantings, activation, overrides, offset, rank)
-        self.assertEqual(out["level_entry_offset"], match["level_entry_offset"])
+        out = scenario(self.game, match["preview_sequence"], level, plantings, activation, overrides, offset, rank,
+                       preview_cost=preview_cost)
+        self.assertEqual((out["level_entry_offset"], out["activation_offset"], out["entry_effects"]),
+                         (match["level_entry_offset"], match["activation_offset"], match["entry_effects"]))
         self.assertEqual(out["stream_end"], match["stream_end"])
         keys = ("action", "cell", "result", "placed", "start", "end")
         self.assertEqual([tuple(row[k] for k in keys) for row in out["results"]],
@@ -47,6 +49,19 @@ class SearchTest(unittest.TestCase):
         self.assertTrue(set(wants) <= self.replay("memory-lane-s33-6-hard", match, (2, 2)))
         for row in match["processing_order"]:
             self.assertEqual(row["kind"], "beach_shore" if row["cell"][0] == 3 else "ground")
+
+    def test_recipes_start_after_the_level_entry(self):
+        # Dark Ages 19 shuffles bags of 3, 6 and 3 at entry; a recipe found after previews and extra outputs must start
+        # where those shuffles end and replay from there through the route a player follows.
+        result = self.search("dark19", [("draftodil", (2, 4))], {"puffshroom": 0, "wallnut": 50}, activation=(2, 4),
+                             prefix=[1], min_previews=0, max_previews=3, max_sources=6, offset=3, preview_cost=47, budget=300000)
+        match = result["match"]
+        self.assertIsNotNone(match)
+        self.assertEqual((match["preview_count"], match["source_count"], match["level_entry_offset"], match["activation_offset"]),
+                         (1, 6, 6137, 6148))
+        self.assertEqual([e["objects"] for e in match["entry_effects"]], [3, 6, 3])
+        self.assertEqual(match["processing_order"][0]["start"], match["activation_offset"])
+        self.assertIn(("draftodil", (2, 4)), self.replay("dark19", match, (2, 4), offset=3, preview_cost=47))
 
     def test_counted_previews_include_placement_draws(self):
         # Captured: after ten rank-1 previews with Sunflowers at cost 47 the stream stands at 30335, two draws past

@@ -104,6 +104,21 @@ class CliTest(unittest.TestCase):
         self.assertEqual(predicted["game"]["version"], "4.2.4")
         self.assertIn("version 4.2.4", predicted["conditions"][0])
 
+    def test_level_entry_shuffles_reach_the_output(self):
+        # Captured on 4.2.4: Dark Ages 21 shuffles three bags of ten at entry, 42 draws from a fresh launch.
+        text = run("predict", "--game-version", "4.2.4", "--rank", "4", "--level", "dark21", "--activate", "2-2")
+        self.assertIn("Entering the level shuffles gravestone bags of 10, 10, 10 objects (42 draws); "
+                      "the activation starts at offset 42.", text)
+        self.assertIn("Selection stream ends at 663.", text)
+        self.assertIn("Entering the level draws nothing; the activation starts at offset 0.",
+                      run("predict", "--rank", "4", "--level", "egypt13", "--activate", "2-2"))
+        plan = json.loads(run("plan", "--game-version", "4.2.4", "--rank", "4", "--level", "dark21", "--want", "groundcherry@1-1",
+                              "--max-sources", "0", "--max-previews", "0", "--json"))
+        self.assertEqual((plan["match"]["level_entry_offset"], plan["match"]["activation_offset"]), (0, 42))
+        self.assertEqual([s["objects"] for s in plan["match"]["entry_effects"]], [10, 10, 10])
+        self.assertIn("the activation starts at 42", run("plan", "--game-version", "4.2.4", "--rank", "4", "--level", "dark21",
+                                                         "--want", "groundcherry@1-1", "--max-sources", "0", "--max-previews", "0"))
+
     def test_model_refusals_reach_the_user_as_errors(self):
         self.assert_error(["predict", "--rank", "4", "--level", "beach3", "--activate", "5-3", "--plant", "lilypad=25@5-3"], "cannot stand on")
         self.assert_error(["plan", "--rank", "4", "--level", "beach3", "--activate", "5-3", "--want", "cactus@5-3", "--source", "puffshroom=0"],
