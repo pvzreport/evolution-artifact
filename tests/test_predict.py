@@ -50,7 +50,7 @@ class PredictTest(unittest.TestCase):
         self.assertEqual(out["stream_end"], 2874)
 
     def test_memory_lane_six_preview_recipe(self):
-        # Forecast saved before play, then both Aeoniums appeared on the iPad. Cell 3-1 is a shore cell;
+        # Forecast saved before play, then both Aeoniums appeared in the game. Cell 3-1 is a shore cell;
         # its own result was not checked in that run and is left out here.
         plantings = [Planting("sunflower", 50, c) for c in [(1, 3), (3, 3), (2, 3), (3, 2), (2, 2), (1, 1)]]
         plantings += [Planting("puffshroom", 0, c) for c in [(1, 2), (3, 1), (2, 1)]]
@@ -64,7 +64,7 @@ class PredictTest(unittest.TestCase):
             self.assertEqual(cells[cell], plant, cell)
 
     def test_pennys_pursuit_27_preview_recipe(self):
-        # Forecast saved before play with Sunflowers at cost 50; both Convallaria Chemists appeared on the iPad, and
+        # Forecast saved before play with Sunflowers at cost 50; both Convallaria Chemists appeared in the game, and
         # only those two cells were checked. The forecast omitted the row shuffles of the four Draftodils among these
         # previews. With them the level entry moves by two outputs and the stream re-aligns inside the first level
         # selection, the Cactus at 2-1, whose result differs and was not checked.
@@ -77,7 +77,7 @@ class PredictTest(unittest.TestCase):
         self.assertEqual(cells[(1, 3)], "convallariachemist")
 
     def test_arthurs_challenge_after_24_discounted_previews(self):
-        # Captured 2026-09-24: a rank-1 activation in Arthur's Challenge after 24 reported rank-1 previews with
+        # Captured: a rank-1 activation in Arthur's Challenge after 24 reported rank-1 previews with
         # Sunflowers at effective cost 47. The nine selections and all 2,974 recorded outputs match from entry 72725,
         # which the previews reach with or without the draws of their one Draftodil (preview 10): the two routes
         # re-align by the end of preview 11. The Draftodil this activation itself creates at 2-3 drew two more
@@ -99,7 +99,7 @@ class PredictTest(unittest.TestCase):
         self.assertEqual(end, 75699)
 
     def test_beach_flooded_capture_from_offset_zero(self):
-        # Captured 2026-09-19 with columns 3 and 4 under water; the stream was at offset 0.
+        # Captured with columns 3 and 4 under water; the stream was at offset 0.
         plantings = [Planting("sunflower", 50, (2, 1)), Planting("sunflower", 50, (2, 3)),
                      Planting("sunflower", 50, (4, 1), "beach_pad"), Planting("puffshroom", 0, (2, 2)),
                      Planting("puffshroom", 0, (3, 1), "beach_pad"), Planting("seashroom", 0, (3, 2), "beach_water")]
@@ -110,7 +110,7 @@ class PredictTest(unittest.TestCase):
         self.assertEqual(out["stream_end"], 1557)
 
     def test_pirate_capture_from_offset_2667(self):
-        # Captured 2026-09-19 in Pirate Seas 1 after other artifact use; the stream was at offset 2,667.
+        # Captured in Pirate Seas 1 after other artifact use; the stream was at offset 2,667.
         plantings = [Planting("sunflower", 50, (5, 4)), Planting("puffshroom", 0, (5, 5)),
                      Planting("sunflower", 50, (6, 5)), Planting("puffshroom", 0, (6, 4)),
                      Planting("sunshroom", 25, (5, 3)), Planting("sunflower", 50, (4, 4)), Planting("puffshroom", 0, (4, 3))]
@@ -122,7 +122,7 @@ class PredictTest(unittest.TestCase):
         self.assertEqual(out["stream_end"], 2667 + 2276)
 
     def test_rank4_preview_after_one_rank1_preview(self):
-        # Forecast saved before play on 2026-09-19 and matched on the device: the three evolutions and the six spawns
+        # Forecast saved before play and matched in the game: the three evolutions and the six spawns
         # in order. The spawn cells were not recorded then; they follow the display-board layout captured later.
         out = self.run_scenario([1, 4], None, [], None, preview_cost=50)
         second = out["previews"][1]["results"]
@@ -136,7 +136,7 @@ class PredictTest(unittest.TestCase):
         self.assertEqual(out["offset_after_previews"], 4292)
 
     def test_two_rank4_previews_and_a_third_start_from_offset_35296(self):
-        # Captured 2026-09-19 with Sunflowers at cost 50: two complete rank-4 previews and the three evolutions
+        # Captured with Sunflowers at cost 50: two complete rank-4 previews and the three evolutions
         # of a third, 3,717 outputs, starting at offset 35,296.
         stream = Stream()
         rows, end = self.previews.advance(stream, 35296, [4, 4], 50)
@@ -151,8 +151,8 @@ class PredictTest(unittest.TestCase):
         self.assertEqual(third[2]["end"], 35296 + 3717)
 
     def test_display_board_layout_played_check(self):
-        # Played 2026-09-24 after a fresh launch with Sunflowers at cost 47: a rank-1 preview, then a rank-4 preview.
-        # The screenshot showed these plants on these cells, a Lily Pad beneath each evolved plant, and nothing else.
+        # Played after a fresh launch with Sunflowers at cost 47: a rank-1 preview, then a rank-4 preview.
+        # The board showed these plants on these cells, a Lily Pad beneath each evolved plant, and nothing else.
         out = self.run_scenario([1, 4], None, [], None, preview_cost=47)
         second = out["previews"][1]["results"]
         self.assertEqual([(row["cell"], row["result"]) for row in second if row["action"] == "evolve"],
@@ -163,7 +163,7 @@ class PredictTest(unittest.TestCase):
                           ((5, 3), "alarmsagittifolia")])
 
     def test_spawned_draftodil_effect_played_check(self):
-        # Played 2026-09-24 after a fresh launch at cost 47, ranks 1,1,1,1,4,4,4,1. Preview 7 showed a bare Lily Pad
+        # Played after a fresh launch at cost 47, ranks 1,1,1,1,4,4,4,1. Preview 7 showed a bare Lily Pad
         # at 3-2, whose pad rejects jewelrabbit, and preview 8 showed rheumnobile at 5-3: the result of one draw,
         # because the spawned Draftodil at 5-3 was added first, when its row held only the source and itself.
         out = self.run_scenario([1, 1, 1, 1, 4, 4, 4, 1], None, [], None, preview_cost=47)
@@ -178,7 +178,7 @@ class PredictTest(unittest.TestCase):
         self.assertEqual(by_cell(out["previews"][7]["results"])[(5, 3)], "rheumnobile")
 
     def test_rank1_rows_one_and_two_played_checks(self):
-        # Played 2026-09-24 after fresh launches at cost 47. Ranks 1,1,1,1,1,4,1,1,1,1: preview 9 evolved a Draftodil
+        # Played after fresh launches at cost 47. Ranks 1,1,1,1,1,4,1,1,1,1: preview 9 evolved a Draftodil
         # at 3-1 and preview 10 showed dendrobiumguard at 5-3. Ranks 1,1,1,4,4,1,4,4,1,1,1,1: preview 11 evolved a
         # Draftodil at 4-2 and preview 12 showed darkmatter_dragonfruit at 5-3. Each is the result of two draws,
         # three objects in the row.
@@ -192,7 +192,7 @@ class PredictTest(unittest.TestCase):
         self.assertEqual(by_cell(out["previews"][11]["results"])[(5, 3)], "darkmatter_dragonfruit")
 
     def test_bare_pad_in_a_draftodil_row_played_check(self):
-        # Forecast saved before play on 2026-09-24 and matched on the device after a fresh launch at cost 47, ranks
+        # Forecast saved before play and matched in the game after a fresh launch at cost 47, ranks
         # 1,1,1,1,1,4,1,1,1,4,1. Preview 10 spawned a Draftodil at 4-2 and a bare Lily Pad at 5-2, and preview 11
         # showed geraniifencer at 5-3: the result of one draw, because the row then held only the source at 3-2 and
         # the Draftodil, the bare pad not among its objects (thundersnapdragon would have followed two draws).
@@ -205,7 +205,7 @@ class PredictTest(unittest.TestCase):
         self.assertEqual(by_cell(out["previews"][10]["results"])[(5, 3)], "geraniifencer")
 
     def test_rejected_values_in_a_row_shuffle_played_check(self):
-        # Forecast saved before play on 2026-09-24 and matched on the device after a fresh launch at cost 47, ranks
+        # Forecast saved before play and matched in the game after a fresh launch at cost 47, ranks
         # 1,1,1,1,4,1,4,4,1,1,4,1,4,1. Preview 13 spawned Draftodils at 4-1 and 4-2. The one at 4-2 is added first
         # and shuffles three objects in two draws; the one at 4-1 then shuffles three objects in four draws, the
         # engine rejecting two values. Preview 14 showed longmalily at 5-3, the result after those six draws
@@ -220,7 +220,7 @@ class PredictTest(unittest.TestCase):
         self.assertEqual(by_cell(out["previews"][13]["results"])[(5, 3)], "longmalily")
 
     def test_pad_over_a_dry_shore_cell_played_check(self):
-        # Played 2026-09-19 after a fresh launch, tide out: Puff-shrooms at 2-1, at 3-1 on bare shore, and at 3-2
+        # Played after a fresh launch, tide out: Puff-shrooms at 2-1, at 3-1 on bare shore, and at 3-2
         # on a Lily Pad; activation at 2-2. Reported chestnut, bloomerang, agave: the pad kind's results only.
         def play(kind):
             plantings = [Planting("puffshroom", 0, (2, 1)), Planting("puffshroom", 0, (3, 1)),
@@ -232,7 +232,7 @@ class PredictTest(unittest.TestCase):
         self.assertEqual(play("beach_shore"), {(3, 2): "endurian", (3, 1): "turkeypult", (2, 1): "chestnut"})
 
     def test_dark_ages_1_gravestone_inside_the_area_played_check(self):
-        # Played 2026-09-19 after a fresh launch: Sunflowers at 1-1, 2-1, 1-2, activation at 2-2, with the
+        # Played after a fresh launch: Sunflowers at 1-1, 2-1, 1-2, activation at 2-2, with the
         # level's gravestone at 3-1 inside the area. Reported passionflower, goldmagnet, nekotail.
         plantings = [Planting("sunflower", 50, cell) for cell in [(1, 1), (2, 1), (1, 2)]]
         out = self.run_scenario([], "dark1", plantings, (2, 2))

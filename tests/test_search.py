@@ -96,7 +96,7 @@ class SearchTest(unittest.TestCase):
                 self.assertEqual(row["kind"], "ground")
 
     def test_preview_prefix_then_counted_previews_of_another_rank(self):
-        # One rank-1 preview then one rank-4 preview end at offset 4,292 (forecast matched on the device).
+        # One rank-1 preview then one rank-4 preview end at offset 4,292 (forecast matched in the game).
         result = self.search("egypt13", [("eagleclaw", (2, 1))], {"wallnut": 50}, prefix=[1], preview_rank=4,
                              min_previews=1, max_previews=1, max_sources=1)
         match = result["match"]
