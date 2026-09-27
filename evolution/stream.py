@@ -36,12 +36,11 @@ class Stream:
         """Element 0 of the permutation `shuffle` produces at this offset, and the offset after it."""
         if offset < 0:
             raise ValueError("A stream position cannot be negative")
-        self.output(offset + 2 * len(values) + 64)
         while True:
             try:
                 return shuffle_first(values, self._outputs, offset)
-            except IndexError:
-                self.output(2 * len(self._outputs))
+            except IndexError:  # the loop read past the outputs drawn so far: draw more and run it again
+                self.output(max(offset, len(self._outputs)) + 2 * len(values) + 64)
 
 
 class _Cursor:

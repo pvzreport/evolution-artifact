@@ -30,7 +30,8 @@ class StreamTest(unittest.TestCase):
 
     def test_first_element_matches_the_full_shuffle(self):
         # The search reads only element 0 and the end of each shuffle. The fast path must agree with the full loop at
-        # every size, including the power-of-two mask boundaries, and extend a stream that holds too few outputs.
+        # every size, including the power-of-two mask boundaries, and draw more outputs whenever the loop reads past
+        # those drawn so far, as it does at the first offsets and every new farthest one.
         rng = random.Random(5489)
         full, fast = Stream(), Stream()
         for size in [0, 1, 2, 3, 4, 5, 8, 9, 16, 17, 55, 63, 64, 65, 127, 128, 129, 217, 227, 251, 256, 257, 1023, 1024, 1500]:
