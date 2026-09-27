@@ -4,9 +4,11 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from evolution import Game, Level, available_levels, load_level
+from evolution import Level, available_levels, load_level
 from evolution.level import LEVELS
+from projections import game_on
 
 POOLS = json.loads((Path(__file__).resolve().parent / "fixtures/pools.json").read_text())
 FIXTURES = POOLS["pools"]
@@ -15,7 +17,7 @@ FIXTURES = POOLS["pools"]
 class LevelTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        game = Game(POOLS["game_version"])
+        game = game_on(POOLS["game_version"])
         cls.document, cls.kinds = game.plants, game.kinds
 
     def test_every_description_loads_with_known_kinds(self):

@@ -4,11 +4,7 @@ Supported Python: 3.9 or newer, standard library only. Use the latest Python for
 
 ## Commands
 
-`predict`, `plan` and `pool` take `--game-version VERSION`, the game version whose plant data to use: one of those in `data/plants`, the newest by default. Use the version your game runs. The versions differ in their plants, so the same route can give different results, and every prediction names the version it assumed in its conditions.
-
-```bash
-python3 -m evolution predict --game-version 4.2.2 --previews 1x3
-```
+The commands use the bundled plant data, of game version 4.2.4, and every prediction names that version in its conditions. Versions differ in their plants, so on another version the same route can give different results. To replay evidence recorded on another version, run the model from Python on that version's plant data file: `scenario` and `search_recipe` take a `Game`, and `Game(load_plants(path))` is one on the plant data in `path`. The tests replay the captures taken on 4.2.2 this way, with `tests/fixtures/plants/4.2.2.json`.
 
 `predict` replays a stated route and prints what the game shows: a full restart, a sequence of previews, optionally some extra engine outputs, then the entry of a level and an activation in it.
 
@@ -33,7 +29,7 @@ python3 -m evolution predict --game-version 4.2.2 --previews 1x3
 - `--max-sources N` caps the sources (default 9).
 - `--json` prints the full result, including the route's complete `preview_sequence`.
 
-`pool` prints an ordered candidate list: `--level`, `--kind` and `--cost` for a level pool, or `--preview evolution|spawn` for a preview pool, where `--cost` is the previews' Sunflower cost. `build-plants PLANTTYPES.json PROPERTYSHEETS.json ARTIFACT.json --game-version VERSION --platform iOS|Android` builds one version's plant data from decoded game files into `data/plants/VERSION.json`.
+`pool` prints an ordered candidate list: `--level`, `--kind` and `--cost` for a level pool, or `--preview evolution|spawn` for a preview pool, where `--cost` is the previews' Sunflower cost. `build-plants PLANTTYPES.json PROPERTYSHEETS.json ARTIFACT.json --game-version VERSION --platform iOS|Android` builds the plant data of the version the decoded game files come from and writes it over `data/plants.json`; [data.md](data.md) describes moving to a newer version.
 
 ```bash
 python3 -m evolution predict --level egypt13 --activate 2-2 \
@@ -68,7 +64,7 @@ A level description gives each cell's usual kind. The kinds are `ground`, `beach
 
 ## Previews
 
-A preview is an activation on the artifact screen's display board, a Beach-stage board of shore cells with the activation cell 4-2. A rank-1 preview evolves nine Sunflowers, processed 5-3, 5-2, 5-1, 4-3, 4-2, 4-1, 3-3, 3-2, 3-1. A rank-4 preview evolves three at 3-3, 3-2, 3-1, then its spawn pass adds a Lily Pad beneath each of them and a spawn on 4-1, 4-2, 4-3, 5-1, 5-2, 5-3. The Sunflowers have the account's effective cost, given with `--preview-cost`; the pools come from the plant data of the version in use, and `pool --preview evolution --cost COST` and `pool --preview spawn` list them.
+A preview is an activation on the artifact screen's display board, a Beach-stage board of shore cells with the activation cell 4-2. A rank-1 preview evolves nine Sunflowers, processed 5-3, 5-2, 5-1, 4-3, 4-2, 4-1, 3-3, 3-2, 3-1. A rank-4 preview evolves three at 3-3, 3-2, 3-1, then its spawn pass adds a Lily Pad beneath each of them and a spawn on 4-1, 4-2, 4-3, 5-1, 5-2, 5-3. The Sunflowers have the account's effective cost, given with `--preview-cost`; the pools come from the plant data, and `pool --preview evolution --cost COST` and `pool --preview spawn` list them.
 
 The preview's effects then run like a level's: a pad rejects some replacements, so such a cell shows a bare pad, and a placed Draftodil shuffles the plant objects of its row, one output per object beyond the first with the engine's rejection rule, where a Lily Pad, bare or beneath a plant, is not an object. Each preview entry lists its selections as rows, its `effects` with the number of objects each shuffle covered and the offsets it spanned, its `selection_end`, and its `end`, the position the next action starts from. Each preview thus consumes a data-dependent but exactly replayable number of outputs. `predict --previews 1,4 --preview-cost COST` prints what one rank-1 preview and then one rank-4 preview show after a fresh launch at that cost, and the offset the stream reaches after each. To find an account's cost, compare its first preview after a relaunch with that command for the costs in question.
 

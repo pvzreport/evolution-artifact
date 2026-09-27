@@ -4,32 +4,30 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from evolution import (Game, available_levels, funnel, game_versions, load_level, load_plants, load_previews,
-                       load_tile_rules)
+from evolution import available_levels, funnel, load_level, load_plants, load_previews, load_tile_rules
 from evolution.model import ROW_SHUFFLERS
 from evolution.plants import EXCLUDED_ALIASES
+from projections import KEPT, game_on
 
-CAPTURED_ON = "4.2.2"  # the version whose declared data gives the counts asserted below
 POOLS = json.loads((Path(__file__).resolve().parent / "fixtures/pools.json").read_text())
 
 
 class PlantsTest(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.document = load_plants(CAPTURED_ON)
-
-    def test_seven_filters_leave_257_of_383(self):
-        self.assertEqual(len(self.document["plants"]), 383)
-        self.assertEqual(len(funnel(self.document)), 257)
+    def test_seven_filters_leave_259_of_385(self):
+        document = load_plants()
+        self.assertEqual(len(document["plants"]), 385)
+        self.assertEqual(len(funnel(document)), 259)
 
     def test_preview_pools_equal_the_captured_lists(self):
-        previews = Game(POOLS["game_version"]).previews
+        previews = game_on(POOLS["game_version"]).previews
         self.assertEqual(list(previews.evolution_pool(50)), POOLS["pools"]["preview"]["evolution"])
         self.assertEqual(list(previews.spawn_pool()), POOLS["pools"]["preview"]["spawn"])
 
-    def test_every_version_declares_the_plants_the_shared_data_names(self):
-        # The cell kinds, previews and levels are shared by every version; a renamed plant would silently drop a rule.
+    def test_every_plant_data_declares_the_plants_the_shared_data_names(self):
+        # The cell kinds, previews and levels are not tied to a version, and they apply to the bundled data and to every
+        # projection kept for replaying evidence; a renamed plant would silently drop a rule.
         named = set(EXCLUDED_ALIASES)
         for kind in load_tile_rules()["kinds"].values():
             named |= set(kind.get("rejects") or ()) | set(kind.get("admits_only") or ())
@@ -37,9 +35,9 @@ class PlantsTest(unittest.TestCase):
         named |= set(ROW_SHUFFLERS)
         for level in available_levels():
             named |= set(load_level(level).bans)
-        for version in game_versions():
-            with self.subTest(version=version):
-                declared = {record["plant"] for record in load_plants(version)["plants"]}
+        for document in [load_plants()] + [load_plants(path) for path in sorted(KEPT.glob("*.json"))]:
+            with self.subTest(version=document["game"]["version"]):
+                declared = {record["plant"] for record in document["plants"]}
                 self.assertEqual(sorted(named - declared), [])
 
 

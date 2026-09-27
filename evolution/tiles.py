@@ -6,8 +6,8 @@ from captures rather than derived: each kind in data/tile-rules.json lists the p
 it rejects beyond the stage rule and the level's bans, or, for a flooded cell, names
 the plant flag that admits a plant (the declared CanLiveOnWaves, carried by the plant
 data as can_live_on_waves). The kind "none" is a cell that cannot hold a plant and is
-never a target. The kinds are shared by every game version; a flag-admitting kind takes
-its list from the plant data of the version in use.
+never a target. The kinds are not tied to a game version; a flag-admitting kind takes
+its list from the plant data in use.
 """
 
 import json
@@ -45,7 +45,7 @@ def load_tile_rules(path=None):
 
 
 def tile_kinds(document, rules=None):
-    """Name -> TileKind for one version's plant document, including the built-in "none"."""
+    """Name -> TileKind for a plant document, including the built-in "none"."""
     rules = rules or load_tile_rules()
     kinds = {name: TileKind(name, record, document) for name, record in rules["kinds"].items()}
     kinds[NONE] = TileKind(NONE, {"description": "Open water or another cell that cannot hold a plant; never a target",

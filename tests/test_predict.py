@@ -3,10 +3,12 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from collections import Counter
 
-from evolution import Game, Planting, Stream, load_level, placement_draws, scenario
+from evolution import Planting, Stream, load_level, placement_draws, scenario
+from projections import game_on
 
 CAPTURED_ON = "4.2.2"
 
@@ -25,7 +27,7 @@ class PredictTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.game = Game(CAPTURED_ON)
+        cls.game = game_on(CAPTURED_ON)
         cls.previews = cls.game.previews
 
     def run_scenario(self, sequence, level, plantings, activation, overrides=None, offset=0, preview_cost=None):

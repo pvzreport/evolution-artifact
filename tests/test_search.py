@@ -5,11 +5,15 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from evolution import Board, Game, Level, Planting, Stream, activate, load_level, scenario, search_recipe, shared
+from evolution import Board, Level, Planting, Stream, activate, load_level, scenario, search_recipe, shared
 from evolution.tiles import NONE
+from projections import game_on
 
-CAPTURED_ON = "4.2.2"  # the version whose captures fix the preview counts and offsets asserted below
+# The version whose captures fix the preview counts and offsets asserted below. The route cases show the properties
+# their comments name with this version's plant data; with 4.2.4's, four of the six do not.
+CAPTURED_ON = "4.2.2"
 
 
 class SearchTest(unittest.TestCase):
@@ -18,7 +22,7 @@ class SearchTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.game = Game(CAPTURED_ON)
+        cls.game = game_on(CAPTURED_ON)
         cls.previews = cls.game.previews
 
     def search(self, level, wants, sources, activation=(2, 2), **options):
