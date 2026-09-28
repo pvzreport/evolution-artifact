@@ -5,6 +5,8 @@ fixtures under tests/fixtures replay the captures named below.
 
 - A transformation shuffles the pool of its source's cell kind and effective cost and
   selects element 0; sources are processed newest planting first (every capture).
+- At ranks 1 and 3 the transformations are the whole activation (every capture; rank 3
+  only in previews on the display board, the 4.2.4 captures with rank-3 previews).
 - At rank 4 a second pass visits the 3x3 around the activation cell down each column and
   then to the right, skipping positions outside the board, and shuffles for each cell the
   candidates it admits costing at most the preview file's spawn_max_cost. An occupied
@@ -47,13 +49,14 @@ from .stream import shared
 from .tiles import NONE
 
 PAD = "beach_pad"
-RANKS = (1, 4)
+RANKS = (1, 3, 4)  # the ranks an activation is modelled at
+LEVEL_RANKS = (1, 4)  # the ranks a level activation is predicted and planned at; rank 3 is known only as a preview
 ROW_SHUFFLERS = ("draftodil",)
 
 _CONDITIONS = [
     "Start after a full process restart (seed 5489, offset 0).",
     "Run exactly the listed previews, each one complete with its placement effects, and nothing else that "
-    "uses the artifact before entering the level.",
+    "uses an artifact before entering the level.",
     "Enter the level once, after the previews and any stated extra outputs, and do not restart it: its entry runs the "
     "gravestone-bag shuffles its description lists, and nothing else uses the shared engine before the activation.",
     "Same level as described, sources at the listed effective cost (no discounts unless included), "
@@ -68,15 +71,18 @@ _CONDITIONS = [
 ]
 
 
-def conditions(game, preview_cost=None, previews=True):
-    """What a prediction assumes: the game version of its plant data, the previews' cost when the route has
-    previews, then the fixed conditions."""
+def conditions(game, preview_cost=None, previews=()):
+    """What a prediction assumes: the game version of its plant data, what its previews need, then the fixed
+    conditions. `previews` are the previews the prediction involves: a route or, for a search without a recipe,
+    every preview it could have planned."""
     lines = ["The game runs version %s, the version of the plant data used (read from the %s package)."
              % (game.version, game.platform)]
-    if previews:
-        lines.append("The previews' %s sources have effective cost %d."
-                     % (game.previews.source, game.previews.cost(preview_cost)))
-    return lines + _CONDITIONS
+    return lines + game.previews.conditions(previews, preview_cost) + _CONDITIONS
+
+
+def check_level_rank(rank):
+    if rank not in LEVEL_RANKS:
+        raise ValueError("Supported activation ranks in a level are 1 and 4; rank 3 is known only as a preview")
 
 
 class Planting:
@@ -240,7 +246,7 @@ def place(rows, kind_of, kinds):
 def activate(board, pools, plantings, rank, stream, offset):
     """The rows of one activation and the offset after its last selection."""
     if rank not in RANKS:
-        raise ValueError("Supported activation ranks are 1 and 4")
+        raise ValueError("Supported activation ranks are 1, 3 and 4")
     plantings = list(plantings)
     check_board(board, pools.kinds)
     kind_of = kinds_for(board, plantings)
@@ -298,13 +304,17 @@ def placement_draws(rows, population, stream, offset):
 def scenario(game, sequence=(), level=None, plantings=(), activation=None, overrides=None, offset=0, rank=1,
              stream=None, preview_cost=None):
     """Replay previews, optional extra raw outputs, then an optional level entry and activation, from a
-    fresh process, with the plant data of `game`. `preview_cost` is the previews' effective source cost;
-    the default is the source's declared cost."""
+    fresh process, with the plant data of `game`; a preview sequence that no route can run is refused.
+    `preview_cost` is the Evolution previews' effective source cost; the default is the source's declared cost."""
     if offset < 0:
         raise ValueError("The extra offset cannot be negative")
+    if level:
+        check_level_rank(rank)
+    sequence = list(sequence)
+    game.previews.check_route(sequence)
     stream = stream or shared()
     cost = game.previews.cost(preview_cost)
-    preview_rows, after_previews = game.previews.advance(stream, 0, list(sequence), cost)
+    preview_rows, after_previews = game.previews.advance(stream, 0, sequence, cost)
     entry = after_previews + offset
     entry_effects, start, results, end = [], entry, [], entry
     if level:
@@ -316,4 +326,4 @@ def scenario(game, sequence=(), level=None, plantings=(), activation=None, overr
             "level": level.describe() if level else None, "level_entry_offset": entry,
             "entry_effects": entry_effects, "activation_offset": start,
             "activation": {"column": activation[0], "row": activation[1]} if activation else None, "rank": rank,
-            "results": results, "stream_end": end, "conditions": conditions(game, cost, bool(sequence))}
+            "results": results, "stream_end": end, "conditions": conditions(game, cost, sequence)}
