@@ -1,0 +1,44 @@
+{
+ "id": "rift-1565-tier2",
+ "name": "Penny's Pursuit level 4 (RIFT_1565), tier 2",
+ "stage": "rift",
+ "default_kind": "ground",
+ "bans": [],
+ "cells": {
+  "6-1": "none",
+  "6-3": "none",
+  "6-5": "none"
+ },
+ "entry_shuffles": [],
+ "notes": "The level protects redstinger at 6-1, 6-3 and 6-5; the artifact skips a protected plant as a source, and its cell holds no other plant while it stands. The protected plants and grid items are those of the level's difficulty tier 2. Traps stand at level start: flame_spreader_trap on 5-1, 5-3, 5-5, 7-1, 7-3 and 7-5. A plant can stand on a trap, so these cells are ground.",
+ "provenance": {
+  "kind": "declared",
+  "resources": [
+   {
+    "path": "PACKAGES/LEVELS/RIFT_1565.json",
+    "sha256": "8485cd160ba2ec9a9d322d8e45b39a61748277bdd368fc181a1c7653a9169e2c"
+   },
+   {
+    "path": "PACKAGES/LEVELMODULES.json",
+    "sha256": "c108947987785337f7013e2eb7c2e55cf4ea28afd542eb5b0e53af5290b95b3d"
+   },
+   {
+    "path": "PACKAGES/LEVELMUTATORTABLES.json",
+    "sha256": "d693dea3f3467b0f876e9581d34e53f79f9f39fb7eb4dfc4560374c19a607798"
+   },
+   {
+    "path": "PACKAGES/LEVELMUTATORMODULES.json",
+    "sha256": "066aac8c7b70850ad04c72ca6b5b09d60e67fec2080d7e21665ada742979fb48"
+   },
+   {
+    "path": "PACKAGES/BOARDGRIDMAPS.json",
+    "sha256": "aa8bfb4cfde96e7538611938e8ca8ca71e90b94d02b753bbe6d225642eb1a50c"
+   },
+   {
+    "path": "PACKAGES/GRIDITEMTYPES.json",
+    "sha256": "de36e4fcc2b97bb5c2096736285be52b01b4025716140c29fd4d1abcde453989"
+   }
+  ],
+  "tier": 2
+ }
+}

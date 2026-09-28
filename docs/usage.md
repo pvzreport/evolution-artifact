@@ -32,6 +32,14 @@ The commands use the bundled plant data, of game version 4.2.4, and every predic
 
 `pool` prints an ordered candidate list: `--level`, `--kind` and `--cost` for a level pool, or `--preview evolution|spawn` for a preview pool, where `--cost` is the previews' Sunflower cost. `build-plants PLANTTYPES.json PROPERTYSHEETS.json ARTIFACT.json --game-version VERSION --platform iOS|Android` builds the plant data of the version the decoded game files come from and writes it over `data/plants.json`; [data.md](data.md) describes moving to a newer version.
 
+`convert-level LEVEL.json` describes a level from its decoded level definition, the game's JSON form of a level such as `PACKAGES/LEVELS/RIFT_1565.json`, and prints the description, or writes it to `--output`, for `--level` to take. The objects a definition shares with every level come from the decoded package directory the file sits in, else from the bundled `data/level-modules.json`; `--package DIR` names another package directory.
+
+- `--tier N` chooses a difficulty tier when the level's tiers put different protected plants or grid items on the board, as Penny's Pursuit levels do; without it the command lists what each tier places.
+- `--stage` supplies the stage when the stage module declares none or two. `--deck-columns` and `--shore-from` give the observed Pirate deck edge and first Beach column that floods.
+- `--id` and `--name` default to the file name, with the tier.
+
+What the description does not describe, its notes name and the command prints as warnings; [data.md](data.md#level-descriptions) lists what a description holds. `build-level-modules DIR --game-version VERSION` extracts the shared objects of a decoded package directory and writes them over `data/level-modules.json`.
+
 ```bash
 python3 -m evolution predict --level egypt13 --activate 2-2 \
   --plant wallnut=50@1-1 --plant wallnut=50@2-1 --plant wallnut=50@3-1 \
@@ -55,6 +63,10 @@ python3 -m evolution plan --rank 4 --level egypt13 --want kiwifruit@2-1 --want p
 
 ```bash
 python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --done 1x2
+```
+
+```bash
+python3 -m evolution convert-level PACKAGES/LEVELS/RIFT_1565.json --tier 2 --output rift-1565-tier2.json
 ```
 
 ## Cells and kinds

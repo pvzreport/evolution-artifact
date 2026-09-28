@@ -39,7 +39,7 @@
   "9-5": "beach_shore"
  },
  "entry_shuffles": [],
- "notes": "Columns 1 to 3 never flood. Columns 4 to 9 are shore cells when dry; the tide is a scheduled level event. For a flooded cell give beach_water (no pad) or beach_pad (plant on a Lily Pad) for that activation. The shore column is observed.",
+ "notes": "Columns 1 to 3 never flood. Columns 4 to 9 are shore cells when dry; the tide is a scheduled level event. For a flooded cell give beach_water (no pad) or beach_pad (plant on a Lily Pad) for that activation. The shore column is observed. Not described: grid items at level start: lilypad on 4-2, 4-4, 6-1, 6-4 and 6-5.",
  "provenance": {
   "kind": "declared",
   "resources": [
@@ -50,6 +50,10 @@
    {
     "path": "PACKAGES/LEVELMODULES.json",
     "sha256": "104bcd4e760bb2be68113d9b5abbc07f8576446b91e17f50e812df67495c9196"
+   },
+   {
+    "path": "PACKAGES/GRIDITEMTYPES.json",
+    "sha256": "757207bfc62994d91ccea861e6743d89e8774fa121e4e13131b578ae0dc0155f"
    }
   ],
   "observed": {

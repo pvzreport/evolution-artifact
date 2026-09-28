@@ -1,4 +1,4 @@
-"""Command line: predict a stated scenario, plan a recipe, list a pool, build the plant data.
+"""Command line: predict a stated scenario, plan a recipe, list a pool, describe a level, build the data files.
 
   python3 -m evolution predict --previews 1,4
   python3 -m evolution predict --previews D1x2,1,3
@@ -12,6 +12,7 @@
   python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --allow 1,4
   python3 -m evolution pool --level pirate1 --kind pirate_plank --cost 0
   python3 -m evolution pool --preview evolution --cost 47
+  python3 -m evolution convert-level PACKAGES/LEVELS/RIFT_1565.json --tier 2 --output rift-1565-tier2.json
 """
 
 import argparse
@@ -21,6 +22,7 @@ import re
 import sys
 
 from .build import build_plants
+from .convert import LEVEL_MODULES, Package, describe_level, extract_package
 from .game import Game
 from .level import format_cell, load_level, parse_cell
 from .model import LEVEL_RANKS, Planting, scenario
@@ -358,6 +360,28 @@ def cmd_build_plants(args):
         len(document["registry_order"]["configured_types"] or ()), len(document["artifact"]["plant_black_list"])))
 
 
+def cmd_convert_level(args):
+    package = Package.read(args.package) if args.package else None
+    description, warnings = describe_level(args.level, package, args.tier, args.id, args.name, args.stage,
+                                           args.deck_columns, args.shore_from)
+    for warning in warnings:
+        print("warning: %s" % warning, file=sys.stderr)
+    text = json.dumps(description, indent=1) + "\n"
+    if args.output:
+        args.output.write_text(text)
+        print("Wrote %s" % args.output, file=sys.stderr)
+    else:
+        sys.stdout.write(text)
+
+
+def cmd_build_level_modules(args):
+    record = dict({"game_version": args.game_version}, **extract_package(args.package))
+    args.output.write_text(json.dumps(record, indent=1) + "\n")
+    print("Wrote %s: game %s, %d level modules, %d mutator tables, %d mutator modules, %d grid maps, %d grid-item types." % (
+        args.output, args.game_version, len(record["level_modules"]), len(record["mutator_tables"]),
+        len(record["mutator_modules"]), len(record["grid_maps"]), len(record["grid_item_classes"])))
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="python3 -m evolution", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -414,6 +438,28 @@ def main(argv=None):
     pool.add_argument("--preview", choices=("evolution", "spawn"), help="A preview pool instead of a level pool")
     pool.set_defaults(run=cmd_pool)
 
+    convert = commands.add_parser("convert-level", help="Describe a level from its decoded level definition JSON")
+    convert.add_argument("level", type=Path, help="The decoded level definition, for example PACKAGES/LEVELS/RIFT_1565.json")
+    convert.add_argument("--tier", type=int, help="Difficulty tier of the level's mutator tables, needed when its tiers "
+                                                  "put different things on the board")
+    convert.add_argument("--id", help="Level id (default: from the file name)")
+    convert.add_argument("--name", help="Level name (default: from the file name)")
+    convert.add_argument("--stage", help="Stage, needed when the stage module's StagePrefix and BelongsToWorld differ")
+    convert.add_argument("--deck-columns", type=int, default=5, help="Pirate deck width, observed (default 5)")
+    convert.add_argument("--shore-from", type=int, help="Beach: first column that floods, observed")
+    convert.add_argument("--package", type=Path, help="Decoded package directory holding the shared level files "
+                                                      "(default: the one the level sits in, else data/level-modules.json)")
+    convert.add_argument("--output", type=Path, help="Write the description here instead of printing it")
+    convert.set_defaults(run=cmd_convert_level)
+
+    modules = commands.add_parser("build-level-modules", help="Extract the shared level objects of a decoded package, "
+                                                              "replacing data/level-modules.json")
+    modules.add_argument("package", type=Path, help="Decoded package directory holding LEVELMODULES.json and the other "
+                                                    "shared level files")
+    modules.add_argument("--game-version", type=parse_version, required=True, help="The version the files come from")
+    modules.add_argument("--output", type=Path, default=LEVEL_MODULES)
+    modules.set_defaults(run=cmd_build_level_modules)
+
     build = commands.add_parser("build-plants", help="Build the plant data from decoded game files, replacing data/plants.json")
     build.add_argument("planttypes", type=Path)
     build.add_argument("propertysheets", type=Path)
@@ -427,7 +473,7 @@ def main(argv=None):
         parser.error("pool needs --level or --preview")
     try:
         args.run(args)
-    except ValueError as error:
+    except (OSError, ValueError) as error:
         print("error: %s" % error, file=sys.stderr)
         sys.exit(2)
 
