@@ -25,14 +25,14 @@ pool and offset. The states stored at one start are capped as a memory guard, an
 at which the cap stopped the search is reported.
 
 A route is the sequence of previews run after a full restart, from those the request
-allows: by default every known one, the Evolution ranks and D1. Tapping an artifact plays
-its rank-1 preview, so a route starts with rank 1 or D1, and after a D1 its Evolution
-previews start again with rank 1. Routes continuing the previews already run are tried in
-increasing length, and routes that reach the same stream position share one search there.
-The shortest route of the chosen style that has a recipe wins; among routes of that length,
-the one with the fewest sources, then the fewest switches between previews, then the first
-in preview order (the Evolution ranks from 1 up, then D1). The recipe is replayed through
-`activate`, which gives the rows it returns.
+allows: by default every known one, the Evolution ranks, D1 and D4. Tapping an artifact
+plays its rank-1 preview, so a route starts with rank 1 or D1, and each switch to the
+other artifact starts with its rank-1 preview. Routes continuing the previews already run
+are tried in increasing length, and routes that reach the same stream position share one
+search there. The shortest route of the chosen style that has a recipe wins; among routes
+of that length, the one with the fewest sources, then the fewest switches between
+previews, then the first in preview order (the Evolution ranks from 1 up, then D1 and D4).
+The recipe is replayed through `activate`, which gives the rows it returns.
 
 A source whose pool is empty transforms into nothing and draws nothing, but at rank 4 it
 still occupies its cell and so moves the spawns; all such sources form one option.
@@ -63,7 +63,7 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
     game: the Game whose plant data the recipe is for. wants: list of (plant, cell). sources:
     {alias: cost} or {alias: (cost, [kinds])} when a source may only be planted on cells of those
     kinds. overrides: {cell: kind} for this activation. done: the previews already run since a full
-    restart, in order, named as in a sequence: Evolution ranks and D1. style: "simple" (at most one
+    restart, in order, named as in a sequence: Evolution ranks, D1 and D4. style: "simple" (at most one
     switch), "shorter" (at most three) or "shortest" (any number); a switch counts whenever a planned
     preview differs from the preview before it, the last done preview included. allowed: the
     previews the planned ones may be, by default every known one. max_previews: the most previews

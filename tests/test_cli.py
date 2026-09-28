@@ -96,8 +96,7 @@ class CliTest(unittest.TestCase):
         # Captured on 4.2.4: two Devolution previews after a fresh launch drew 90 and 84 outputs, and a rank-1 preview
         # with Sunflowers at cost 37 after them ended at 3222.
         text = run("predict", "--previews", "D1x2,1", "--preview-cost", "37")
-        self.assertIn("Preview 2 (Devolution rank 1): shuffles of 10, 15, 10, 15, 10, 15 objects, 84 draws "
-                      "(stream at 174 after)", text)
+        self.assertIn("Preview 2 (Devolution rank 1): 6 shuffles of 10 and 15 objects, 84 draws (stream at 174 after)", text)
         self.assertIn("3-1 whitemelon (stream at 3222 after)", text)
         request = ["plan", "--level", "egypt1", "--want", "chestnut@1-1", "--source", "wallnut=50", "--max-sources", "1",
                    "--max-previews", "4"]

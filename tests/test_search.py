@@ -270,6 +270,9 @@ class SearchTest(unittest.TestCase):
             # routes still rank in preview order when --allow lists the previews in another order and leaves out the
             # last done one: 1,D1 comes before D1,1
             (("egypt1", [("tuliptrumpeter", (1, 1))], {"wallnut": 50, "puffshroom": 0}, (2, 2)), 1, [1, 3], ["D1", 4, 1], 2, 2),
+            # D4,D4,D4 would be first, but D4 needs a Devolution preview before it; 1,D1,1 is
+            (("egypt1", [("snapdragon", (1, 1))], {"wallnut": 50}, (2, 2)), 1, [], every + ["D4"], 3, 1),
+            (("egypt1", [("aloes", (1, 1))], {"wallnut": 50}, (2, 2)), 1, [], every + ["D4"], 3, 1),  # 1,D1,D4
         ]
         for (level, wants, sources, activation), rank, done, allowed, limit, most in cases:
             level = load_level(level)
@@ -330,13 +333,16 @@ class SearchTest(unittest.TestCase):
     def every_route(done, limit, most=None, allowed=(1, 4)):
         """Every sequence of up to `limit` allowed previews after the done ones with at most `most` switches, counted
         from the last done preview. Tapping an artifact plays its rank-1 preview, so a route starts with 1 or D1, and
-        the Evolution previews after a D1 start again with rank 1."""
+        each switch to another artifact starts with its rank-1 preview."""
+        def devolution(preview):
+            return str(preview).startswith("D")
+
         def extend(route, last, switches):
             yield route
             if len(route) < limit:
                 for preview in allowed:
                     count = switches + (last is not None and preview != last)
-                    same_artifact = last is not None and (last == "D1") == (preview == "D1")
+                    same_artifact = last is not None and devolution(last) == devolution(preview)
                     if (preview in (1, "D1") or same_artifact) and (most is None or count <= most):
                         yield from extend(route + [preview], preview, count)
         return extend([], done[-1] if done else None, 0)
@@ -348,8 +354,9 @@ class SearchTest(unittest.TestCase):
 
     @staticmethod
     def preference(planned):
-        """A route's place in preview order, compared preview by preview: the Evolution ranks from 1 up, then D1."""
-        return [[1, 3, 4, "D1"].index(preview) for preview in planned]
+        """A route's place in preview order, compared preview by preview: the Evolution ranks from 1 up, then the
+        Devolution ones."""
+        return [[1, 3, 4, "D1", "D4"].index(preview) for preview in planned]
 
     def test_each_entry_agrees_with_a_brute_force_on_small_boards(self):
         """On tiny boards every planting is enumerable: after each number of rank-1 previews the search must find the
