@@ -350,9 +350,9 @@ def main(argv=None):
                       help="Kind of a cell for this activation; repeatable")
     plan.add_argument("--done", default="", metavar="SEQ",
                       help="Previews already run since a full restart, in order, for example 1x3,4 (default: none)")
-    plan.add_argument("--style", choices=tuple(STYLES), default="simple",
+    plan.add_argument("--style", choices=tuple(STYLES), default="shorter",
                       help="Rank switches the route may make after the done previews: simple at most one, shorter at "
-                           "most three, shortest any (default simple)")
+                           "most three, shortest any (default shorter)")
     plan.add_argument("--max-previews", type=int, default=100, help="Most previews to plan after the done ones (default 100)")
     plan.add_argument("--preview-cost", type=int, metavar="COST",
                       help="Effective cost of the previews' Sunflowers (default: the declared cost)")

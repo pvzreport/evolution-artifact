@@ -24,7 +24,7 @@ The commands use the bundled plant data, of game version 4.2.4, and every predic
 - `--source ALIAS=COST[:KIND,KIND]`, repeated: a source available to plant, with its effective cost and optionally the kinds of cell it may be planted on. Optional at rank 4, where the spawn pass alone may satisfy the wants.
 - `--rank`, `--activate` (default `2-2`), `--cell` and `--offset` as for `predict`.
 - `--done SEQ` lists the previews already run since a full restart, in order, for example `1x3,4`; the route continues from there. The default is none.
-- `--style simple|shorter|shortest` bounds the rank switches of the planned previews: at most one, at most three, or any number (default `simple`).
+- `--style simple|shorter|shortest` bounds the rank switches of the planned previews: at most one, at most three, or any number (default `shorter`).
 - `--max-previews N` caps the previews planned after the done ones (default 100). `--preview-cost` as for `predict`.
 - `--max-sources N` caps the sources (default 9).
 - `--json` prints the full result, including the route's complete `preview_sequence`.
@@ -53,7 +53,7 @@ python3 -m evolution plan --rank 4 --level egypt13 --want kiwifruit@2-1 --want p
 ```
 
 ```bash
-python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --done 1x2 --style shorter
+python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --done 1x2
 ```
 
 ## Cells and kinds
