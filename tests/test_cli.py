@@ -43,7 +43,8 @@ class CliTest(unittest.TestCase):
 
     def test_plan_recipe_replays_through_predict(self):
         plan = json.loads(run("plan", "--rank", "4", "--level", "egypt13", "--want", "kiwifruit@2-1",
-                              "--want", "primalwallnut@3-3", "--source", "wallnut=50", "--max-previews", "0", "--json"))
+                              "--want", "primalwallnut@3-3", "--source", "wallnut=50", "--max-sources", "9", "--max-previews", "0",
+                              "--json"))
         match = plan["match"]
         argv = ["predict", "--rank", "4", "--level", "egypt13", "--activate", "2-2", "--json"]
         for step in match["planting_order"]:
@@ -61,14 +62,17 @@ class CliTest(unittest.TestCase):
                    "--style", "simple", "--max-previews", "1", "--max-sources", "1")
         self.assertIn("Continue from the previews already run since a full relaunch: 1.", text)
         self.assertIn("Run these further previews, each one complete, with sunflower at effective cost 50: 4.", text)
+        self.assertIn("Enter the level directly and plant 1 source, in this order:", text)
         self.assertIn("eagleclaw  <- wanted", text)
 
     def test_repeated_source_flags_widen_the_kinds(self):
-        plan = json.loads(run("plan", "--level", "memory-lane-s33-6-hard", "--want", "aeonium@1-1", "--max-previews", "12",
+        plan = json.loads(run("plan", "--level", "memory-lane-s33-6-hard", "--want", "aeonium@1-1", "--max-previews", "12", "--max-sources", "9",
                               "--source", "sunflower=50", "--source", "puffshroom=0:ground", "--source", "puffshroom=0:beach_shore", "--json"))
         self.assertEqual(sorted(k for o in plan["options"] if o["sources"] == ["puffshroom"] for k in o["kinds"]), ["beach_shore", "ground"])
-        self.assert_error(["plan", "--level", "egypt13", "--want", "kiwifruit@1-1", "--source", "wallnut=50", "--source", "wallnut=75"],
-                          "two costs")
+        self.assert_error(["plan", "--level", "egypt13", "--want", "kiwifruit@1-1", "--source", "wallnut=50", "--source", "wallnut=75",
+                           "--max-sources", "1"], "two costs")
+        # The number of sources is part of the setup, like their costs, so a plan with sources states it.
+        self.assert_error(["plan", "--level", "egypt13", "--want", "kiwifruit@1-1", "--source", "wallnut=50"], "needs --max-sources")
 
     def test_rank4_preview_text_shows_pads_spawns_and_cells(self):
         # Captured on 4.2.4: a rank-1 and a rank-4 preview with Sunflowers at cost 47 end at 4643.
@@ -128,8 +132,8 @@ class CliTest(unittest.TestCase):
 
     def test_model_refusals_reach_the_user_as_errors(self):
         self.assert_error(["predict", "--rank", "4", "--level", "beach3", "--activate", "5-3", "--plant", "lilypad=25@5-3"], "cannot stand on")
-        self.assert_error(["plan", "--rank", "4", "--level", "beach3", "--activate", "5-3", "--want", "cactus@5-3", "--source", "puffshroom=0"],
-                          "can never be placed")
+        self.assert_error(["plan", "--rank", "4", "--level", "beach3", "--activate", "5-3", "--want", "cactus@5-3", "--source", "puffshroom=0",
+                           "--max-sources", "1"], "can never be placed")
 
 
 if __name__ == "__main__":

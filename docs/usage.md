@@ -27,7 +27,7 @@ The commands use the bundled plant data, of game version 4.2.4, and every predic
 - `--style simple|shorter|shortest` bounds the switches between the planned previews: at most one, at most three, or any number (default `shorter`).
 - `--allow PREVIEWS` lists the previews the planned route may use, for example `1,4`; the default is every known one, `1,3,4,D1,D4`.
 - `--max-previews N` caps the previews planned after the done ones (default 100). `--preview-cost` as for `predict`.
-- `--max-sources N` caps the sources (default 9).
+- `--max-sources N`, required with `--source`: the most sources you will plant. The recipe may plant fewer and says how many.
 - `--json` prints the full result, including the route's complete `preview_sequence`.
 
 `pool` prints an ordered candidate list: `--level`, `--kind` and `--cost` for a level pool, or `--preview evolution|spawn` for a preview pool, where `--cost` is the previews' Sunflower cost. `build-plants PLANTTYPES.json PROPERTYSHEETS.json ARTIFACT.json --game-version VERSION --platform iOS|Android` builds the plant data of the version the decoded game files come from and writes it over `data/plants.json`; [data.md](data.md) describes moving to a newer version.
@@ -46,15 +46,16 @@ python3 -m evolution predict --rank 4 --level beach3 --previews 1x11 --activate 
 
 ```bash
 python3 -m evolution plan --level memory-lane-s33-6-hard \
-  --want aeonium@1-1 --want aeonium@1-3 --source sunflower=50 --source puffshroom=0
+  --want aeonium@1-1 --want aeonium@1-3 --source sunflower=50 --source puffshroom=0 --max-sources 9
 ```
 
 ```bash
-python3 -m evolution plan --rank 4 --level egypt13 --want kiwifruit@2-1 --want primalwallnut@3-3 --source wallnut=50
+python3 -m evolution plan --rank 4 --level egypt13 --want kiwifruit@2-1 --want primalwallnut@3-3 --source wallnut=50 \
+  --max-sources 9
 ```
 
 ```bash
-python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --done 1x2
+python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --max-sources 1 --done 1x2
 ```
 
 ## Cells and kinds
@@ -83,7 +84,7 @@ At each entry position the search walks sequences of source pools breadth first,
 
 The tests hold this search to the one that walks every sequence. At 34,992 level entries drawn at random for 34 requests, on uniform ground, ground with Beach shore, Lily Pads and Pirate planks, at both ranks and with one to eight cost bands, both returned the same recipe, or none; `tests/fixtures/search-equality.json` keeps 635 of those entries, 389 with a recipe.
 
-Search time, measured in CPython 3.14 in one process, for requests with the default nine sources at most. Sources in n cost bands are the first n of `wallnut=50`, `puffshroom=0`, `potatomine=25`, `holonut=75`, `peashooter=100`, `twinsunflower=125`, `snowpea=150` and `repeater=200`, each band with its own pool. Egypt 1 is activated at 2-2 with Kernel-pults wanted at 1-1, 2-2 and 3-3, or Peashooters at 1-1 and 1-3 and Burdock batters at 3-1 and 3-3; Big Wave Beach 3 is activated at 4-2 with Kernel-pults wanted on the ground cell 3-1 and the shore cells 4-3 and 5-3. The time per entry position is over 100 positions drawn below 1,000,000; the simple search is `plan` from a restart with `--style simple` and up to 100 previews, until it returns.
+Search time, measured in CPython 3.14 in one process, for requests with nine sources at most, `--max-sources 9`. Sources in n cost bands are the first n of `wallnut=50`, `puffshroom=0`, `potatomine=25`, `holonut=75`, `peashooter=100`, `twinsunflower=125`, `snowpea=150` and `repeater=200`, each band with its own pool. Egypt 1 is activated at 2-2 with Kernel-pults wanted at 1-1, 2-2 and 3-3, or Peashooters at 1-1 and 1-3 and Burdock batters at 3-1 and 3-3; Big Wave Beach 3 is activated at 4-2 with Kernel-pults wanted on the ground cell 3-1 and the shore cells 4-3 and 5-3. The time per entry position is over 100 positions drawn below 1,000,000; the simple search is `plan` from a restart with `--style simple` and up to 100 previews, until it returns.
 
 | Request | Per entry position, mean | Slowest of 100 | Simple search up to 100 previews |
 |---|---|---|---|
