@@ -27,7 +27,7 @@ Declared initial gravestones are `none` cells, which cannot hold a plant; give `
 
 `convert-level` generates the descriptions with declared provenance from decoded level definitions, which are not redistributed, and they regenerate identically from their recorded inputs. It follows the definition's active references; an alias declared twice resolves to its first declaration. What it does not describe, the description's notes name: grid items of other kinds, plants placed at level start, a Beach tide without its observed shore column, references nothing declares, later declarations that differ from the first, and modules of classes that no matched activation has had, which may change the board or draw from the shared engine before the activation. A level whose file is not at hand can be described by hand from the seed-selection screen, which shows the bans, and from the board.
 
-`pennys-pursuit-dark` was read from a capture in one Penny's Pursuit level whose definition was not identified; it describes that level only. `rift-1565-tier2` is the Penny's Pursuit level `RIFT_1565` at tier 2, whose protected Red Stingers stand on 6-1, 6-3 and 6-5 between its traps.
+`rift-1565-tier2` is the Penny's Pursuit level `RIFT_1565` at tier 2, whose protected Red Stingers stand on 6-1, 6-3 and 6-5 between its traps.
 
 The Endless examples are `arthurs-challenge` (Dark Ages) and `tiki-torch-er` (Big Wave Beach). Arthur's Challenge uses a ground baseline; supply standing gravestones as `none`. Tiki Torch-er defaults to ground in columns 1–4 and water in columns 5–9; supply `beach_pad` for Lily Pads and `beach_shore` for exposed sand at activation.
 
