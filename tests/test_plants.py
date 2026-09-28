@@ -31,7 +31,7 @@ class PlantsTest(unittest.TestCase):
         named = set(EXCLUDED_ALIASES)
         for kind in load_tile_rules()["kinds"].values():
             named |= set(kind.get("rejects") or ()) | set(kind.get("admits_only") or ())
-        named.add(load_previews()["source"])
+        named.add(load_previews()["evolution"]["source"])
         named |= set(ROW_SHUFFLERS)
         for level in available_levels():
             named |= set(load_level(level).bans)

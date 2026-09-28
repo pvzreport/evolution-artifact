@@ -89,7 +89,24 @@ class CliTest(unittest.TestCase):
         with contextlib.redirect_stderr(error):
             run("predict", "--level", "dark1", "--activate", "2-2", "--previews", "1", "--plant", "sunflower=47@1-1")
             run("predict", "--level", "dark1", "--activate", "2-2", "--plant", "sunflower=47@1-1")
+            run("predict", "--level", "dark1", "--activate", "2-2", "--previews", "D1", "--plant", "sunflower=47@1-1")
         self.assertEqual(error.getvalue().count("pass --preview-cost"), 1)
+
+    def test_devolution_previews_reach_predict_and_plan(self):
+        # Captured on 4.2.4: two Devolution previews after a fresh launch drew 90 and 84 outputs, and a rank-1 preview
+        # with Sunflowers at cost 37 after them ended at 3222.
+        text = run("predict", "--previews", "D1x2,1", "--preview-cost", "37")
+        self.assertIn("Preview 2 (Devolution rank 1): shuffles of 10, 15, 10, 15, 10, 15 objects, 84 draws "
+                      "(stream at 174 after)", text)
+        self.assertIn("3-1 whitemelon (stream at 3222 after)", text)
+        request = ["plan", "--level", "egypt1", "--want", "chestnut@1-1", "--source", "wallnut=50", "--max-sources", "1",
+                   "--max-previews", "4"]
+        self.assertIn("at effective cost 50: D1,1,3;", run(*request))
+        self.assertNotIn("D1", run(*request, "--allow", "1,4"))
+        self.assert_error(request + ["--allow", "1,D2"], "No measured structure for the preview 'D2'")
+        self.assert_error(request + ["--allow", "3,4"], "None of the allowed previews 3, 4 can come first")
+        self.assert_error(request + ["--done", "D1,4"], "4 cannot follow D1")
+        self.assert_error(["predict", "--previews", "D1,3"], "3 cannot follow D1")
 
     def test_pool_listing(self):
         text = run("pool", "--level", "pirate1", "--kind", "pirate_plank", "--cost", "0")

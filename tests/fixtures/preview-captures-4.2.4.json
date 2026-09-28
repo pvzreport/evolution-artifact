@@ -1,0 +1,2598 @@
+{
+ "game_version": "4.2.4",
+ "note": "Previews captured on the artifact screen, replayed with the plant data of the version they were taken on. An Evolution preview lists its selections in selection order with the cell, the candidates, the draw interval and whether the plant was placed, and add_order is the recorded plant-add order; no placement effect drew. A Devolution preview, marked with its artifact, lists the draw interval of each of its shuffles: the captures record the draws but not the lists. No process or account data.",
+ "cases": [
+  {
+   "capture": "fresh-launch rank-1, rank-3 and rank-1 previews",
+   "capture_sha256": "55cbfab1a484ef6556d90a093b0b191c8e5579969920c0fe71d4128ca58e1f7d",
+   "preview_cost": 37,
+   "previews": [
+    1,
+    3,
+    1
+   ],
+   "first_captured_preview": 1,
+   "start_offset": 0,
+   "stream_end": 7135,
+   "expected": [
+    {
+     "preview": 1,
+     "rank": 1,
+     "effects": [],
+     "add_order": [
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       3
+      ],
+      [
+       4,
+       1
+      ],
+      [
+       4,
+       2
+      ],
+      [
+       4,
+       3
+      ],
+      [
+       5,
+       1
+      ],
+      [
+       5,
+       2
+      ],
+      [
+       5,
+       3
+      ]
+     ],
+     "selection_end": 3135,
+     "end": 3135,
+     "rows": [
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        3
+       ],
+       "result": "pumpkinwitch",
+       "candidates": 244,
+       "start": 0,
+       "end": 319,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        2
+       ],
+       "result": "chainsawburmannii",
+       "candidates": 244,
+       "start": 319,
+       "end": 661,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        1
+       ],
+       "result": "sporeshroom",
+       "candidates": 244,
+       "start": 661,
+       "end": 1022,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        3
+       ],
+       "result": "egretflower",
+       "candidates": 244,
+       "start": 1022,
+       "end": 1366,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        2
+       ],
+       "result": "bromelblade",
+       "candidates": 244,
+       "start": 1366,
+       "end": 1728,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        1
+       ],
+       "result": "torchwood",
+       "candidates": 244,
+       "start": 1728,
+       "end": 2085,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "rheumnobile",
+       "candidates": 244,
+       "start": 2085,
+       "end": 2458,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "umbrellaleaf",
+       "candidates": 244,
+       "start": 2458,
+       "end": 2795,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "hydrocotyledrummer",
+       "candidates": 244,
+       "start": 2795,
+       "end": 3135,
+       "placed": true
+      }
+     ]
+    },
+    {
+     "preview": 2,
+     "rank": 3,
+     "effects": [],
+     "add_order": [
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       3
+      ]
+     ],
+     "selection_end": 4163,
+     "end": 4163,
+     "rows": [
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "deodarcedar",
+       "candidates": 244,
+       "start": 3135,
+       "end": 3480,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "beercoconut",
+       "candidates": 244,
+       "start": 3480,
+       "end": 3822,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "dmdragonfruit",
+       "candidates": 244,
+       "start": 3822,
+       "end": 4163,
+       "placed": true
+      }
+     ]
+    },
+    {
+     "preview": 3,
+     "rank": 1,
+     "effects": [],
+     "add_order": [
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       3
+      ],
+      [
+       4,
+       1
+      ],
+      [
+       4,
+       2
+      ],
+      [
+       4,
+       3
+      ],
+      [
+       5,
+       1
+      ],
+      [
+       5,
+       2
+      ],
+      [
+       5,
+       3
+      ]
+     ],
+     "selection_end": 7135,
+     "end": 7135,
+     "rows": [
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        3
+       ],
+       "result": "dragoncane",
+       "candidates": 244,
+       "start": 4163,
+       "end": 4479,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        2
+       ],
+       "result": "turnip",
+       "candidates": 244,
+       "start": 4479,
+       "end": 4814,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        1
+       ],
+       "result": "burdockbatter",
+       "candidates": 244,
+       "start": 4814,
+       "end": 5143,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        3
+       ],
+       "result": "cactus",
+       "candidates": 244,
+       "start": 5143,
+       "end": 5471,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        2
+       ],
+       "result": "pamegranate",
+       "candidates": 244,
+       "start": 5471,
+       "end": 5815,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        1
+       ],
+       "result": "passionflower",
+       "candidates": 244,
+       "start": 5815,
+       "end": 6140,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "cthulhuactinia",
+       "candidates": 244,
+       "start": 6140,
+       "end": 6472,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "headbutterlettuce",
+       "candidates": 244,
+       "start": 6472,
+       "end": 6804,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "dusklobber",
+       "candidates": 244,
+       "start": 6804,
+       "end": 7135,
+       "placed": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "capture": "fresh-launch Devolution preview and a rank-1 preview",
+   "capture_sha256": "9cd993a1b1843b7c5a8890704b6f7888bb7508543aabd34e216061299ec4978c",
+   "preview_cost": 37,
+   "previews": [
+    "D1",
+    1
+   ],
+   "first_captured_preview": 1,
+   "start_offset": 0,
+   "stream_end": 3135,
+   "expected": [
+    {
+     "preview": 1,
+     "artifact": "devolution",
+     "rank": 1,
+     "shuffles": [
+      [
+       0,
+       14
+      ],
+      [
+       14,
+       30
+      ],
+      [
+       30,
+       43
+      ],
+      [
+       43,
+       65
+      ],
+      [
+       65,
+       74
+      ],
+      [
+       74,
+       90
+      ]
+     ],
+     "end": 90
+    },
+    {
+     "preview": 2,
+     "rank": 1,
+     "effects": [],
+     "add_order": [
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       3
+      ],
+      [
+       4,
+       1
+      ],
+      [
+       4,
+       2
+      ],
+      [
+       4,
+       3
+      ],
+      [
+       5,
+       1
+      ],
+      [
+       5,
+       2
+      ],
+      [
+       5,
+       3
+      ]
+     ],
+     "selection_end": 3135,
+     "end": 3135,
+     "rows": [
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        3
+       ],
+       "result": "spikeweed",
+       "candidates": 244,
+       "start": 90,
+       "end": 422,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        2
+       ],
+       "result": "megagatling",
+       "candidates": 244,
+       "start": 422,
+       "end": 755,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        1
+       ],
+       "result": "umbrellaleaf",
+       "candidates": 244,
+       "start": 755,
+       "end": 1096,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        3
+       ],
+       "result": "nekotail",
+       "candidates": 244,
+       "start": 1096,
+       "end": 1410,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        2
+       ],
+       "result": "cottonyeti",
+       "candidates": 244,
+       "start": 1410,
+       "end": 1748,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        1
+       ],
+       "result": "primalwallnut",
+       "candidates": 244,
+       "start": 1748,
+       "end": 2100,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "maybee",
+       "candidates": 244,
+       "start": 2100,
+       "end": 2462,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "fumeshroom",
+       "candidates": 244,
+       "start": 2462,
+       "end": 2797,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "electriccurrant",
+       "candidates": 244,
+       "start": 2797,
+       "end": 3135,
+       "placed": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "capture": "fresh-launch two Devolution previews and a rank-1 preview",
+   "capture_sha256": "69de3251068dd96e679f8b79e109492ce2a0b47f2683975437e088b8fa3df2e9",
+   "preview_cost": 37,
+   "previews": [
+    "D1",
+    "D1",
+    1
+   ],
+   "first_captured_preview": 1,
+   "start_offset": 0,
+   "stream_end": 3222,
+   "expected": [
+    {
+     "preview": 1,
+     "artifact": "devolution",
+     "rank": 1,
+     "shuffles": [
+      [
+       0,
+       14
+      ],
+      [
+       14,
+       30
+      ],
+      [
+       30,
+       43
+      ],
+      [
+       43,
+       65
+      ],
+      [
+       65,
+       74
+      ],
+      [
+       74,
+       90
+      ]
+     ],
+     "end": 90
+    },
+    {
+     "preview": 2,
+     "artifact": "devolution",
+     "rank": 1,
+     "shuffles": [
+      [
+       90,
+       104
+      ],
+      [
+       104,
+       118
+      ],
+      [
+       118,
+       129
+      ],
+      [
+       129,
+       147
+      ],
+      [
+       147,
+       157
+      ],
+      [
+       157,
+       174
+      ]
+     ],
+     "end": 174
+    },
+    {
+     "preview": 3,
+     "rank": 1,
+     "effects": [],
+     "add_order": [
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       3
+      ],
+      [
+       4,
+       1
+      ],
+      [
+       4,
+       2
+      ],
+      [
+       4,
+       3
+      ],
+      [
+       5,
+       1
+      ],
+      [
+       5,
+       2
+      ],
+      [
+       5,
+       3
+      ]
+     ],
+     "selection_end": 3222,
+     "end": 3222,
+     "rows": [
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        3
+       ],
+       "result": "happyleek",
+       "candidates": 244,
+       "start": 174,
+       "end": 524,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        2
+       ],
+       "result": "matchflower",
+       "candidates": 244,
+       "start": 524,
+       "end": 871,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        1
+       ],
+       "result": "sweetpotato",
+       "candidates": 244,
+       "start": 871,
+       "end": 1175,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        3
+       ],
+       "result": "narcissusshooter",
+       "candidates": 244,
+       "start": 1175,
+       "end": 1506,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        2
+       ],
+       "result": "pepperpult",
+       "candidates": 244,
+       "start": 1506,
+       "end": 1836,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        1
+       ],
+       "result": "monotropa",
+       "candidates": 244,
+       "start": 1836,
+       "end": 2177,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "horsebean",
+       "candidates": 244,
+       "start": 2177,
+       "end": 2540,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "waterrabbit",
+       "candidates": 244,
+       "start": 2540,
+       "end": 2874,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "whitemelon",
+       "candidates": 244,
+       "start": 2874,
+       "end": 3222,
+       "placed": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "capture": "fresh-launch route of thirteen previews: ranks 1, 4, 3, 3 and 4, then Devolution and Evolution previews in turn",
+   "capture_sha256": "e784694b81d3a4e749f9d249ebdfc3ecac2c6ac67418ac4b4d52f7abe5cd5ac3",
+   "preview_cost": 37,
+   "previews": [
+    1,
+    4,
+    3,
+    3,
+    4,
+    "D1",
+    1,
+    3,
+    "D1",
+    "D1",
+    1,
+    "D1",
+    1
+   ],
+   "first_captured_preview": 1,
+   "start_offset": 0,
+   "stream_end": 18720,
+   "expected": [
+    {
+     "preview": 1,
+     "rank": 1,
+     "effects": [],
+     "add_order": [
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       3
+      ],
+      [
+       4,
+       1
+      ],
+      [
+       4,
+       2
+      ],
+      [
+       4,
+       3
+      ],
+      [
+       5,
+       1
+      ],
+      [
+       5,
+       2
+      ],
+      [
+       5,
+       3
+      ]
+     ],
+     "selection_end": 3135,
+     "end": 3135,
+     "rows": [
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        3
+       ],
+       "result": "pumpkinwitch",
+       "candidates": 244,
+       "start": 0,
+       "end": 319,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        2
+       ],
+       "result": "chainsawburmannii",
+       "candidates": 244,
+       "start": 319,
+       "end": 661,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        1
+       ],
+       "result": "sporeshroom",
+       "candidates": 244,
+       "start": 661,
+       "end": 1022,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        3
+       ],
+       "result": "egretflower",
+       "candidates": 244,
+       "start": 1022,
+       "end": 1366,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        2
+       ],
+       "result": "bromelblade",
+       "candidates": 244,
+       "start": 1366,
+       "end": 1728,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        1
+       ],
+       "result": "torchwood",
+       "candidates": 244,
+       "start": 1728,
+       "end": 2085,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "rheumnobile",
+       "candidates": 244,
+       "start": 2085,
+       "end": 2458,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "umbrellaleaf",
+       "candidates": 244,
+       "start": 2458,
+       "end": 2795,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "hydrocotyledrummer",
+       "candidates": 244,
+       "start": 2795,
+       "end": 3135,
+       "placed": true
+      }
+     ]
+    },
+    {
+     "preview": 2,
+     "rank": 4,
+     "effects": [],
+     "add_order": [
+      [
+       5,
+       3
+      ],
+      [
+       5,
+       2
+      ],
+      [
+       5,
+       1
+      ],
+      [
+       4,
+       3
+      ],
+      [
+       4,
+       2
+      ],
+      [
+       4,
+       1
+      ],
+      [
+       3,
+       3
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       3
+      ]
+     ],
+     "selection_end": 4643,
+     "end": 4643,
+     "rows": [
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "deodarcedar",
+       "candidates": 244,
+       "start": 3135,
+       "end": 3480,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "beercoconut",
+       "candidates": 244,
+       "start": 3480,
+       "end": 3822,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "dmdragonfruit",
+       "candidates": 244,
+       "start": 3822,
+       "end": 4163,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "lilypad",
+       "candidates": 1,
+       "start": 4163,
+       "end": 4163,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "lilypad",
+       "candidates": 1,
+       "start": 4163,
+       "end": 4163,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "lilypad",
+       "candidates": 1,
+       "start": 4163,
+       "end": 4163,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        4,
+        1
+       ],
+       "result": "cthulhuactinia",
+       "candidates": 56,
+       "start": 4163,
+       "end": 4244,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        4,
+        2
+       ],
+       "result": "bramble",
+       "candidates": 56,
+       "start": 4244,
+       "end": 4327,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        4,
+        3
+       ],
+       "result": "scaredyshroom",
+       "candidates": 56,
+       "start": 4327,
+       "end": 4415,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        5,
+        1
+       ],
+       "result": "streetlamp",
+       "candidates": 56,
+       "start": 4415,
+       "end": 4494,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        5,
+        2
+       ],
+       "result": "moonflower",
+       "candidates": 56,
+       "start": 4494,
+       "end": 4570,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        5,
+        3
+       ],
+       "result": "aloes",
+       "candidates": 56,
+       "start": 4570,
+       "end": 4643,
+       "placed": true
+      }
+     ]
+    },
+    {
+     "preview": 3,
+     "rank": 3,
+     "effects": [],
+     "add_order": [
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       3
+      ]
+     ],
+     "selection_end": 5679,
+     "end": 5679,
+     "rows": [
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "firecrackerflower",
+       "candidates": 244,
+       "start": 4643,
+       "end": 4982,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "acorn",
+       "candidates": 244,
+       "start": 4982,
+       "end": 5335,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "olivepit",
+       "candidates": 244,
+       "start": 5335,
+       "end": 5679,
+       "placed": true
+      }
+     ]
+    },
+    {
+     "preview": 4,
+     "rank": 3,
+     "effects": [],
+     "add_order": [
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       3
+      ]
+     ],
+     "selection_end": 6718,
+     "end": 6718,
+     "rows": [
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "cabbagepult",
+       "candidates": 244,
+       "start": 5679,
+       "end": 6021,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "matchflower",
+       "candidates": 244,
+       "start": 6021,
+       "end": 6385,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "plantain",
+       "candidates": 244,
+       "start": 6385,
+       "end": 6718,
+       "placed": true
+      }
+     ]
+    },
+    {
+     "preview": 5,
+     "rank": 4,
+     "effects": [],
+     "add_order": [
+      [
+       5,
+       3
+      ],
+      [
+       5,
+       2
+      ],
+      [
+       5,
+       1
+      ],
+      [
+       4,
+       3
+      ],
+      [
+       4,
+       2
+      ],
+      [
+       4,
+       1
+      ],
+      [
+       3,
+       3
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       3
+      ]
+     ],
+     "selection_end": 8175,
+     "end": 8175,
+     "rows": [
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "snowpea",
+       "candidates": 244,
+       "start": 6718,
+       "end": 7053,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "aeonium",
+       "candidates": 244,
+       "start": 7053,
+       "end": 7370,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "eywa",
+       "candidates": 244,
+       "start": 7370,
+       "end": 7703,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "lilypad",
+       "candidates": 1,
+       "start": 7703,
+       "end": 7703,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "lilypad",
+       "candidates": 1,
+       "start": 7703,
+       "end": 7703,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "lilypad",
+       "candidates": 1,
+       "start": 7703,
+       "end": 7703,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        4,
+        1
+       ],
+       "result": "icelotus",
+       "candidates": 56,
+       "start": 7703,
+       "end": 7776,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        4,
+        2
+       ],
+       "result": "chardguard",
+       "candidates": 56,
+       "start": 7776,
+       "end": 7854,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        4,
+        3
+       ],
+       "result": "cosmicmushroom",
+       "candidates": 56,
+       "start": 7854,
+       "end": 7931,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        5,
+        1
+       ],
+       "result": "icelotus",
+       "candidates": 56,
+       "start": 7931,
+       "end": 8013,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        5,
+        2
+       ],
+       "result": "burdockbatter",
+       "candidates": 56,
+       "start": 8013,
+       "end": 8097,
+       "placed": true
+      },
+      {
+       "action": "spawn",
+       "cell": [
+        5,
+        3
+       ],
+       "result": "gravitree",
+       "candidates": 56,
+       "start": 8097,
+       "end": 8175,
+       "placed": true
+      }
+     ]
+    },
+    {
+     "preview": 6,
+     "artifact": "devolution",
+     "rank": 1,
+     "shuffles": [
+      [
+       8175,
+       8185
+      ],
+      [
+       8185,
+       8206
+      ],
+      [
+       8206,
+       8223
+      ],
+      [
+       8223,
+       8245
+      ],
+      [
+       8245,
+       8257
+      ],
+      [
+       8257,
+       8276
+      ]
+     ],
+     "end": 8276
+    },
+    {
+     "preview": 7,
+     "rank": 1,
+     "effects": [],
+     "add_order": [
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       3
+      ],
+      [
+       4,
+       1
+      ],
+      [
+       4,
+       2
+      ],
+      [
+       4,
+       3
+      ],
+      [
+       5,
+       1
+      ],
+      [
+       5,
+       2
+      ],
+      [
+       5,
+       3
+      ]
+     ],
+     "selection_end": 11326,
+     "end": 11326,
+     "rows": [
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        3
+       ],
+       "result": "nagasalak",
+       "candidates": 244,
+       "start": 8276,
+       "end": 8593,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        2
+       ],
+       "result": "electricpeel",
+       "candidates": 244,
+       "start": 8593,
+       "end": 8946,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        1
+       ],
+       "result": "dragoncane",
+       "candidates": 244,
+       "start": 8946,
+       "end": 9288,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        3
+       ],
+       "result": "levitater",
+       "candidates": 244,
+       "start": 9288,
+       "end": 9631,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        2
+       ],
+       "result": "cactus",
+       "candidates": 244,
+       "start": 9631,
+       "end": 9967,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        1
+       ],
+       "result": "magicshroom",
+       "candidates": 244,
+       "start": 9967,
+       "end": 10291,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "witchhazel",
+       "candidates": 244,
+       "start": 10291,
+       "end": 10649,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "nagasalak",
+       "candidates": 244,
+       "start": 10649,
+       "end": 10975,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "lotusshower",
+       "candidates": 244,
+       "start": 10975,
+       "end": 11326,
+       "placed": true
+      }
+     ]
+    },
+    {
+     "preview": 8,
+     "rank": 3,
+     "effects": [],
+     "add_order": [
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       3
+      ]
+     ],
+     "selection_end": 12341,
+     "end": 12341,
+     "rows": [
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "deodarcedar",
+       "candidates": 244,
+       "start": 11326,
+       "end": 11687,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "bearberry",
+       "candidates": 244,
+       "start": 11687,
+       "end": 12017,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "gravitree",
+       "candidates": 244,
+       "start": 12017,
+       "end": 12341,
+       "placed": true
+      }
+     ]
+    },
+    {
+     "preview": 9,
+     "artifact": "devolution",
+     "rank": 1,
+     "shuffles": [
+      [
+       12341,
+       12350
+      ],
+      [
+       12350,
+       12369
+      ],
+      [
+       12369,
+       12379
+      ],
+      [
+       12379,
+       12398
+      ],
+      [
+       12398,
+       12408
+      ],
+      [
+       12408,
+       12428
+      ]
+     ],
+     "end": 12428
+    },
+    {
+     "preview": 10,
+     "artifact": "devolution",
+     "rank": 1,
+     "shuffles": [
+      [
+       12428,
+       12437
+      ],
+      [
+       12437,
+       12454
+      ],
+      [
+       12454,
+       12463
+      ],
+      [
+       12463,
+       12479
+      ],
+      [
+       12479,
+       12494
+      ],
+      [
+       12494,
+       12512
+      ]
+     ],
+     "end": 12512
+    },
+    {
+     "preview": 11,
+     "rank": 1,
+     "effects": [],
+     "add_order": [
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       3
+      ],
+      [
+       4,
+       1
+      ],
+      [
+       4,
+       2
+      ],
+      [
+       4,
+       3
+      ],
+      [
+       5,
+       1
+      ],
+      [
+       5,
+       2
+      ],
+      [
+       5,
+       3
+      ]
+     ],
+     "selection_end": 15560,
+     "end": 15560,
+     "rows": [
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        3
+       ],
+       "result": "narcissusshooter",
+       "candidates": 244,
+       "start": 12512,
+       "end": 12844,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        2
+       ],
+       "result": "bloomerang",
+       "candidates": 244,
+       "start": 12844,
+       "end": 13178,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        1
+       ],
+       "result": "sapfling",
+       "candidates": 244,
+       "start": 13178,
+       "end": 13543,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        3
+       ],
+       "result": "vamporcini",
+       "candidates": 244,
+       "start": 13543,
+       "end": 13901,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        2
+       ],
+       "result": "explodeonut",
+       "candidates": 244,
+       "start": 13901,
+       "end": 14212,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        1
+       ],
+       "result": "redstinger",
+       "candidates": 244,
+       "start": 14212,
+       "end": 14531,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "hoyacordata",
+       "candidates": 244,
+       "start": 14531,
+       "end": 14858,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "cabbagepult",
+       "candidates": 244,
+       "start": 14858,
+       "end": 15189,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "vanilla",
+       "candidates": 244,
+       "start": 15189,
+       "end": 15560,
+       "placed": true
+      }
+     ]
+    },
+    {
+     "preview": 12,
+     "artifact": "devolution",
+     "rank": 1,
+     "shuffles": [
+      [
+       15560,
+       15569
+      ],
+      [
+       15569,
+       15583
+      ],
+      [
+       15583,
+       15594
+      ],
+      [
+       15594,
+       15610
+      ],
+      [
+       15610,
+       15624
+      ],
+      [
+       15624,
+       15639
+      ]
+     ],
+     "end": 15639
+    },
+    {
+     "preview": 13,
+     "rank": 1,
+     "effects": [],
+     "add_order": [
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       3
+      ],
+      [
+       4,
+       1
+      ],
+      [
+       4,
+       2
+      ],
+      [
+       4,
+       3
+      ],
+      [
+       5,
+       1
+      ],
+      [
+       5,
+       2
+      ],
+      [
+       5,
+       3
+      ]
+     ],
+     "selection_end": 18720,
+     "end": 18720,
+     "rows": [
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        3
+       ],
+       "result": "pokra",
+       "candidates": 244,
+       "start": 15639,
+       "end": 15989,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        2
+       ],
+       "result": "peapod",
+       "candidates": 244,
+       "start": 15989,
+       "end": 16312,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        1
+       ],
+       "result": "hotdate",
+       "candidates": 244,
+       "start": 16312,
+       "end": 16652,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        3
+       ],
+       "result": "beanchemist",
+       "candidates": 244,
+       "start": 16652,
+       "end": 17002,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        2
+       ],
+       "result": "dracaena",
+       "candidates": 244,
+       "start": 17002,
+       "end": 17340,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        1
+       ],
+       "result": "holonut",
+       "candidates": 244,
+       "start": 17340,
+       "end": 17688,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "gardenergrass",
+       "candidates": 244,
+       "start": 17688,
+       "end": 18027,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "kiwifruit",
+       "candidates": 244,
+       "start": 18027,
+       "end": 18361,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "carrotlauncher",
+       "candidates": 244,
+       "start": 18361,
+       "end": 18720,
+       "placed": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "capture": "fresh-launch rank-1 and rank-3 previews, then a Devolution preview and a rank-1 preview",
+   "capture_sha256": "74e702f78b0dea94a681fe96eaff16c098d5962472c14378ba53d41472839480",
+   "preview_cost": 37,
+   "previews": [
+    1,
+    3,
+    "D1",
+    1
+   ],
+   "first_captured_preview": 1,
+   "start_offset": 0,
+   "stream_end": 7307,
+   "expected": [
+    {
+     "preview": 1,
+     "rank": 1,
+     "effects": [],
+     "add_order": [
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       3
+      ],
+      [
+       4,
+       1
+      ],
+      [
+       4,
+       2
+      ],
+      [
+       4,
+       3
+      ],
+      [
+       5,
+       1
+      ],
+      [
+       5,
+       2
+      ],
+      [
+       5,
+       3
+      ]
+     ],
+     "selection_end": 3135,
+     "end": 3135,
+     "rows": [
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        3
+       ],
+       "result": "pumpkinwitch",
+       "candidates": 244,
+       "start": 0,
+       "end": 319,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        2
+       ],
+       "result": "chainsawburmannii",
+       "candidates": 244,
+       "start": 319,
+       "end": 661,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        1
+       ],
+       "result": "sporeshroom",
+       "candidates": 244,
+       "start": 661,
+       "end": 1022,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        3
+       ],
+       "result": "egretflower",
+       "candidates": 244,
+       "start": 1022,
+       "end": 1366,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        2
+       ],
+       "result": "bromelblade",
+       "candidates": 244,
+       "start": 1366,
+       "end": 1728,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        1
+       ],
+       "result": "torchwood",
+       "candidates": 244,
+       "start": 1728,
+       "end": 2085,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "rheumnobile",
+       "candidates": 244,
+       "start": 2085,
+       "end": 2458,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "umbrellaleaf",
+       "candidates": 244,
+       "start": 2458,
+       "end": 2795,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "hydrocotyledrummer",
+       "candidates": 244,
+       "start": 2795,
+       "end": 3135,
+       "placed": true
+      }
+     ]
+    },
+    {
+     "preview": 2,
+     "rank": 3,
+     "effects": [],
+     "add_order": [
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       3
+      ]
+     ],
+     "selection_end": 4163,
+     "end": 4163,
+     "rows": [
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "deodarcedar",
+       "candidates": 244,
+       "start": 3135,
+       "end": 3480,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "beercoconut",
+       "candidates": 244,
+       "start": 3480,
+       "end": 3822,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "dmdragonfruit",
+       "candidates": 244,
+       "start": 3822,
+       "end": 4163,
+       "placed": true
+      }
+     ]
+    },
+    {
+     "preview": 3,
+     "artifact": "devolution",
+     "rank": 1,
+     "shuffles": [
+      [
+       4163,
+       4177
+      ],
+      [
+       4177,
+       4196
+      ],
+      [
+       4196,
+       4207
+      ],
+      [
+       4207,
+       4228
+      ],
+      [
+       4228,
+       4240
+      ],
+      [
+       4240,
+       4254
+      ]
+     ],
+     "end": 4254
+    },
+    {
+     "preview": 4,
+     "rank": 1,
+     "effects": [],
+     "add_order": [
+      [
+       3,
+       1
+      ],
+      [
+       3,
+       2
+      ],
+      [
+       3,
+       3
+      ],
+      [
+       4,
+       1
+      ],
+      [
+       4,
+       2
+      ],
+      [
+       4,
+       3
+      ],
+      [
+       5,
+       1
+      ],
+      [
+       5,
+       2
+      ],
+      [
+       5,
+       3
+      ]
+     ],
+     "selection_end": 7307,
+     "end": 7307,
+     "rows": [
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        3
+       ],
+       "result": "acorn",
+       "candidates": 244,
+       "start": 4254,
+       "end": 4591,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        2
+       ],
+       "result": "splitpea",
+       "candidates": 244,
+       "start": 4591,
+       "end": 4934,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        5,
+        1
+       ],
+       "result": "missiletoe",
+       "candidates": 244,
+       "start": 4934,
+       "end": 5269,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        3
+       ],
+       "result": "hollyknight",
+       "candidates": 244,
+       "start": 5269,
+       "end": 5592,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        2
+       ],
+       "result": "sugarcane",
+       "candidates": 244,
+       "start": 5592,
+       "end": 5931,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        4,
+        1
+       ],
+       "result": "peanut",
+       "candidates": 244,
+       "start": 5931,
+       "end": 6290,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        3
+       ],
+       "result": "cherry_bomb",
+       "candidates": 244,
+       "start": 6290,
+       "end": 6623,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        2
+       ],
+       "result": "waterrabbit",
+       "candidates": 244,
+       "start": 6623,
+       "end": 6970,
+       "placed": true
+      },
+      {
+       "action": "evolve",
+       "cell": [
+        3,
+        1
+       ],
+       "result": "waxgourd",
+       "candidates": 244,
+       "start": 6970,
+       "end": 7307,
+       "placed": true
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

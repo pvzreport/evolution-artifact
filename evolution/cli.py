@@ -1,6 +1,7 @@
 """Command line: predict a stated scenario, plan a recipe, list a pool, build the plant data.
 
   python3 -m evolution predict --previews 1,4
+  python3 -m evolution predict --previews D1x2,1,3
   python3 -m evolution predict --level memory-lane-s33-6-hard --previews 1x6 --activate 2-2 \\
       --plant sunflower=50@1-3 --plant puffshroom=0@3-1:beach_shore
   python3 -m evolution predict --rank 4 --level egypt13 --activate 2-2
@@ -8,6 +9,7 @@
       --source sunflower=50 --source puffshroom=0 --cell 3-1=beach_shore
   python3 -m evolution plan --rank 4 --level egypt13 --want kiwifruit@2-1 --want primalwallnut@3-3 --source wallnut=50
   python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --done 1x2 --style shorter
+  python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --allow 1,4
   python3 -m evolution pool --level pirate1 --kind pirate_plank --cost 0
   python3 -m evolution pool --preview evolution --cost 47
 """
@@ -21,9 +23,9 @@ import sys
 from .build import build_plants
 from .game import Game
 from .level import format_cell, load_level, parse_cell
-from .model import Planting, scenario
+from .model import LEVEL_RANKS, Planting, scenario
 from .plants import PLANTS
-from .previews import parse_sequence
+from .previews import parse_preview, parse_sequence
 from .search import STYLES, search_recipe
 
 PLATFORMS = ("iOS", "Android")
@@ -87,6 +89,17 @@ def parse_override(text):
     return parse_cell(cell), kind
 
 
+def parse_allowed(text):
+    """PREVIEW,PREVIEW: the previews a planned route may use, for example 1,4 or 1,3,4,D1."""
+    try:
+        allowed = [parse_preview(name) for name in text.replace(" ", "").split(",") if name]
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(str(error))
+    if not allowed:
+        raise argparse.ArgumentTypeError("List at least one preview, for example 1,4")
+    return allowed
+
+
 def parse_version(text):
     """A game version such as 4.2.4."""
     if not VERSION.fullmatch(text):
@@ -95,14 +108,14 @@ def parse_version(text):
 
 
 def format_sequence(sequence):
-    """Preview ranks as RANKxCOUNT runs, for example 1x6,4; "none" for an empty sequence."""
+    """Previews as NAMExCOUNT runs, for example 1x6,4 or D1x2,1; "none" for an empty sequence."""
     runs = []
-    for rank in sequence:
-        if runs and runs[-1][0] == rank:
+    for preview in sequence:
+        if runs and runs[-1][0] == preview:
             runs[-1][1] += 1
         else:
-            runs.append([rank, 1])
-    return ",".join("%dx%d" % (rank, count) if count > 1 else str(rank) for rank, count in runs) or "none"
+            runs.append([preview, 1])
+    return ",".join("%sx%d" % (preview, count) if count > 1 else str(preview) for preview, count in runs) or "none"
 
 
 def _count(number, noun):
@@ -111,6 +124,12 @@ def _count(number, noun):
 
 def _print_previews(previews):
     for preview in previews:
+        if preview["artifact"] == "devolution":
+            shuffles = preview["shuffles"]
+            print("Preview %d (Devolution rank %d): shuffles of %s objects, %s (stream at %d after)" % (
+                preview["preview"], preview["rank"], ", ".join(str(shuffle["objects"]) for shuffle in shuffles),
+                _count(preview["end"] - shuffles[0]["start"], "draw"), preview["end"]))
+            continue
         evolved, pads, spawns = [], [], []
         for row in preview["results"]:
             text = "%s %s" % (format_cell(row["cell"]), _outcome(row))
@@ -136,11 +155,12 @@ def _print_previews(previews):
         print(line)
 
 
-def _note_preview_cost(game, preview_cost, listed_costs, previews):
-    """Point out a listed cost of the preview source that differs from the cost the previews assume."""
+def _note_preview_cost(game, preview_cost, listed_costs, evolution):
+    """Point out a listed cost of the preview source that differs from the cost the Evolution previews, when there
+    are any, assume."""
     cost = game.previews.cost(preview_cost)
     other = sorted({c for c in listed_costs if c is not None and c != cost})
-    if previews and other and preview_cost is None:
+    if evolution and other and preview_cost is None:
         print("note: the previews assume %s at effective cost %d, but --plant or --source lists it at %s; pass "
               "--preview-cost if the previews used that cost" % (game.previews.source, cost, ", ".join(str(c) for c in other)),
               file=sys.stderr)
@@ -189,8 +209,8 @@ def cmd_predict(args):
         if cost is None:
             raise ValueError("No effective cost for %s: write ALIAS=COST@CELL or add --source ALIAS=COST" % entry["source"])
         plantings.append(Planting(entry["source"], cost, entry["cell"], entry["kind"]))
-    _note_preview_cost(game, args.preview_cost, [p.cost for p in plantings if p.source == game.previews.source],
-                       bool(sequence))
+    evolution = "evolution" in game.previews.artifacts(sequence)
+    _note_preview_cost(game, args.preview_cost, [p.cost for p in plantings if p.source == game.previews.source], evolution)
     result = scenario(game, sequence, level, plantings, activation, dict(args.cell or []), args.offset, args.rank,
                       preview_cost=args.preview_cost)
     if args.json:
@@ -198,8 +218,10 @@ def cmd_predict(args):
         return
     if not sequence:
         print("No previews: the stream starts at offset 0.")
-    else:
+    elif evolution:
         print("Previews with %s at effective cost %d:" % (game.previews.source, result["preview_cost"]))
+    else:
+        print("Previews:")
     _print_previews(result["previews"])
     if args.offset:
         print("Extra raw outputs consumed: %d" % args.offset)
@@ -219,9 +241,28 @@ def cmd_predict(args):
 
 
 def _switches(style):
-    """What a route style allows, for example "at most 1 rank switch"."""
+    """What a route style allows, for example "at most 1 switch"."""
     limit = STYLES[style]
-    return "any number of rank switches" if limit is None else "at most %d rank switch%s" % (limit, "" if limit == 1 else "es")
+    return "any number of switches" if limit is None else "at most %d switch%s" % (limit, "" if limit == 1 else "es")
+
+
+def _run_previews(game, done, planned, cost):
+    """Step 2 of a recipe: the planned previews, the Evolution previews' cost, and how each artifact's previews start."""
+    previews = game.previews
+    artifacts = [previews.identify(preview)[0] for preview in done[-1:] + planned]  # from the last done preview on
+    switches = any(before != after for before, after in zip(artifacts, artifacts[1:]))
+    source = ""
+    if "evolution" in previews.artifacts(planned):
+        whose = "the Evolution previews' " if "devolution" in artifacts else ""
+        source = ", with %s%s at effective cost %d" % (whose, previews.source, cost)
+    if switches or (not done and "devolution" in artifacts):
+        start = "; tapping an artifact plays its rank-1 preview, which counts as the next one"
+    elif not done:
+        start = "; the first is the rank-1 preview that plays when the artifact is tapped"
+    else:
+        start = ""
+    print("2. Run these %spreviews, each one complete%s: %s%s." % ("further " if done else "", source,
+                                                                    format_sequence(planned), start))
 
 
 def cmd_plan(args):
@@ -230,12 +271,13 @@ def cmd_plan(args):
     sources = merge_sources(args.source)
     done = parse_sequence(args.done)
     listed = sources.get(game.previews.source)
+    involved = done + ((args.allow or game.previews.names()) if args.max_previews > 0 else [])
     _note_preview_cost(game, args.preview_cost, [listed[0] if isinstance(listed, tuple) else listed],
-                       bool(done) or args.max_previews > 0)
+                       "evolution" in game.previews.artifacts(involved))
     result = search_recipe(game, level, args.want, sources, parse_cell(args.activate),
                            overrides=dict(args.cell or []), rank=args.rank, done=done, style=args.style,
-                           max_previews=args.max_previews, offset=args.offset, max_sources=args.max_sources,
-                           preview_cost=args.preview_cost)
+                           allowed=args.allow, max_previews=args.max_previews, offset=args.offset,
+                           max_sources=args.max_sources, preview_cost=args.preview_cost)
     if args.json:
         print(json.dumps(result, indent=2))
         return
@@ -246,8 +288,9 @@ def cmd_plan(args):
     if result["unusable_sources"]:
         print("Not plantable in this level or on any cell of this area, so not planned: " + ", ".join(result["unusable_sources"]))
     after = " after the done previews %s" % format_sequence(done) if done else ""
-    print("Routes of the %s style (%s), up to %s%s: %s searched." % (
-        args.style, _switches(args.style), _count(result["max_previews"], "preview"), after,
+    print("Routes of the %s style (%s) with the previews %s, up to %s%s: %s searched." % (
+        args.style, _switches(args.style), ", ".join(str(preview) for preview in result["allowed_previews"]),
+        _count(result["max_previews"], "preview"), after,
         _count(result["entry_positions_searched"], "distinct entry position")))
     for capped in result["state_cap_reached"]:
         previews = capped["preview_sequence"]
@@ -268,9 +311,7 @@ def cmd_plan(args):
         else:
             print("\n1. Fully quit and relaunch the game.")
         if planned:
-            print("2. Run these %spreviews, each one complete, with %s at effective cost %d: %s%s." % (
-                "further " if done else "", game.previews.source, result["preview_cost"], format_sequence(planned),
-                "" if done else "; the first is the rank-1 preview that plays when the artifact is tapped"))
+            _run_previews(game, done, planned, result["preview_cost"])
         else:
             print("2. Run no %spreviews." % ("further " if done else ""))
         if result["extra_offset"]:
@@ -323,12 +364,14 @@ def main(argv=None):
     commands = parser.add_subparsers(dest="command", required=True)
 
     predict = commands.add_parser("predict", help="Replay a stated scenario and print what the game shows")
-    predict.add_argument("--previews", default="", help="Preview ranks in order, for example 1x6 or 1,4 (default: none)")
+    predict.add_argument("--previews", default="",
+                         help="Previews in order, Evolution ranks and D1 for the Devolution rank-1 preview, for example "
+                              "1x6, 1,4 or D1x2,1,3 (default: none)")
     predict.add_argument("--preview-cost", type=int, metavar="COST",
                          help="Effective cost of the previews' Sunflowers (default: the declared cost)")
     predict.add_argument("--offset", type=int, default=0, help="Extra raw engine outputs consumed between the previews and the level")
     predict.add_argument("--level", help="Level id from data/levels, or a path to a description")
-    predict.add_argument("--rank", type=int, choices=(1, 4), default=1, help="Artifact rank of the activation (default: 1)")
+    predict.add_argument("--rank", type=int, choices=LEVEL_RANKS, default=1, help="Artifact rank of the activation (default: 1)")
     predict.add_argument("--activate", help="Activation cell COLUMN-ROW")
     predict.add_argument("--plant", type=parse_planting, action="append", metavar="ALIAS[=COST]@CELL[:KIND]",
                          help="A planted source, in planting order; repeatable")
@@ -341,7 +384,7 @@ def main(argv=None):
 
     plan = commands.add_parser("plan", help="Find previews and a planting order that put wanted plants on wanted cells")
     plan.add_argument("--level", required=True, help="Level id from data/levels, or a path to a description")
-    plan.add_argument("--rank", type=int, choices=(1, 4), default=1, help="Artifact rank of the activation (default: 1)")
+    plan.add_argument("--rank", type=int, choices=LEVEL_RANKS, default=1, help="Artifact rank of the activation (default: 1)")
     plan.add_argument("--want", type=parse_want, action="append", required=True, metavar="PLANT@CELL")
     plan.add_argument("--source", type=parse_source, action="append", metavar="ALIAS=COST[:KIND,KIND]",
                       help="An available source and its effective cost; optional at rank 4")
@@ -349,10 +392,12 @@ def main(argv=None):
     plan.add_argument("--cell", type=parse_override, action="append", metavar="CELL=KIND",
                       help="Kind of a cell for this activation; repeatable")
     plan.add_argument("--done", default="", metavar="SEQ",
-                      help="Previews already run since a full restart, in order, for example 1x3,4 (default: none)")
+                      help="Previews already run since a full restart, in order, for example 1x3,4 or D1,1 (default: none)")
     plan.add_argument("--style", choices=tuple(STYLES), default="shorter",
-                      help="Rank switches the route may make after the done previews: simple at most one, shorter at "
-                           "most three, shortest any (default shorter)")
+                      help="Switches between previews the route may make after the done previews: simple at most one, "
+                           "shorter at most three, shortest any (default shorter)")
+    plan.add_argument("--allow", type=parse_allowed, metavar="PREVIEWS",
+                      help="The previews the planned route may use, for example 1,4 (default: every known one, 1,3,4,D1)")
     plan.add_argument("--max-previews", type=int, default=100, help="Most previews to plan after the done ones (default 100)")
     plan.add_argument("--preview-cost", type=int, metavar="COST",
                       help="Effective cost of the previews' Sunflowers (default: the declared cost)")

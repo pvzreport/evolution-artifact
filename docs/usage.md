@@ -8,8 +8,8 @@ The commands use the bundled plant data, of game version 4.2.4, and every predic
 
 `predict` replays a stated route and prints what the game shows: a full restart, a sequence of previews, optionally some extra engine outputs, then the entry of a level and an activation in it.
 
-- `--previews 1x6,4` lists the preview ranks in order; the default is none.
-- `--preview-cost COST` is the effective cost of the previews' Sunflowers, which the account's modifiers can change; the default is the declared cost. `predict` and `plan` point out a listed Sunflower cost that differs from it.
+- `--previews 1x6,4` lists the previews in order: an Evolution preview by its rank, 1, 3 or 4, and the Devolution artifact's rank-1 preview as `D1`, each optionally repeated as `xCOUNT`. `D1x2,1,3` is two Devolution previews, then a rank-1 and a rank-3 Evolution preview. The default is none.
+- `--preview-cost COST` is the effective cost of the Evolution previews' Sunflowers, which the account's modifiers can change; the default is the declared cost. `predict` and `plan` point out a listed Sunflower cost that differs from it.
 - `--offset N` adds N raw engine outputs consumed between the previews and entering the level, before the level's own entry shuffles.
 - `--level ID` names a description in `data/levels`, or a path to one.
 - `--rank 1|4` is the artifact rank of the activation; rank 4 needs `--activate`.
@@ -23,8 +23,9 @@ The commands use the bundled plant data, of game version 4.2.4, and every predic
 - `--want PLANT@CELL`, repeated. At rank 4 a Lily Pad and an ordinary plant may be wanted on the same cell.
 - `--source ALIAS=COST[:KIND,KIND]`, repeated: a source available to plant, with its effective cost and optionally the kinds of cell it may be planted on. Optional at rank 4, where the spawn pass alone may satisfy the wants.
 - `--rank`, `--activate` (default `2-2`), `--cell` and `--offset` as for `predict`.
-- `--done SEQ` lists the previews already run since a full restart, in order, for example `1x3,4`; the route continues from there. The default is none.
-- `--style simple|shorter|shortest` bounds the rank switches of the planned previews: at most one, at most three, or any number (default `shorter`).
+- `--done SEQ` lists the previews already run since a full restart, in order, as for `--previews`, for example `1x3,4` or `D1,1`; the route continues from there. The default is none.
+- `--style simple|shorter|shortest` bounds the switches between the planned previews: at most one, at most three, or any number (default `shorter`).
+- `--allow PREVIEWS` lists the previews the planned route may use, for example `1,4`; the default is every known one, `1,3,4,D1`.
 - `--max-previews N` caps the previews planned after the done ones (default 100). `--preview-cost` as for `predict`.
 - `--max-sources N` caps the sources (default 9).
 - `--json` prints the full result, including the route's complete `preview_sequence`.
@@ -64,17 +65,19 @@ A level description gives each cell's usual kind. The kinds are `ground`, `beach
 
 ## Previews
 
-A preview is an activation on the artifact screen's display board, a Beach-stage board of shore cells with the activation cell 4-2. A rank-1 preview evolves nine Sunflowers, processed 5-3, 5-2, 5-1, 4-3, 4-2, 4-1, 3-3, 3-2, 3-1. A rank-4 preview evolves three at 3-3, 3-2, 3-1, then its spawn pass adds a Lily Pad beneath each of them and a spawn on 4-1, 4-2, 4-3, 5-1, 5-2, 5-3. The Sunflowers have the account's effective cost, given with `--preview-cost`; the pools come from the plant data, and `pool --preview evolution --cost COST` and `pool --preview spawn` list them.
+The artifact screen shows each artifact's previews, and tapping an artifact plays its rank-1 preview. An Evolution preview is an activation on the screen's display board, a Beach-stage board of shore cells with the activation cell 4-2. A rank-1 preview evolves nine Sunflowers, processed 5-3, 5-2, 5-1, 4-3, 4-2, 4-1, 3-3, 3-2, 3-1. A rank-3 preview evolves three at 3-3, 3-2, 3-1 and nothing more. A rank-4 preview evolves the same three, then its spawn pass adds a Lily Pad beneath each of them and a spawn on 4-1, 4-2, 4-3, 5-1, 5-2, 5-3. The Sunflowers have the account's effective cost, given with `--preview-cost`; the pools come from the plant data, and `pool --preview evolution --cost COST` and `pool --preview spawn` list them.
 
-The preview's effects then run like a level's: a pad rejects some replacements, so such a cell shows a bare pad, and a placed Draftodil shuffles the plant objects of its row, one output per object beyond the first with the engine's rejection rule, where a Lily Pad, bare or beneath a plant, is not an object. Each preview entry lists its selections as rows, its `effects` with the number of objects each shuffle covered and the offsets it spanned, its `selection_end`, and its `end`, the position the next action starts from. Each preview thus consumes a data-dependent but exactly replayable number of outputs. `predict --previews 1,4 --preview-cost COST` prints what one rank-1 preview and then one rank-4 preview show after a fresh launch at that cost, and the offset the stream reaches after each. To find an account's cost, compare its first preview after a relaunch with that command for the costs in question.
+The preview's effects then run like a level's: a pad rejects some replacements, so such a cell shows a bare pad, and a placed Draftodil shuffles the plant objects of its row, one output per object beyond the first with the engine's rejection rule, where a Lily Pad, bare or beneath a plant, is not an object. Each Evolution preview entry lists its selections as rows, its `effects` with the number of objects each shuffle covered and the offsets it spanned, its `selection_end`, and its `end`, the position the next action starts from. `predict --previews 1,4 --preview-cost COST` prints what one rank-1 preview and then one rank-4 preview show after a fresh launch at that cost, and the offset the stream reaches after each. To find an account's cost, compare its first preview after a relaunch with that command for the costs in question.
+
+The Devolution artifact's rank-1 preview, `D1`, draws as its three zombies are devolved: for each, a 10-entry shuffle and then a 15-entry shuffle of the same engine, and nothing else. The captures record the shuffles' draws but not their lists; at the seven positions captured, after a fresh launch, after another Devolution preview and after Evolution previews of each rank, only these sizes replay every shuffle. Its entry lists the six `shuffles`, with the objects each covered and the offsets it spanned, and its `end`. Each preview, of either artifact, therefore consumes a data-dependent but exactly replayable number of outputs. Every preview entry also gives the preview's `name`, as written in a sequence, its `artifact` and its `rank`.
 
 `plan` reports the whole route it assumed as `preview_sequence`: the done previews followed by the planned ones. Replay a recipe with exactly that sequence.
 
 ## Planning
 
-A route is the sequence of previews run after a full restart. Tapping the artifact plays a rank-1 preview, so a route with previews starts with rank 1, and so must `--done`. A rank switch is a preview whose rank differs from the preview before it; the first planned preview is compared with the last done one. The styles bound the switches among the planned previews: `simple` allows one, so after a restart its routes are rank-1 previews followed by rank-4 previews; `shorter` allows three; `shortest` any number.
+A route is the sequence of previews run after a full restart, from those `--allow` lists. Tapping an artifact plays its rank-1 preview, so a route with previews starts with rank 1 or D1, the Evolution previews after a D1 start again with rank 1, and `--done` follows the same rule. A switch is a preview that differs from the one before it, in rank or in artifact; the first planned preview is compared with the last done one. The styles bound the switches among the planned previews: `simple` allows one, so after a restart its routes are previews of one kind followed by previews of another, such as rank-1 previews followed by rank-4 previews; `shorter` allows three; `shortest` any number.
 
-`plan` tries routes in increasing length, from the done previews alone up to `--max-previews` more, and returns the shortest route of the style that has a recipe. Among the routes of that length it prefers the fewest sources, then the fewest switches, then the first in rank order, comparing the planned previews one by one with rank 1 before rank 4. Routes that reach the same stream position enter the level at the same position, so each distinct position is searched once, for the route this order prefers there. The result lists the route's `planned_previews` and `switches`, the `style`, and `entry_positions_searched`, the number of distinct positions searched.
+`plan` tries routes in increasing length, from the done previews alone up to `--max-previews` more, and returns the shortest route of the style that has a recipe. Among the routes of that length it prefers the fewest sources, then the fewest switches, then the first in preview order, comparing the planned previews one by one: ranks 1, 3 and 4, then D1. Routes that reach the same stream position enter the level at the same position, so each distinct position is searched once, for the route this order prefers there. The result lists the route's `planned_previews` and `switches`, the `style`, the `allowed_previews`, and `entry_positions_searched`, the number of distinct positions searched.
 
 At each entry position the search walks sequences of source pools breadth first, fewest sources first; sources with the same pool count as one, whatever their aliases or costs. A sequence grows only while its sources fit the cells of the area, counted per kind of cell. Whether it or any sequence grown from it yields a recipe depends only on its state: the position its last shuffle ended at and, among its sources that may stand on the same kinds of cell, how many there are and how many of each wanted plant they produced, counted up to the number wanted. The search keeps the first sequence to reach each state and drops the others, so it returns the recipe that walking every sequence returns: the fewest sources at that position, and among those the first sequence, taking larger pools first. A memory guard caps the states stored at one position at 1,000,000. A position where the cap stopped the search is listed in `state_cap_reached` and printed with the number of sources among whose recipes it stopped; a recipe there with that many sources or more may have been missed.
 
@@ -84,18 +87,18 @@ Search time, measured in CPython 3.14 in one process, for requests with the defa
 
 | Request | Per entry position, mean | Slowest of 100 | Simple search up to 100 previews |
 |---|---|---|---|
-| The two Aeoniums of the example above | 5 ms | 7 ms | 0.1 s: 6 previews, 16 positions searched |
-| Egypt 1, rank 1, three Kernel-pults, 1 band | 0.6 ms | 0.8 ms | 0.5 s: no recipe, 1,159 positions |
-| Egypt 1, rank 1, three Kernel-pults, 4 bands | 10 ms | 13 ms | 1.9 s: 30 previews, 206 positions |
-| Egypt 1, rank 1, three Kernel-pults, 8 bands | 38 ms | 43 ms | 0.4 s: 4 previews, 10 positions |
-| Egypt 1, rank 4, three Kernel-pults, 8 bands | 71 ms | 134 ms | 0.6 s: 4 previews, 10 positions |
-| Egypt 1, rank 1, two Peashooters and two Burdock batters, 4 bands | 10 ms | 13 ms | 10.9 s: no recipe, 1,159 positions |
-| Egypt 1, rank 1, two Peashooters and two Burdock batters, 8 bands | 40 ms | 44 ms | 3.9 s: 20 previews, 100 positions |
-| Egypt 1, rank 4, two Peashooters and two Burdock batters, 8 bands | 58 ms | 96 ms | 0.8 s: 5 previews, 13 positions |
-| Big Wave Beach 3, rank 4, three Kernel-pults, 4 bands | 55 ms | 308 ms | 2.3 s: 11 previews, 40 positions |
-| Big Wave Beach 3, rank 4, three Kernel-pults, 8 bands | 470 ms | 1.7 s | 3.9 s: 3 previews, 7 positions |
+| The two Aeoniums of the example above | 5 ms | 7 ms | 0.3 s: 6 previews, 60 positions searched |
+| Egypt 1, rank 1, three Kernel-pults, 1 band | 0.6 ms | 0.8 ms | 2.0 s: no recipe, 6,014 positions |
+| Egypt 1, rank 1, three Kernel-pults, 4 bands | 10 ms | 13 ms | 0.3 s: 4 previews, 31 positions |
+| Egypt 1, rank 1, three Kernel-pults, 8 bands | 38 ms | 43 ms | 1.2 s: 4 previews, 31 positions |
+| Egypt 1, rank 4, three Kernel-pults, 8 bands | 71 ms | 134 ms | 0.2 s: 1 preview, 3 positions |
+| Egypt 1, rank 1, two Peashooters and two Burdock batters, 4 bands | 10 ms | 13 ms | 1.9 s: 12 previews, 197 positions |
+| Egypt 1, rank 1, two Peashooters and two Burdock batters, 8 bands | 40 ms | 44 ms | 3.4 s: 7 previews, 79 positions |
+| Egypt 1, rank 4, two Peashooters and two Burdock batters, 8 bands | 58 ms | 96 ms | 2.6 s: 5 previews, 44 positions |
+| Big Wave Beach 3, rank 4, three Kernel-pults, 4 bands | 55 ms | 308 ms | 1.9 s: 4 previews, 31 positions |
+| Big Wave Beach 3, rank 4, three Kernel-pults, 8 bands | 470 ms | 1.7 s | 11.1 s: 3 previews, 19 positions |
 
-A request without a recipe searches every position its style reaches. Within 100 previews that is 1,159 positions for `simple`, 6,443 for `shorter` and 9,337 for `shortest`, so such a search takes about that many times the time per entry position. At 20 entry positions of each request, a search stored at most 4,815 states on uniform ground and 38,988 on ground and shore, both with eight bands, against the cap of 1,000,000.
+A request without a recipe searches every position its style reaches. Within 100 previews that is 6,014 positions for `simple`, 30,176 for `shorter` and 34,256 for `shortest`, or 1,159, 6,443 and 9,337 with `--allow 1,4`, so such a search takes about that many times the time per entry position. At 20 entry positions of each request, a search stored at most 4,815 states on uniform ground and 38,988 on ground and shore, both with eight bands, against the cap of 1,000,000.
 
 ## Reading the output
 
@@ -105,7 +108,7 @@ A prediction in a level also reports `level_entry_offset`, the position at which
 
 ## Checking a prediction against the game
 
-Every prediction is printed with its conditions. Fully quit and relaunch the game, run exactly the listed previews and nothing else that uses the artifact, letting each preview's effects finish, enter the level, set up the stated sources, pads and terrain, and activate the artifact at the stated rank once, promptly and before any automatic spawning. Save the prediction before playing and compare it with what appears. Reversing the planting order reverses the processing order of the transformations; the rank-4 pass keeps its cell order.
+Every prediction is printed with its conditions. Fully quit and relaunch the game, run exactly the listed previews and nothing else that uses an artifact, letting each Evolution preview's effects finish and each Devolution preview devolve its three zombies, enter the level, set up the stated sources, pads and terrain, and activate the artifact at the stated rank once, promptly and before any automatic spawning. Save the prediction before playing and compare it with what appears. Reversing the planting order reverses the processing order of the transformations; the rank-4 pass keeps its cell order.
 
 Entering the level is part of the route. A level whose description lists `entry_shuffles` shuffles those gravestone bags with the shared engine as it loads, before anything is planted, and the model replays them after the previews and any `--offset`; a level whose definition declares no such action consumes nothing at entry, as every capture in such levels shows, and a description written by hand or from a capture lists none because none were read. Enter the level once, after the previews and any stated extra outputs, and do not restart it: whether a restart repeats the entry shuffles was not measured, so restart the game instead. A level activation's `stream_end` is the end of its selections. Its placement effects can draw further outputs (a Draftodil's row shuffle counts every plant in its row, which only the display board makes known), and captures have recorded outputs from outside the artifact during a level's effects and a few seconds after them, so `stream_end` does not establish the engine position for a later activation in the same process. For a second activation, restart the game.
 
