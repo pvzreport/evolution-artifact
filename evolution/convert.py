@@ -17,9 +17,10 @@ description's notes, and returns as warnings, what it finds on the board but doe
 - Gravestones, declared or placed as grid items, hold no plant while they stand (Dark Ages captures),
   and neither do the cells of the plants a level protects: the artifact skips a protected plant as a
   source and its cell holds no other plant (the Dark Ages 19 capture of 2026-09-26). Both are `none`.
-- A plant can stand on a trap, so a trap's cell is ground. An activation reported from play in
-  RIFT_1565 at tier 2, with spawns on trap cells beside the tier's protected Red Stingers, matched the
-  model with the traps as ground and the Red Stingers' cells as `none`.
+- A plant can stand on a trap, so a trap's cell is ground. In RIFT_1565 at tier 2, an activation
+  reported from play and two checked in the game on 4.2.4, predicted before play from the converted
+  definition, put spawns on trap cells beside the tier's protected Red Stingers; all matched the model
+  with the traps as ground and the Red Stingers' cells as `none`.
 - Entry shuffles: when a level loads, every SpawnGravestonesWaveActionProps that the wave list
   references builds a bag of its GravestonePool entries, each repeated Count times, and shuffles it
   with the shared engine, in wave order (Dark Ages 4, 19 and 21 captures). An action no wave

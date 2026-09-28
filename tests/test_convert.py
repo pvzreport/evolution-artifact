@@ -180,6 +180,22 @@ class BundledRiftLevelTest(unittest.TestCase):
         self.assertEqual((results[(6, 4)], results[(5, 3)], results[(7, 3)]), ("rheumnobile", "peashooter", "burdockbatter"))
         self.assertNotIn((6, 3), results)
 
+    def test_empty_area_activations_checked_in_game(self):
+        # Predicted before play from the converted definition and checked in the game on 4.2.4: a rank-4 activation
+        # at 6-4 on the empty area, after a fresh launch and after three rank-1 previews with Sunflowers at effective
+        # cost 37. Every spawn matched, and the protected Red Stingers on 6-3 and 6-5 took none.
+        expected = {"": ["endurian", "puffshroom", "guardshroom", "icelotus", "levitater", "gravitree", "puffshroom"],
+                    "1x3": ["celerystalker", "cosmicmushroom", "burdockbatter", "exorcislily", "spikeweed", "peashooter",
+                            "streetlamp"]}
+        for previews, plants in expected.items():
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                main(["predict", "--level", "rift-1565-tier2", "--previews", previews, "--preview-cost", "37", "--rank", "4",
+                      "--activate", "6-4", "--json"])
+            rows = json.loads(out.getvalue())["results"]
+            self.assertEqual([tuple(row["cell"]) for row in rows], [(5, 3), (5, 4), (5, 5), (6, 4), (7, 3), (7, 4), (7, 5)])
+            self.assertEqual([row["result"] for row in rows], plants, previews)
+
 
 if __name__ == "__main__":
     unittest.main()
