@@ -34,7 +34,7 @@ class PlantsTest(unittest.TestCase):
         named.add(load_previews()["evolution"]["source"])
         named |= set(ROW_SHUFFLERS)
         for level in available_levels():
-            named |= set(load_level(level).bans)
+            named |= set(load_level(level).bans) | set((load_level(level).plants or {}).values())
         for document in [load_plants()] + [load_plants(path) for path in sorted(KEPT.glob("*.json"))]:
             with self.subTest(version=document["game"]["version"]):
                 declared = {record["plant"] for record in document["plants"]}

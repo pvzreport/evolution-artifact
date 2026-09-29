@@ -1,10 +1,11 @@
-"""A level: its stage, its seed-bank bans, the kind of each cell, and what its entry shuffles.
+"""A level: its stage, its seed-bank bans, the kind of each cell, what its entry shuffles, and its plants.
 
 A level description is a small JSON file holding declared values only: the stage name,
-the banned plants, the default cell kind, the cells whose kind differs, and the sizes of
-the gravestone bags the level shuffles with the shared engine when it loads. The tide
-state of a Beach cell changes during play, so it is supplied per activation instead of
-stored here. Cells are written COLUMN-ROW, one-based, for example 3-1.
+the banned plants, the default cell kind, the cells whose kind differs, the sizes of the
+gravestone bags the level shuffles with the shared engine when it loads, and, when known,
+the plants standing on the board at its start. The tide state of a Beach cell changes
+during play, so it is supplied per activation instead of stored here. Cells are written
+COLUMN-ROW, one-based, for example 3-1.
 """
 
 import json
@@ -46,6 +47,12 @@ class Level:
             raise ValueError("entry_shuffles lists the object count of each gravestone bag the level shuffles at entry, "
                              "non-negative integers in order; got %r" % (shuffles,))
         self.entry_shuffles = list(shuffles)
+        plants = record.get("plants")
+        if plants is not None and (not isinstance(plants, dict) or not all(isinstance(alias, str) for alias in plants.values())):
+            raise ValueError("plants maps COLUMN-ROW to the alias of the plant standing there at level start; got %r"
+                             % (plants,))
+        # None when the description does not say which plants stand at level start.
+        self.plants = None if plants is None else {parse_cell(cell): alias for cell, alias in plants.items()}
         self.notes = record.get("notes", "")
 
     def kind_at(self, cell, overrides=None):
@@ -83,7 +90,9 @@ class Level:
         return {"id": self.id, "name": self.name, "stage": self.stage, "bans": self.bans,
                 "default_kind": self.default_kind, "width": self.width, "height": self.height,
                 "cells": {format_cell(cell): kind for cell, kind in sorted(self.cells.items())},
-                "entry_shuffles": list(self.entry_shuffles)}
+                "entry_shuffles": list(self.entry_shuffles),
+                "plants": None if self.plants is None else {format_cell(cell): alias
+                                                            for cell, alias in sorted(self.plants.items())}}
 
 
 def available_levels():
