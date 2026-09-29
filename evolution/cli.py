@@ -90,7 +90,7 @@ def parse_override(text):
 
 
 def parse_allowed(text):
-    """PREVIEW,PREVIEW: the previews a planned route may use, for example 1,4 or 1,3,4,D1."""
+    """PREVIEW,PREVIEW: the previews a planned route may use, for example 1,4 or 1,3,4,D1,D4."""
     try:
         allowed = [parse_preview(name) for name in text.replace(" ", "").split(",") if name]
     except ValueError as error:
@@ -126,8 +126,9 @@ def _print_previews(previews):
     for preview in previews:
         if preview["artifact"] == "devolution":
             shuffles = preview["shuffles"]
-            print("Preview %d (Devolution rank %d): shuffles of %s objects, %s (stream at %d after)" % (
-                preview["preview"], preview["rank"], ", ".join(str(shuffle["objects"]) for shuffle in shuffles),
+            sizes = list(dict.fromkeys(str(shuffle["objects"]) for shuffle in shuffles))
+            print("Preview %d (Devolution rank %d): %s of %s objects, %s (stream at %d after)" % (
+                preview["preview"], preview["rank"], _count(len(shuffles), "shuffle"), " and ".join(sizes),
                 _count(preview["end"] - shuffles[0]["start"], "draw"), preview["end"]))
             continue
         evolved, pads, spawns = [], [], []
@@ -365,7 +366,7 @@ def main(argv=None):
 
     predict = commands.add_parser("predict", help="Replay a stated scenario and print what the game shows")
     predict.add_argument("--previews", default="",
-                         help="Previews in order, Evolution ranks and D1 for the Devolution rank-1 preview, for example "
+                         help="Previews in order, Evolution ranks, and D1 and D4 for the Devolution previews, for example "
                               "1x6, 1,4 or D1x2,1,3 (default: none)")
     predict.add_argument("--preview-cost", type=int, metavar="COST",
                          help="Effective cost of the previews' Sunflowers (default: the declared cost)")
@@ -397,7 +398,7 @@ def main(argv=None):
                       help="Switches between previews the route may make after the done previews: simple at most one, "
                            "shorter at most three, shortest any (default shorter)")
     plan.add_argument("--allow", type=parse_allowed, metavar="PREVIEWS",
-                      help="The previews the planned route may use, for example 1,4 (default: every known one, 1,3,4,D1)")
+                      help="The previews the planned route may use, for example 1,4 (default: every known one, 1,3,4,D1,D4)")
     plan.add_argument("--max-previews", type=int, default=100, help="Most previews to plan after the done ones (default 100)")
     plan.add_argument("--preview-cost", type=int, metavar="COST",
                       help="Effective cost of the previews' Sunflowers (default: the declared cost)")

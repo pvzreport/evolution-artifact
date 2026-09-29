@@ -46,6 +46,14 @@
      {"game_version": "4.2.4", "capture_sha256": "e784694b81d3a4e749f9d249ebdfc3ecac2c6ac67418ac4b4d52f7abe5cd5ac3", "note": "a fresh-launch route of thirteen previews at source cost 37, all 18,720 outputs: four previews, after a rank-4, a rank-3 and a rank-1 Evolution preview and after another Devolution preview, at 8,175, 12,341, 15,560 and 12,428, drew 101, 87, 79 and 84 outputs, each shuffle as replayed"},
      {"game_version": "4.2.4", "capture_sha256": "74e702f78b0dea94a681fe96eaff16c098d5962472c14378ba53d41472839480", "note": "a rank-1 and a rank-3 preview after a fresh launch, then one preview and a rank-1 preview at source cost 37, all 7,307 outputs: the preview at 4,163 drew 14, 19, 11, 21, 12 and 14 outputs, which rules out a 14-entry list for the second zombie's second shuffle, the one other size that fitted the earlier captures"}
     ]
+   },
+   "4": {
+    "description": "Ten zombies devolved, each with a 10-entry shuffle and then a 15-entry shuffle",
+    "shuffles": [10, 15, 10, 15, 10, 15, 10, 15, 10, 15, 10, 15, 10, 15, 10, 15, 10, 15, 10, 15],
+    "measured": [
+     {"game_version": "4.2.4", "capture_sha256": "1d76c57cc19576beab8a1391222b204161bbc9642e3421d8818fd3a0498b3ed9", "note": "a rank-1 preview after a fresh launch, then two rank-4 previews, a rank-1 Evolution preview, a rank-1 and a rank-4 preview and a rank-1 Evolution preview at source cost 37, all 7,245 outputs: the rank-4 previews at 90, 377 and 3,919 drew 287, 307 and 286 outputs in 20 shuffles each, through the call sites of the rank-1 preview's two lists"},
+     {"game_version": "4.2.4", "capture_sha256": "5019d9ede77a5fad3f4f4266067a9b5bd227e4aae66fe591271377c04b1b4baf", "note": "a rank-1 and a rank-4 Evolution preview after a fresh launch, then a rank-1 preview, three rank-4 previews and a rank-1 Evolution preview at source cost 37, all 8,683 outputs, predicted before play: the rank-4 previews at 4,737, 5,035 and 5,344 drew 298, 309 and 306 outputs, and with the three before them every shuffle fits one size only"}
+    ]
    }
   }
  }
