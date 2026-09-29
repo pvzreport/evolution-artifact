@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -75,9 +76,12 @@ class RouteTest(unittest.TestCase):
         self.assertEqual([(e["plant"], e["cell"], e["objects"]) for e in step["effects"]], [("draftodil", (5, 3), 3)])
         self.assertEqual((step["end"], step["established"]), (step["effects"][-1]["end"], False))
         self.assertEqual((len(out["steps"]), out["offset_after_route"], out["results"]), (1, None, []))
-        # Egypt 13's description does not list the plants standing at its start, so the row shuffle of the Draftodil it
-        # spawns on 2-1 from a fresh launch cannot be counted.
-        step = scenario(self.game, ["egypt13@2-2"])["steps"][0]
+        # A description that does not list the plants standing at level start leaves the row population unknown, so
+        # the row shuffle of the Draftodil that Egypt 13 spawns on 2-1 from a fresh launch cannot be counted.
+        record = {key: value for key, value in load_level("egypt13").record.items() if key != "plants"}
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as unknown:
+            json.dump(record, unknown)
+        step = scenario(self.game, ["%s@2-2" % unknown.name])["steps"][0]
         self.assertIn(((2, 1), "draftodil"), [(row["cell"], row["result"]) for row in step["results"]])
         self.assertEqual((step["effects"], step["end"], step["established"]), (None, None, False))
 
