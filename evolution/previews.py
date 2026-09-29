@@ -10,7 +10,7 @@ too. A Devolution preview devolves its zombies with shuffles of fixed sizes. Eac
 therefore moves the shared stream by a replayable amount, and the previews run before
 entering a level choose where in the fixed sequence the level's activation starts.
 
-A preview is named as in a sequence: an Evolution preview by its rank, a Devolution
+A preview is named as in a route: an Evolution preview by its rank, a Devolution
 preview by D and its rank, so D1 is the Devolution artifact's rank-1 preview. Tapping an
 artifact plays its rank-1 preview, so a route starts with a rank-1 preview, and so does
 each run of an artifact's previews after another artifact's. The boards, cells and
@@ -42,20 +42,6 @@ def parse_preview(text):
         raise ValueError("Name a preview by its Evolution rank, such as 4, or as D1 for the Devolution rank-1 preview")
     evolution, devolution = match.groups()
     return int(evolution) if evolution else DEVOLUTION_PREFIX + str(int(devolution))
-
-
-def parse_sequence(text):
-    """Previews in order: "1x6,4" is six rank-1 Evolution previews then one rank-4, "D1x2,1" two Devolution previews
-    then a rank-1 Evolution preview."""
-    sequence = []
-    for part in str(text or "").replace(" ", "").split(","):
-        if not part:
-            continue
-        name, _, times = part.partition("x")
-        if times and not times.isdigit():
-            raise ValueError("A preview sequence lists NAME or NAMExCOUNT items separated by commas, for example 1x6,4 or D1x2,1")
-        sequence.extend([parse_preview(name)] * (int(times) if times else 1))
-    return sequence
 
 
 class Previews:
@@ -107,17 +93,6 @@ class Previews:
         preview, so any other rank needs a preview of the same artifact before it."""
         artifact, rank = self.identify(preview)
         return rank == 1 or (last is not None and self.identify(last)[0] == artifact)
-
-    def check_route(self, sequence):
-        """Refuse a sequence that no route can run."""
-        last = None
-        for preview in sequence:
-            if not self.follows(last, preview):
-                raise ValueError("In a preview sequence, %s cannot %s: tapping an artifact plays its rank-1 preview, so a "
-                                 "sequence starts with %s, and so does each switch to another artifact"
-                                 % (preview, "come first" if last is None else "follow %s" % last,
-                                    " or ".join(str(name) for name in self.openers())))
-            last = preview
 
     def check_preview(self, preview, cost):
         """Refuse an unknown preview, or an Evolution preview whose source has no candidates at this cost."""
@@ -179,12 +154,3 @@ class Previews:
         rows, selection_end = activate(board, self.pools, self.plantings(rank, cost), rank, stream, offset)
         effects, end = placement_draws(rows, self.populations[rank], stream, selection_end)
         return dict(entry, results=rows, effects=effects, selection_end=selection_end, end=end)
-
-    def advance(self, stream, offset, sequence, cost):
-        """A sequence of previews from an offset: one entry per preview, and the offset after them."""
-        entries = []
-        for index, preview in enumerate(sequence, start=1):
-            entry = self.run(stream, offset, preview, cost)
-            entries.append({"preview": index, **entry})
-            offset = entry["end"]
-        return entries, offset

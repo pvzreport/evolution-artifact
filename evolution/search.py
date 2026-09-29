@@ -42,7 +42,8 @@ from collections import Counter
 from itertools import combinations
 
 from .level import LILYPAD, format_cell
-from .model import PAD, Board, Planting, activate, check_board, check_level_rank, conditions, enter_level, place, selection_row
+from .model import PAD, Board, Planting, activate, check_board, check_level_rank, enter_level, place, selection_row
+from .route import advance, check_route, conditions
 from .stream import shared
 from .tiles import NONE
 
@@ -56,7 +57,7 @@ def parse_spec(spec):
 
 
 def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=None, rank=1, done=(), style="simple",
-                  allowed=None, max_previews=100, offset=0, max_sources=9, max_states=MAX_STATES, stream=None,
+                  allowed=None, max_length=100, offset=0, max_sources=9, max_states=MAX_STATES, stream=None,
                   preview_cost=None):
     """The shortest preview route of `style` continuing the `done` previews, with the recipe that places every want.
 
@@ -66,8 +67,8 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
     restart, in order, named as in a sequence: Evolution ranks, D1 and D4. style: "simple" (at most one
     switch), "shorter" (at most three) or "shortest" (any number); a switch counts whenever a planned
     preview differs from the preview before it, the last done preview included. allowed: the
-    previews the planned ones may be, by default every known one. max_previews: the most previews
-    planned after the done ones. offset: extra raw outputs consumed between the previews and the
+    previews the planned ones may be, by default every known one. max_length: the longest route
+    planned after the done previews, a preview counting 1. offset: extra raw outputs consumed between the previews and the
     level, before the level's own entry shuffles. max_states: the most search states stored at one
     entry position. preview_cost: the Evolution previews' effective source cost; the default is the
     source's declared cost.
@@ -75,8 +76,8 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
     check_level_rank(rank)
     if style not in STYLES:
         raise ValueError("Route styles are %s" % ", ".join(STYLES))
-    if max_previews < 0 or max_sources < 0 or offset < 0 or max_states < 1:
-        raise ValueError("Require max_previews >= 0, max_sources >= 0, offset >= 0 and max_states >= 1")
+    if max_length < 0 or max_sources < 0 or offset < 0 or max_states < 1:
+        raise ValueError("Require max_length >= 0, max_sources >= 0, offset >= 0 and max_states >= 1")
     previews = game.previews
     cost = previews.cost(preview_cost)
     done = list(done)
@@ -87,11 +88,11 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
         for preview in allowed:
             previews.identify(preview)
         allowed = [preview for preview in previews.names() if preview in allowed]
-    for preview in done + (allowed if max_previews else []):
+    for preview in done + (allowed if max_length else []):
         previews.check_preview(preview, cost)
-    previews.check_route(done)
+    check_route(previews, done)
     latest = done[-1] if done else None
-    if max_previews and not any(previews.follows(latest, preview) for preview in allowed):
+    if max_length and not any(previews.follows(latest, preview) for preview in allowed):
         raise ValueError("None of the allowed previews %s can %s: tapping an artifact plays its rank-1 preview, so allow "
                          "%s" % (", ".join(str(preview) for preview in allowed),
                                  "come first" if latest is None else "follow %s" % latest,
@@ -128,13 +129,13 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
         "wants": [{"plant": plant, "cell": cell, "kind": kind_of[cell]} for plant, cell in wants],
         "options": [{"sources": sorted({alias for pairs in o["aliases"].values() for alias, _ in pairs}),
                      "kinds": o["kinds"], "candidates": len(o["pool"])} for o in options],
-        "unusable_sources": unusable, "done": done, "style": style, "allowed_previews": allowed, "max_previews": max_previews,
+        "unusable_sources": unusable, "done": done, "style": style, "allowed_steps": allowed, "max_length": max_length,
         "extra_offset": offset, "max_sources": max_sources, "max_states": max_states, "preview_cost": cost,
         "entry_positions_searched": 0, "state_cap_reached": [], "conditions": None, "match": None,
     }
     search = _Search(stream, pools, board, kind_of, usable, options, wants, required, spawnable, rank, max_states)
     best = None
-    for entries in _routes(previews, stream, cost, done, allowed, STYLES[style], max_previews):
+    for entries in _routes(game, stream, cost, done, allowed, STYLES[style], max_length):
         for position, planned, switches in entries:
             if best is not None and best[0] == 0:
                 break  # no route of this length can use fewer sources
@@ -143,7 +144,7 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
             rows, capped = search.run(start, max_sources if best is None else best[0] - 1)
             result["entry_positions_searched"] += 1
             if capped is not None:
-                result["state_cap_reached"].append({"preview_sequence": done + planned, "level_entry_offset": entry,
+                result["state_cap_reached"].append({"route": done + planned, "level_entry_offset": entry,
                                                     "activation_offset": start, "sources": capped})
             if rows is not None:
                 best = (sum(1 for row in rows if row["action"] == "evolve"), planned, switches, entry, entered, start, rows)
@@ -154,7 +155,7 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=N
         rows = _replay(board, pools, rank, stream, start, rows)
         result["match"] = _recipe(done, planned, switches, entry, entered, start, rows)
     # Without a recipe, the conditions cover every preview the search could have planned.
-    involved = result["match"]["preview_sequence"] if result["match"] else done + (allowed if max_previews else [])
+    involved = result["match"]["route"] if result["match"] else done + (allowed if max_length else [])
     result["conditions"] = conditions(game, cost, involved)
     return result
 
@@ -213,7 +214,7 @@ def _options(pools, sources, kind_of, usable, rank):
     return sorted(by_pool.values(), key=lambda o: (-len(o["pool"]), o["kinds"])), unusable
 
 
-def _routes(previews, stream, cost, done, allowed, max_switches, max_previews):
+def _routes(game, stream, cost, done, allowed, max_switches, max_length):
     """For each planned length from 0 up, the entry positions no shorter route reaches, in preference order, each as
     (position, planned previews, switches) with its preferred route: the fewest switches, then the first in preview
     order, the order of `allowed`.
@@ -222,7 +223,7 @@ def _routes(previews, stream, cost, done, allowed, max_switches, max_previews):
     dropped when another reached the same position with the same last preview and no more switches, in fewer previews
     or earlier in preference order; with no limit on switches, the first route to reach them covers every later one.
     """
-    ends = {}
+    previews, ends = game.previews, {}
 
     def after(position, preview):
         if (position, preview) not in ends:
@@ -233,14 +234,14 @@ def _routes(previews, stream, cost, done, allowed, max_switches, max_previews):
     # The allowed previews that may follow each last preview, with their places in preference order.
     nexts = {before: [(index, preview) for index, preview in enumerate(allowed) if previews.follows(before, preview)]
              for before in [latest] + allowed}
-    origin = previews.advance(stream, 0, done, cost)[1]
+    origin = advance(game, stream, 0, done, cost)[1]
     # A route is (position, last preview, switches, planned previews as a linked list, newest first); a frontier holds
     # the routes of one length in preference order.
     frontier = [(origin, latest, 0, None)]
     fewest = {(origin, latest): 0}
     known = {origin}
     yield [(origin, [], 0)]
-    for _ in range(max_previews):
+    for _ in range(max_length):
         children = []
         for order, (position, last, switches, planned) in enumerate(frontier):
             for index, preview in nexts[last]:
@@ -553,7 +554,7 @@ def _recipe(done, planned, switches, entry, entered, start, rows):
         row["position"] = position
     sources = [row for row in rows if row["action"] == "evolve"]
     planting = [dict(row, step=index) for index, row in enumerate(reversed(sources), start=1)]
-    return {"preview_sequence": done + planned, "planned_previews": planned, "switches": switches,
+    return {"route": done + planned, "planned_steps": planned, "switches": switches,
             "level_entry_offset": entry, "entry_effects": entered, "activation_offset": start,
             "source_count": len(sources), "processing_order": rows, "planting_order": planting,
             "stream_end": rows[-1]["end"] if rows else start}

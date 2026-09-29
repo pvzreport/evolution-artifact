@@ -36,7 +36,7 @@ class Rank4Test(unittest.TestCase):
                 pools = game.pools(level)
                 if "previews" in case:
                     result = scenario(game, level=level, plantings=plantings, activation=case["activation"],
-                                      overrides=overrides, sequence=case["previews"], rank=4)
+                                      overrides=overrides, route=case["previews"], rank=4)
                     self.assertEqual((result["level_entry_offset"], result["activation_offset"]), (case["offset"], case["offset"]))
                     rows, end = result["results"], result["stream_end"]
                 else:

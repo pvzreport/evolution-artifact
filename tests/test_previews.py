@@ -27,9 +27,9 @@ class PreviewCaptureTest(unittest.TestCase):
                     out = scenario(game, case["previews"], preview_cost=case["preview_cost"])
                     first = case["first_captured_preview"]
                     if first > 1:
-                        self.assertEqual(out["previews"][first - 2]["end"], case["start_offset"])
+                        self.assertEqual(out["steps"][first - 2]["end"], case["start_offset"])
                     for expected in case["expected"]:
-                        preview = out["previews"][expected["preview"] - 1]
+                        preview = out["steps"][expected["preview"] - 1]
                         self.assertEqual((preview["artifact"], preview["rank"]),
                                          (expected.get("artifact", "evolution"), expected["rank"]))
                         self.assertEqual(preview["end"], expected["end"])
@@ -43,7 +43,7 @@ class PreviewCaptureTest(unittest.TestCase):
                         self.assertEqual(preview["selection_end"], expected["selection_end"])
                         self.assertEqual([list(r["cell"]) for r in reversed(preview["results"]) if r["placed"]],
                                          expected["add_order"], expected["preview"])
-                    self.assertEqual(out["offset_after_previews"], case["stream_end"])
+                    self.assertEqual(out["offset_after_route"], case["stream_end"])
 
 
 if __name__ == "__main__":

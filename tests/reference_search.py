@@ -278,7 +278,7 @@ def _reference(job):
     if compare:
         level_id, activation, wants, sources, rank, overrides, max_sources = case_request(case)
         match = search_recipe(game, load_level(level_id), wants, sources, activation, overrides=overrides, rank=rank,
-                              max_previews=0, offset=entry, max_sources=max_sources)["match"]
+                              max_length=0, offset=entry, max_sources=max_sources)["match"]
         same = _entry(None if match is None else match["processing_order"]) == expected
     return case["name"], entry, expected, same, seconds
 
