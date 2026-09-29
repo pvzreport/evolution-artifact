@@ -7,7 +7,11 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from unittest import mock
+
 from evolution import Board, Level, Planting, Stream, activate, advance, load_level, scenario, search_recipe, shared
+from evolution import search as search_module
+from evolution.route import LevelStep, as_step, run_step, step_name
 from evolution.tiles import NONE
 from projections import game_on
 
@@ -18,7 +22,7 @@ CAPTURED_ON = "4.2.2"
 
 class SearchTest(unittest.TestCase):
     """Every recipe must replay through `scenario` to the rows it promised, and the search must agree with brute forces
-    over plantings and over preview routes."""
+    over plantings and over routes."""
 
     @classmethod
     def setUpClass(cls):
@@ -214,6 +218,27 @@ class SearchTest(unittest.TestCase):
             with self.subTest(done=done):
                 self.search(*request, done=done, max_length=0)
 
+    def test_a_level_step_is_planned_only_when_allowed_and_established(self):
+        # From a fresh launch, a level step in Egypt 6 on 9-1 ends at 209, where Egypt 1's spawn pass at 2-2 puts Ice
+        # Lotus on 1-1 and Levitater on 1-2, and no route of up to 25 rank-1 previews does. A level step is as long as 25
+        # previews, so allowed with rank-1 previews it is the route; not allowed, there is none.
+        egypt1 = load_level("egypt1")
+        wants = [("icelotus", (1, 1)), ("levitater", (1, 2))]
+        options = dict(rank=4, max_sources=0, max_length=25, style="shorter")
+        match = self.search(egypt1, wants, {}, allowed=[1, "egypt6@9-1"], **options)["match"]
+        self.assertEqual((match["route"], match["planned_steps"], match["switches"]), (["egypt6@9-1"], ["egypt6@9-1"], 1))
+        self.assertTrue(set(wants) <= self.replay(egypt1, match, (2, 2), rank=4))
+        self.assertIsNone(self.search(egypt1, wants, {}, allowed=[1], **options)["match"])
+        # Dark Ages 19 at 6-4 spawns a Draftodil from a fresh launch. Where its row shuffle would leave the stream, at
+        # 530, Egypt 1 spawns Devil's flower on 1-1 and White Melon on 1-2, but the Draftodil's attack is not modelled,
+        # so the step is never taken there: the search stays at the one position a route without it reaches.
+        wants = [("devilsflower", (1, 1)), ("whitemelon", (1, 2))]
+        self.assertIsNotNone(self.search(egypt1, wants, {}, offset=530, **dict(options, max_length=0))["match"])
+        result = self.search(egypt1, wants, {}, allowed=["dark19@6-4"], **options)
+        self.assertEqual((result["match"], result["entry_positions_searched"]), (None, 1))
+        with self.assertRaisesRegex(ValueError, "after the done step 1, dark19@6-4, is not established"):
+            self.search(egypt1, wants, {}, done=["dark19@6-4"], **dict(options, max_length=0))
+
     def test_a_search_stopped_by_the_state_cap_is_reported(self):
         # Two Kernel-pults at this entry need seven sources. The start is a stored state, so with room for two the
         # search stores one one-source sequence and stops at the second: the entry is listed with the number of sources
@@ -274,89 +299,137 @@ class SearchTest(unittest.TestCase):
             (("egypt1", [("snapdragon", (1, 1))], {"wallnut": 50}, (2, 2)), 1, [], every + ["D4"], 3, 1),
             (("egypt1", [("aloes", (1, 1))], {"wallnut": 50}, (2, 2)), 1, [], every + ["D4"], 3, 1),  # 1,D1,D4
         ]
-        for (level, wants, sources, activation), rank, done, allowed, limit, most in cases:
-            level = load_level(level)
-            outcomes = {}
-            for planned in self.every_route(done, limit, allowed=allowed):
+        for request, rank, done, allowed, limit, most in cases:
+            self.assert_routes_agree(request, rank, done, allowed, limit, most)
+
+    def test_routes_with_level_steps_agree_with_a_brute_force(self):
+        """As above, with level steps allowed. A level step's length is 25; with a length of 2 here, every route within
+        the limit stays few enough to search on its own while level steps still mix with previews in routes of one
+        length."""
+        wallnut = {"wallnut": 50}
+        with mock.patch.object(search_module, "LEVEL_STEP_LENGTH", 2):
+            for request, rank, done, allowed, limit, most in [
+                    # the simple style's one switch is the level step, last
+                    (("egypt1", [("toadstool", (1, 1))], wallnut, (2, 2)), 1, [], [1, 4, "egypt6@9-1", "dark4"], 5, 1),
+                    # a level step first, and a preview after it, an opener and a switch
+                    (("egypt1", [("horsebean", (1, 1))], wallnut, (2, 2)), 1, [], [1, 4, "egypt6@9-1", "dark4"], 5, 1),
+                    # a level step between previews makes two switches, so the simple style has no recipe
+                    (("egypt1", [("threepeater", (1, 1))], wallnut, (2, 2)), 1, [], [1, 4, "egypt6@9-1", "dark4"], 5, 1),
+                    # after a done level step, two entries alone into Dark Ages 4, each a switch
+                    (("egypt1", [("splitpea", (1, 1))], wallnut, (2, 2)), 1, ["egypt6@9-1"], [1, "D1", "dark4"], 4, 1),
+                    # Egypt 13 at 2-2 spawns a Draftodil after 1,4, so no route takes it there
+                    (("egypt1", [("kernelpult", (1, 1))], wallnut, (2, 2)), 1, [], [1, 4, "egypt13@2-2"], 6, 1)]:
+                self.assert_routes_agree(request, rank, done, allowed, limit, most)
+
+    def assert_routes_agree(self, request, rank, done, allowed, limit, most):
+        level, wants, sources, activation = request
+        level, done, allowed = load_level(level), [as_step(step) for step in done], [as_step(step) for step in allowed]
+        outcomes = {}
+        for planned in self.every_route(done, limit, allowed=allowed):
+            end = advance(self.game, shared(), 0, done + planned, 50)[1]
+            if end is not None:
                 match = self.search(level, wants, sources, activation, rank=rank, done=done + planned, max_length=0,
                                     max_sources=most)["match"]
-                outcomes[tuple(planned)] = (advance(self.game, shared(), 0, done + planned, 50)[1], match)
-            for style, switches in (("simple", 1), ("shorter", 3), ("shortest", None)):
-                with self.subTest(level=level.id, rank=rank, done=done, allowed=allowed, style=style):
-                    within = {planned: outcome for planned, outcome in outcomes.items()
-                              if switches is None or self.switches(done, planned) <= switches}
-                    found = sorted((len(planned), match["source_count"], self.switches(done, planned),
-                                    self.preference(planned), planned)
-                                   for planned, (_, match) in within.items() if match)
-                    result = self.search(level, wants, sources, activation, rank=rank, done=done, style=style,
-                                         allowed=allowed, max_length=limit, max_sources=most)
-                    match, length = result["match"], found[0][0] if found else limit
-                    if found:
-                        _, count, switched, _, planned = found[0]
-                        self.assertEqual((match["route"], match["planned_steps"], match["source_count"],
-                                          match["switches"]), (done + list(planned), list(planned), count, switched))
-                        keys = ("action", "cell", "result", "start", "end", "placed")
-                        self.assertEqual([[row[k] for k in keys] for row in match["processing_order"]],
-                                         [[row[k] for k in keys] for row in within[planned][1]["processing_order"]])
-                    else:
-                        self.assertIsNone(match)
-                    self.assertEqual(result["entry_positions_searched"],
-                                     len({end for planned, (end, _) in within.items() if len(planned) <= length}))
+                outcomes[tuple(planned)] = (end, match)
+        for style, switches in (("simple", 1), ("shorter", 3), ("shortest", None)):
+            with self.subTest(level=level.id, rank=rank, done=done, allowed=allowed, style=style):
+                within = {planned: outcome for planned, outcome in outcomes.items()
+                          if switches is None or self.switches(done, planned) <= switches}
+                found = sorted((self.length(planned), match["source_count"], self.switches(done, planned),
+                                self.preference(planned, allowed), planned)
+                               for planned, (_, match) in within.items() if match)
+                result = self.search(level, wants, sources, activation, rank=rank, done=done, style=style,
+                                     allowed=allowed, max_length=limit, max_sources=most)
+                match, length = result["match"], found[0][0] if found else limit
+                if found:
+                    _, count, switched, _, planned = found[0]
+                    self.assertEqual((match["route"], match["planned_steps"], match["source_count"], match["switches"]),
+                                     ([step_name(step) for step in done + list(planned)],
+                                      [step_name(step) for step in planned], count, switched))
+                    keys = ("action", "cell", "result", "start", "end", "placed")
+                    self.assertEqual([[row[k] for k in keys] for row in match["processing_order"]],
+                                     [[row[k] for k in keys] for row in within[planned][1]["processing_order"]])
+                else:
+                    self.assertIsNone(match)
+                self.assertEqual(result["entry_positions_searched"],
+                                 len({end for planned, (end, _) in within.items() if self.length(planned) <= length}))
 
     def test_every_position_within_the_limit_is_searched_once(self):
         # Three spawns that almost never coincide: no route has a recipe, so each style must search every position its
         # routes reach, and each only once, however many routes reach it. Positions reached with more than one last
-        # preview occur in these ranges.
+        # step occur in these ranges, among them positions that some routes reach with a level step last and others
+        # with a preview. A level step's length is 2 here, as in the test above.
         wants = [("kernelpult", (1, 1)), ("peashooter", (2, 2)), ("burdockbatter", (3, 3))]
-        evolution, every = [1, 4], [1, 3, 4, "D1"]
+        evolution, every, levels = [1, 4], [1, 3, 4, "D1"], [1, 4, "egypt6@9-1", "dark4"]
         after = {}
-        for style, switches, done, allowed, limit in (
-                ("simple", 1, [], evolution, 30), ("simple", 1, [1, 4], evolution, 30), ("shorter", 3, [], evolution, 12),
-                ("shortest", None, [1], evolution, 9), ("simple", 1, [], every, 20), ("shorter", 3, ["D1"], every, 7),
-                ("shortest", None, [1], every, 5)):
-            with self.subTest(style=style, done=done, allowed=allowed):
-                origin = advance(self.game, shared(), 0, done, 50)[1]
-                ends = set()
-                for planned in self.every_route(done, limit, switches, allowed):
-                    position = origin
-                    for preview in planned:
-                        if (position, preview) not in after:
-                            after[(position, preview)] = self.previews.run(shared(), position, preview, 50)["end"]
-                        position = after[(position, preview)]
-                    ends.add(position)
-                result = self.search("egypt1", wants, {}, rank=4, max_sources=0, done=done, style=style, allowed=allowed,
-                                     max_length=limit)
-                self.assertIsNone(result["match"])
-                self.assertEqual(result["entry_positions_searched"], len(ends))
+        with mock.patch.object(search_module, "LEVEL_STEP_LENGTH", 2):
+            for style, switches, done, allowed, limit in (
+                    ("simple", 1, [], evolution, 30), ("simple", 1, [1, 4], evolution, 30), ("shorter", 3, [], evolution, 12),
+                    ("shortest", None, [1], evolution, 9), ("simple", 1, [], every, 20), ("shorter", 3, ["D1"], every, 7),
+                    ("shortest", None, [1], every, 5), ("simple", 1, [], levels, 16), ("shorter", 3, [], levels, 11),
+                    ("shortest", None, ["egypt6@9-1"], [1, "D1", "egypt13@2-2", "dark4"], 8)):
+                with self.subTest(style=style, done=done, allowed=allowed):
+                    done, allowed = [as_step(step) for step in done], [as_step(step) for step in allowed]
+                    origin = advance(self.game, shared(), 0, done, 50)[1]
+                    ends = set()
+                    for planned in self.every_route(done, limit, switches, allowed):
+                        position = origin
+                        for step in planned:
+                            if (position, step) not in after:
+                                entry = run_step(self.game, shared(), position, step, 50)
+                                established = entry["kind"] == "preview" or entry["established"]
+                                after[(position, step)] = entry["end"] if established else None
+                            position = after[(position, step)]
+                            if position is None:
+                                break
+                        if position is not None:
+                            ends.add(position)
+                    result = self.search("egypt1", wants, {}, rank=4, max_sources=0, done=done, style=style,
+                                         allowed=allowed, max_length=limit)
+                    self.assertIsNone(result["match"])
+                    self.assertEqual(result["entry_positions_searched"], len(ends))
 
     @staticmethod
     def every_route(done, limit, most=None, allowed=(1, 4)):
-        """Every sequence of up to `limit` allowed previews after the done ones with at most `most` switches, counted
-        from the last done preview. Tapping an artifact plays its rank-1 preview, so a route starts with 1 or D1, and
-        each switch to another artifact starts with its rank-1 preview."""
-        def devolution(preview):
-            return str(preview).startswith("D")
+        """Every sequence of allowed steps after the done ones, up to a length of `limit`, with at most `most` switches,
+        counted from the last done step. Tapping an artifact plays its rank-1 preview, so the previews after a restart
+        or a level step start with 1 or D1, and so do those after a switch to another artifact; a level step may follow
+        any step."""
+        def devolution(step):
+            return str(step).startswith("D")
 
-        def extend(route, last, switches):
+        def extend(route, last, length, switches):
             yield route
-            if len(route) < limit:
-                for preview in allowed:
-                    count = switches + (last is not None and preview != last)
-                    same_artifact = last is not None and devolution(last) == devolution(preview)
-                    if (preview in (1, "D1") or same_artifact) and (most is None or count <= most):
-                        yield from extend(route + [preview], preview, count)
-        return extend([], done[-1] if done else None, 0)
+            for step in allowed:
+                level = isinstance(step, LevelStep)
+                count = switches + (level or (last is not None and step != last))
+                same_artifact = last is not None and not isinstance(last, LevelStep) and devolution(last) == devolution(step)
+                if (length + SearchTest.length([step]) <= limit and (level or step in (1, "D1") or same_artifact)
+                        and (most is None or count <= most)):
+                    yield from extend(route + [step], step, length + SearchTest.length([step]), count)
+        return extend([], done[-1] if done else None, 0, 0)
+
+    @staticmethod
+    def length(planned):
+        """A preview adds 1 to a route's length and a level step LEVEL_STEP_LENGTH."""
+        return sum(search_module.LEVEL_STEP_LENGTH if isinstance(step, LevelStep) else 1 for step in planned)
 
     @staticmethod
     def switches(done, planned):
-        previews = done[-1:] + list(planned)
-        return sum(1 for before, after in zip(previews, previews[1:]) if before != after)
+        """A preview that differs from the step before it is a switch, the last done step included, and so is every
+        level step."""
+        last, count = (done[-1] if done else None), 0
+        for step in planned:
+            count += isinstance(step, LevelStep) or (last is not None and step != last)
+            last = step
+        return count
 
     @staticmethod
-    def preference(planned):
-        """A route's place in preview order, compared preview by preview: the Evolution ranks from 1 up, then the
-        Devolution ones."""
-        return [[1, 3, 4, "D1", "D4"].index(preview) for preview in planned]
+    def preference(planned, allowed):
+        """A route's place in step order, compared step by step: the Evolution ranks from 1 up, the Devolution ones,
+        then the level steps in the order allowed."""
+        order = [1, 3, 4, "D1", "D4"] + [step for step in allowed if isinstance(step, LevelStep)]
+        return [order.index(step) for step in planned]
 
     def test_each_entry_agrees_with_a_brute_force_on_small_boards(self):
         """On tiny boards every planting is enumerable: after each number of rank-1 previews the search must find the

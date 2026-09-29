@@ -107,7 +107,7 @@ class CliTest(unittest.TestCase):
         self.assertIn("at effective cost 50: D1,1,3;", run(*request))
         self.assertNotIn("D1", run(*request, "--allow", "1,4"))
         self.assert_error(request + ["--allow", "1,D2"], "No measured structure for the preview 'D2'")
-        self.assert_error(request + ["--allow", "3,4"], "None of the allowed previews 3, 4 can come first")
+        self.assert_error(request + ["--allow", "3,4"], "None of the allowed steps 3, 4 can come first")
         self.assert_error(request + ["--done", "D1,4"], "4 cannot follow D1")
         self.assert_error(["predict", "--route", "D1,3"], "3 cannot follow D1")
 
@@ -127,6 +127,21 @@ class CliTest(unittest.TestCase):
         self.assertIn("The position after step 1 is not established: a Draftodil's attack shuffles with the shared engine "
                       "and is not modelled, so the rest of the route and the level are not predicted.", text)
         self.assertNotIn("Level Egypt 1", text)
+
+    def test_plan_prints_its_level_steps(self):
+        # The second activation of the level-step capture as a plan: Gravitree on 9-2 of Egypt 6 after one level step
+        # there, and the level restarted for the activation.
+        request = ["plan", "--rank", "4", "--level", "egypt6", "--activate", "9-1", "--want", "gravitree@9-2",
+                   "--allow", "egypt6@9-1", "--max-length", "25"]
+        text = run(*request)
+        self.assertIn("with the steps egypt6@9-1, up to length 25 (a level step counts 25): 2 distinct entry positions "
+                      "searched.", text)
+        self.assertIn("2. Run these steps: egypt6@9-1.\n   Step 1 (egypt6@9-1): enter Egypt 6 (story), activate rank-4 "
+                      "Evolution on 9-1 with nothing planted, then restart the level.", text)
+        self.assertIn("3. In the restarted level, leave the activation area empty.", text)
+        plan = json.loads(run(*request, "--json"))
+        self.assertEqual((plan["allowed_steps"], plan["match"]["route"], plan["match"]["level_entry_offset"]),
+                         (["egypt6@9-1"], ["egypt6@9-1"], 209))
 
     def test_pool_listing(self):
         text = run("pool", "--level", "pirate1", "--kind", "pirate_plank", "--cost", "0")

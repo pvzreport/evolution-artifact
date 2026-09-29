@@ -12,6 +12,7 @@
       --max-sources 9
   python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --max-sources 1 --done 1x2 --style shorter
   python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --max-sources 3 --allow 1,4
+  python3 -m evolution plan --rank 4 --level egypt1 --want icelotus@1-1 --want levitater@1-2 --allow 1,egypt6@9-1
   python3 -m evolution pool --level pirate1 --kind pirate_plank --cost 0
   python3 -m evolution pool --preview evolution --cost 47
 """
@@ -27,9 +28,9 @@ from .game import Game
 from .level import format_cell, load_level, parse_cell
 from .model import LEVEL_RANKS, ROW_SHUFFLERS, Planting
 from .plants import PLANTS
-from .previews import parse_preview
-from .route import format_route, parse_route, previews_in, scenario
-from .search import STYLES, search_recipe
+from .route import LevelStep, advance, as_step, format_route, parse_route, parse_step, previews_in, scenario
+from .search import LEVEL_STEP_LENGTH, STYLES, search_recipe
+from .stream import shared
 
 PLATFORMS = ("iOS", "Android")
 VERSION = re.compile(r"\d+(\.\d+)+")
@@ -93,13 +94,13 @@ def parse_override(text):
 
 
 def parse_allowed(text):
-    """PREVIEW,PREVIEW: the previews a planned route may use, for example 1,4 or 1,3,4,D1,D4."""
+    """STEP,STEP: the steps a planned route may use, for example 1,4 or 1,3,4,D1,D4,egypt6@9-1."""
     try:
-        allowed = [parse_preview(name) for name in text.replace(" ", "").split(",") if name]
+        allowed = [parse_step(name) for name in text.replace(" ", "").split(",") if name]
     except ValueError as error:
         raise argparse.ArgumentTypeError(str(error))
     if not allowed:
-        raise argparse.ArgumentTypeError("List at least one preview, for example 1,4")
+        raise argparse.ArgumentTypeError("List at least one step, for example 1,4")
     return allowed
 
 
@@ -291,23 +292,39 @@ def _switches(style):
     return "any number of switches" if limit is None else "at most %d switch%s" % (limit, "" if limit == 1 else "es")
 
 
-def _run_previews(game, done, planned, cost):
-    """Step 2 of a recipe: the planned previews, the Evolution previews' cost, and how each artifact's previews start."""
+def _steps(route):
+    """What a route's steps are called: previews, when none is a level step."""
+    return "steps" if any(isinstance(step, LevelStep) for step in route) else "previews"
+
+
+def _up_to(length, level_steps):
+    """The longest route searched, in previews when no level step is allowed."""
+    if not level_steps:
+        return _count(length, "preview")
+    return "length %d (a level step counts %d)" % (length, LEVEL_STEP_LENGTH)
+
+
+def _run_route(game, done, planned, cost):
+    """Step 2 of a recipe: the planned steps, the Evolution previews' cost, and how each artifact's previews start."""
     previews = game.previews
-    artifacts = [previews.identify(preview)[0] for preview in done[-1:] + planned]  # from the last done preview on
-    switches = any(before != after for before, after in zip(artifacts, artifacts[1:]))
+    kinds = ["level" if isinstance(step, LevelStep) else previews.identify(step)[0] for step in done[-1:] + planned]
+    switches = any(before != after for before, after in zip(kinds, kinds[1:]))
     source = ""
-    if "evolution" in previews.artifacts(planned):
-        whose = "the Evolution previews' " if "devolution" in artifacts else ""
+    if "evolution" in previews.artifacts(previews_in(planned)):
+        whose = "the Evolution previews' " if "devolution" in kinds else ""
         source = ", with %s%s at effective cost %d" % (whose, previews.source, cost)
-    if switches or (not done and "devolution" in artifacts):
+    if not previews_in(planned):
+        start = ""
+    elif switches or (not done and "devolution" in kinds):
         start = "; tapping an artifact plays its rank-1 preview, which counts as the next one"
     elif not done:
         start = "; the first is the rank-1 preview that plays when the artifact is tapped"
     else:
         start = ""
-    print("2. Run these %spreviews, each one complete%s: %s%s." % ("further " if done else "", source,
-                                                                    format_route(planned), start))
+    complete = (", each one complete" if _steps(planned) == "previews" else
+                ", each preview complete" if previews_in(planned) else "")
+    print("2. Run these %s%s%s%s: %s%s." % ("further " if done else "", _steps(planned), complete, source,
+                                           format_route(planned), start))
 
 
 def cmd_plan(args):
@@ -318,7 +335,7 @@ def cmd_plan(args):
     listed = sources.get(game.previews.source)
     involved = done + ((args.allow or game.previews.names()) if args.max_length > 0 else [])
     _note_preview_cost(game, args.preview_cost, [listed[0] if isinstance(listed, tuple) else listed],
-                       "evolution" in game.previews.artifacts(involved))
+                       "evolution" in game.previews.artifacts(previews_in(involved)))
     result = search_recipe(game, level, args.want, sources, parse_cell(args.activate),
                            overrides=dict(args.cell or []), rank=args.rank, done=done, style=args.style,
                            allowed=args.allow, max_length=args.max_length, offset=args.offset,
@@ -332,37 +349,48 @@ def cmd_plan(args):
     print("Cells: " + ", ".join("%s %s" % (cell, kind) for cell, kind in result["cell_kinds"].items()))
     if result["unusable_sources"]:
         print("Not plantable in this level or on any cell of this area, so not planned: " + ", ".join(result["unusable_sources"]))
-    after = " after the done previews %s" % format_route(done) if done else ""
-    print("Routes of the %s style (%s) with the previews %s, up to %s%s: %s searched." % (
-        args.style, _switches(args.style), ", ".join(str(preview) for preview in result["allowed_steps"]),
-        _count(result["max_length"], "preview"), after,
-        _count(result["entry_positions_searched"], "distinct entry position")))
+    allowed = [as_step(step) for step in result["allowed_steps"]]
+    up_to = _up_to(result["max_length"], any(isinstance(step, LevelStep) for step in allowed))
+    after = " after the done %s %s" % (_steps(done), format_route(done)) if done else ""
+    print("Routes of the %s style (%s) with the %s %s, up to %s%s: %s searched." % (
+        args.style, _switches(args.style), _steps(allowed), ", ".join(str(step) for step in result["allowed_steps"]),
+        up_to, after, _count(result["entry_positions_searched"], "distinct entry position")))
     for capped in result["state_cap_reached"]:
-        previews = capped["route"]
+        route = [as_step(step) for step in capped["route"]]
         print("The state cap (%d) stopped the search at level entry %d, after %s, among recipes of %s: a recipe there "
               "with that many sources or more may have been missed." % (
                   result["max_states"], capped["level_entry_offset"],
-                  "the previews " + format_route(previews) if previews else "no previews",
+                  "the %s %s" % (_steps(route), format_route(route)) if route else "no previews",
                   _count(capped["sources"], "source")))
     match = result["match"]
     if match is None:
         print("No recipe within %s of the %s style%s and up to %s%s." % (
-            _count(result["max_length"], "preview"), args.style, after, _count(result["max_sources"], "source"),
+            up_to, args.style, after, _count(result["max_sources"], "source"),
             ", apart from where the state cap stopped the search" if result["state_cap_reached"] else ""))
     else:
-        planned = match["planned_steps"]
+        planned = [as_step(step) for step in match["planned_steps"]]
         if done:
-            print("\n1. Continue from the previews already run since a full relaunch: %s." % format_route(done))
+            print("\n1. Continue from the %s already run since a full relaunch: %s." % (_steps(done), format_route(done)))
         else:
             print("\n1. Fully quit and relaunch the game.")
         if planned:
-            _run_previews(game, done, planned, result["preview_cost"])
+            _run_route(game, done, planned, result["preview_cost"])
         else:
-            print("2. Run no %spreviews." % ("further " if done else ""))
+            print("2. Run no %s%s." % ("further " if done else "", _steps(done)))
+        steps, _ = advance(game, shared(), 0, done + planned, result["preview_cost"], level)
+        previous = steps[len(done) - 1] if done else None
+        for step in steps[len(done):]:
+            if step["kind"] == "level":
+                print("   " + _describe_level_step(step, previous))
+            previous = step
         if result["extra_offset"]:
             print("   Then let the engine consume the %d further outputs stated with --offset." % result["extra_offset"])
-        print("3. Enter the level directly" + (" and plant %s, in this order:" % _count(len(match["planting_order"]), "source")
-                                               if match["planting_order"] else "; leave the activation area empty."))
+        planting = "plant %s, in this order:" % _count(len(match["planting_order"]), "source")
+        if steps and steps[-1].get("leave") == "restart":
+            print("3. In the restarted level, " + (planting if match["planting_order"] else "leave the activation area empty."))
+        else:
+            print("3. Enter the level directly" + (" and " + planting if match["planting_order"]
+                                                   else "; leave the activation area empty."))
         for step in match["planting_order"]:
             print("   %d. %s at %s" % (step["step"], "/".join(step["sources"]), format_cell(step["cell"])))
         print("4. Start the waves, then activate rank-%d Evolution once at %s." % (args.rank, args.activate))
@@ -440,14 +468,18 @@ def main(argv=None):
     plan.add_argument("--cell", type=parse_override, action="append", metavar="CELL=KIND",
                       help="Kind of a cell for this activation; repeatable")
     plan.add_argument("--done", default="", metavar="ROUTE",
-                      help="Steps already run since a full restart, in order, for example 1x3,4 or D1,1 (default: none)")
+                      help="Steps already run since a full restart, in order, as for predict --route, for example 1x3,4 "
+                           "or D1,1,egypt6@9-1 (default: none)")
     plan.add_argument("--style", choices=tuple(STYLES), default="shorter",
-                      help="Switches between previews the route may make after the done previews: simple at most one, "
-                           "shorter at most three, shortest any (default shorter)")
-    plan.add_argument("--allow", type=parse_allowed, metavar="PREVIEWS",
-                      help="The previews the planned route may use, for example 1,4 (default: every known one, 1,3,4,D1,D4)")
+                      help="Switches the route may make after the done steps, where a preview that differs from the "
+                           "step before it and a level step are switches: simple at most one, shorter at most three, "
+                           "shortest any (default shorter)")
+    plan.add_argument("--allow", type=parse_allowed, metavar="STEPS",
+                      help="The steps the planned route may use, previews and level steps, for example 1,4 or "
+                           "1,4,egypt6@9-1 (default: every known preview, 1,3,4,D1,D4)")
     plan.add_argument("--max-length", type=int, default=100,
-                      help="The longest route to plan after the done steps, a preview counting 1 (default 100)")
+                      help="The longest route to plan after the done steps, a preview counting 1 and a level step %d, "
+                           "for the time each takes to play (default 100)" % LEVEL_STEP_LENGTH)
     plan.add_argument("--preview-cost", type=int, metavar="COST",
                       help="Effective cost of the previews' Sunflowers (default: the declared cost)")
     plan.add_argument("--offset", type=int, default=0, help="Extra raw engine outputs consumed between the route and the level")

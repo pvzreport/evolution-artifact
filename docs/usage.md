@@ -18,15 +18,15 @@ The commands use the bundled plant data, of game version 4.2.4, and every predic
 - `--cell CELL=KIND` sets a cell's kind for this activation.
 - `--json` prints the full result.
 
-`plan` searches for a route of previews and a recipe that put wanted plants on wanted cells: the shortest route of the chosen style, then the fewest sources. [Planning](#planning) gives the rules.
+`plan` searches for a route and a recipe that put wanted plants on wanted cells: the shortest route of the chosen style, then the fewest sources. [Planning](#planning) gives the rules.
 
 - `--want PLANT@CELL`, repeated. At rank 4 a Lily Pad and an ordinary plant may be wanted on the same cell.
 - `--source ALIAS=COST[:KIND,KIND]`, repeated: a source available to plant, with its effective cost and optionally the kinds of cell it may be planted on. Optional at rank 4, where the spawn pass alone may satisfy the wants.
 - `--rank`, `--activate` (default `2-2`), `--cell` and `--offset` as for `predict`.
-- `--done ROUTE` lists the steps already run since a full restart, in order, as for `--route`, for example `1x3,4` or `D1,1`; the route continues from there. The default is none.
-- `--style simple|shorter|shortest` bounds the switches between the planned previews: at most one, at most three, or any number (default `shorter`).
-- `--allow PREVIEWS` lists the previews the planned route may use, for example `1,4`; the default is every known one, `1,3,4,D1,D4`.
-- `--max-length N` caps the length of the route planned after the done steps, a preview counting 1 (default 100). `--preview-cost` as for `predict`.
+- `--done ROUTE` lists the steps already run since a full restart, in order, as for `--route`, for example `1x3,4` or `D1,1,egypt6@9-1`; the route continues from there. The default is none.
+- `--style simple|shorter|shortest` bounds the switches of the planned steps: at most one, at most three, or any number (default `shorter`).
+- `--allow STEPS` lists the steps the planned route may use, previews and level steps, for example `1,4` or `1,4,egypt6@9-1`; the default is every known preview, `1,3,4,D1,D4`.
+- `--max-length N` caps the length of the route planned after the done steps, a preview counting 1 and a level step 25 (default 100). `--preview-cost` as for `predict`.
 - `--max-sources N`, required with `--source`: the most sources you will plant. The recipe may plant fewer and says how many.
 - `--json` prints the full result, including the complete `route`.
 
@@ -45,6 +45,10 @@ python3 -m evolution predict --rank 4 --level beach3 --route 1x11 --activate 5-3
 ```
 
 ```bash
+python3 -m evolution predict --route egypt6@9-1x2,egypt13@2-2
+```
+
+```bash
 python3 -m evolution plan --level memory-lane-s33-6-hard \
   --want aeonium@1-1 --want aeonium@1-3 --source sunflower=50 --source puffshroom=0 --max-sources 9
 ```
@@ -56,6 +60,10 @@ python3 -m evolution plan --rank 4 --level egypt13 --want kiwifruit@2-1 --want p
 
 ```bash
 python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --max-sources 1 --done 1x2
+```
+
+```bash
+python3 -m evolution plan --rank 4 --level egypt1 --want icelotus@1-1 --want levitater@1-2 --allow 1,egypt6@9-1
 ```
 
 ## Cells and kinds
@@ -86,9 +94,9 @@ A level step's entry gives its `name`, its `level`, its `activation` cell and `r
 
 ## Planning
 
-A route is the sequence of previews run after a full restart, from those `--allow` lists. Tapping an artifact plays its rank-1 preview, so a route with previews starts with rank 1 or D1, the Evolution previews after a D1 start again with rank 1, and `--done` follows the same rule. A switch is a preview that differs from the one before it, in rank or in artifact; the first planned preview is compared with the last done one. The styles bound the switches among the planned previews: `simple` allows one, so after a restart its routes are previews of one kind followed by previews of another, such as rank-1 previews followed by rank-4 previews; `shorter` allows three; `shortest` any number.
+A route is the sequence of steps run after a full restart, from those `--allow` lists: by default the previews, and level steps only when listed. Tapping an artifact plays its rank-1 preview, so a route's previews start with rank 1 or D1, the Evolution previews after a D1 start again with rank 1, the previews after a level step start with 1 or D1 as after a restart, and `--done` follows the same rule. A switch is a preview that differs from the step before it, in rank or in artifact, or that follows a level step, and every level step is a switch; the first planned step is compared with the last done one. The styles bound the switches among the planned steps: `simple` allows one, so after a restart its routes are previews of one kind followed by previews of another, such as rank-1 previews followed by rank-4 previews, or by a single level step; `shorter` allows three; `shortest` any number.
 
-`plan` tries routes in increasing length, from the done previews alone up to `--max-length` more, and returns the shortest route of the style that has a recipe. Among the routes of that length it prefers the fewest sources, then the fewest switches, then the first in preview order, comparing the planned previews one by one: ranks 1, 3 and 4, then D1 and D4. Routes that reach the same stream position enter the level at the same position, so each distinct position is searched once, for the route this order prefers there. The result lists the route's `planned_steps` and `switches`, the `style`, the `allowed_steps`, and `entry_positions_searched`, the number of distinct positions searched.
+A route's length is its number of previews plus 25 for each level step, entries alone included: a level step takes well over twenty seconds to play, against under a second for a preview tap. `plan` tries routes in increasing length, from the done steps alone up to a length of `--max-length` more, and returns the shortest route of the style that has a recipe. Among the routes of that length it prefers the fewest sources, then the fewest switches, then the first in step order, comparing the planned steps one by one: ranks 1, 3 and 4, D1 and D4, then the level steps in the order `--allow` lists them. A level step is never planned where its spawns include a Draftodil, since the position after it is not established there. Routes that reach the same stream position enter the level at the same position, so each distinct position is searched once, for the route this order prefers there. The result lists the route's `planned_steps` and `switches`, the `style`, the `allowed_steps`, and `entry_positions_searched`, the number of distinct positions searched. The text output prints each planned level step with what to do in it and the spawns it shows.
 
 At each entry position the search walks sequences of source pools breadth first, fewest sources first; sources with the same pool count as one, whatever their aliases or costs. A sequence grows only while its sources fit the cells of the area, counted per kind of cell. Whether it or any sequence grown from it yields a recipe depends only on its state: the position its last shuffle ended at and, among its sources that may stand on the same kinds of cell, how many there are and how many of each wanted plant they produced, counted up to the number wanted. The search keeps the first sequence to reach each state and drops the others, so it returns the recipe that walking every sequence returns: the fewest sources at that position, and among those the first sequence, taking larger pools first. A memory guard caps the states stored at one position at 1,000,000. A position where the cap stopped the search is listed in `state_cap_reached` and printed with the number of sources among whose recipes it stopped; a recipe there with that many sources or more may have been missed.
 
