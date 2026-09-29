@@ -26,6 +26,7 @@
   "9-4": "pirate_plank",
   "9-5": "none"
  },
+ "plants": {},
  "entry_shuffles": [],
  "notes": "Deck columns 1 to 5. Planks on rows 1, 2, 3, 4 from column 6; other rows are open water there. The plank rows are declared; the deck edge is observed.",
  "provenance": {

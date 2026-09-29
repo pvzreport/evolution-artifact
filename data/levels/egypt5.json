@@ -11,6 +11,7 @@
   "8-1": "none",
   "8-4": "none"
  },
+ "plants": {},
  "entry_shuffles": [],
  "notes": "Gravestones declared at level start on 6-2, 7-1, 7-5, 8-1, 8-4 hold no plant while they stand; give ground for that activation once one has been destroyed.",
  "provenance": {

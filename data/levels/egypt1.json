@@ -4,6 +4,7 @@
  "stage": "egypt",
  "default_kind": "ground",
  "bans": [],
+ "plants": {},
  "entry_shuffles": [],
  "provenance": {
   "kind": "declared",
