@@ -2,6 +2,7 @@
 
   python3 -m evolution predict --route 1,4
   python3 -m evolution predict --route D1x2,1,3
+  python3 -m evolution predict --route 1,egypt6@9-1x2,egypt13@2-2
   python3 -m evolution predict --level memory-lane-s33-6-hard --route 1x6 --activate 2-2 \\
       --plant sunflower=50@1-3 --plant puffshroom=0@3-1:beach_shore
   python3 -m evolution predict --rank 4 --level egypt13 --activate 2-2
@@ -24,10 +25,10 @@ import sys
 from .build import build_plants
 from .game import Game
 from .level import format_cell, load_level, parse_cell
-from .model import LEVEL_RANKS, Planting
+from .model import LEVEL_RANKS, ROW_SHUFFLERS, Planting
 from .plants import PLANTS
 from .previews import parse_preview
-from .route import format_route, parse_route, scenario
+from .route import format_route, parse_route, previews_in, scenario
 from .search import STYLES, search_recipe
 
 PLATFORMS = ("iOS", "Android")
@@ -113,38 +114,88 @@ def _count(number, noun):
     return "%d %s%s" % (number, noun, "" if number == 1 else "s")
 
 
-def _print_previews(previews):
-    for preview in previews:
-        if preview["artifact"] == "devolution":
-            shuffles = preview["shuffles"]
+def _print_steps(steps):
+    """One line per step of a route."""
+    previous = None
+    for step in steps:
+        if step["kind"] == "level":
+            print(_describe_level_step(step, previous))
+        elif step["artifact"] == "devolution":
+            shuffles = step["shuffles"]
             sizes = list(dict.fromkeys(str(shuffle["objects"]) for shuffle in shuffles))
-            print("Preview %d (Devolution rank %d): %s of %s objects, %s (stream at %d after)" % (
-                preview["step"], preview["rank"], _count(len(shuffles), "shuffle"), " and ".join(sizes),
-                _count(preview["end"] - shuffles[0]["start"], "draw"), preview["end"]))
-            continue
-        evolved, pads, spawns = [], [], []
-        for row in preview["results"]:
-            text = "%s %s" % (format_cell(row["cell"]), _outcome(row))
-            if row["action"] == "evolve":
-                evolved.append(text)
-            elif row["beneath"]:
-                pads.append(format_cell(row["cell"]))
-            else:
-                spawns.append(text)
-        line = "Preview %d (rank %d): %s" % (preview["step"], preview["rank"], ", ".join(evolved))
-        if pads:
-            line += "; pads beneath " + ", ".join(pads)
-        if spawns:
-            line += "; spawns " + ", ".join(spawns)
-        for effect in preview["effects"]:
-            line += "; %s at %s shuffles %s (%s)" % (
-                effect["plant"], format_cell(effect["cell"]), _count(effect["objects"], "plant object"),
-                _count(effect["end"] - effect["start"], "draw"))
-        if preview["effects"]:
-            line += " (selections end at %d; stream at %d after)" % (preview["selection_end"], preview["end"])
+            print("Step %d (Devolution rank %d): %s of %s objects, %s (stream at %d after)" % (
+                step["step"], step["rank"], _count(len(shuffles), "shuffle"), " and ".join(sizes),
+                _count(step["end"] - shuffles[0]["start"], "draw"), step["end"]))
         else:
-            line += " (stream at %d after)" % preview["end"]
-        print(line)
+            print(_describe_preview(step))
+        previous = step
+
+
+def _describe_preview(step):
+    """An Evolution preview's selections, pads, spawns and row shuffles, and where the stream stands after it."""
+    evolved, pads, spawns = [], [], []
+    for row in step["results"]:
+        text = "%s %s" % (format_cell(row["cell"]), _outcome(row))
+        if row["action"] == "evolve":
+            evolved.append(text)
+        elif row["beneath"]:
+            pads.append(format_cell(row["cell"]))
+        else:
+            spawns.append(text)
+    line = "Step %d (rank %d): %s" % (step["step"], step["rank"], ", ".join(evolved))
+    if pads:
+        line += "; pads beneath " + ", ".join(pads)
+    if spawns:
+        line += "; spawns " + ", ".join(spawns)
+    return line + _effects(step["effects"]) + _stream_after(step)
+
+
+def _describe_level_step(step, previous):
+    """What a level step asks of the player, what it drew, and where the stream stands after it; `previous` is the
+    step before it."""
+    again = previous is not None and previous["kind"] == "level" and previous["level"]["id"] == step["level"]["id"]
+    action = "enter %s%s" % (step["level"]["name"], " again from the map" if again else "")
+    if step["activation"]:
+        action = "%s, activate rank-4 Evolution on %d-%d with nothing planted" % (
+            "in the restarted level" if again and previous["leave"] == "restart" else action,
+            step["activation"]["column"], step["activation"]["row"])
+    action += ", then %s." % ("restart the level" if step["leave"] == "restart" else "quit to the map")
+    drawn = []
+    if step["entry_effects"]:
+        drawn.append("entering shuffles " + _bags(step["entry_effects"]))
+    if step["results"]:
+        drawn.append("spawns " + ", ".join("%s %s" % (format_cell(row["cell"]), _outcome(row)) for row in step["results"]))
+    if step["effects"] is None:
+        shufflers = [row for row in step["results"] if row["placed"] and row["result"] in ROW_SHUFFLERS]
+        drawn.append("the row shuffle of the %s is not counted, since the level's description does not list the plants "
+                     "standing at its start" % " and the ".join("%s at %s" % (row["result"], format_cell(row["cell"]))
+                                                                 for row in shufflers))
+        after = " (selections end at %d)" % step["selection_end"]
+    else:
+        after = _effects(step["effects"]) + _stream_after(step)
+    text = "; ".join(drawn) + after
+    return "Step %d (%s): %s %s" % (step["step"], step["name"], action, text[:1].upper() + text[1:] + ".")
+
+
+def _effects(effects):
+    """The row shuffles of the placement effects, as clauses."""
+    return "".join("; %s at %s shuffles %s (%s)" % (
+        effect["plant"], format_cell(effect["cell"]), _count(effect["objects"], "plant object"),
+        _count(effect["end"] - effect["start"], "draw")) for effect in effects)
+
+
+def _stream_after(step):
+    """Where the stream stands after a step, with the end of its selections when its effects drew."""
+    if step["effects"]:
+        return " (selections end at %d; stream at %d after)" % (step["selection_end"], step["end"])
+    return " (stream at %d after)" % step["end"]
+
+
+def _bags(effects):
+    """The gravestone bags an entry shuffles and the outputs they draw."""
+    bags = ("a gravestone bag of %s" % _count(effects[0]["objects"], "object") if len(effects) == 1
+            else "gravestone bags of %s objects" % ", ".join(str(e["objects"]) for e in effects))
+    return "%s (%s)" % (bags, _count(effects[-1]["end"] - effects[0]["start"], "draw"))
 
 
 def _note_preview_cost(game, preview_cost, listed_costs, evolution):
@@ -170,10 +221,7 @@ def _describe_entry(effects, start):
     """What entering the level draws: its gravestone-bag shuffles, and the offset the activation starts from."""
     if not effects:
         return "Entering the level draws nothing; the activation starts at offset %d." % start
-    bags = ("a gravestone bag of %s" % _count(effects[0]["objects"], "object") if len(effects) == 1
-            else "gravestone bags of %s objects" % ", ".join(str(e["objects"]) for e in effects))
-    return "Entering the level shuffles %s (%s); the activation starts at offset %d." % (
-        bags, _count(start - effects[0]["start"], "draw"), start)
+    return "Entering the level shuffles %s; the activation starts at offset %d." % (_bags(effects), start)
 
 
 def _describe_row(row):
@@ -201,7 +249,7 @@ def cmd_predict(args):
         if cost is None:
             raise ValueError("No effective cost for %s: write ALIAS=COST@CELL or add --source ALIAS=COST" % entry["source"])
         plantings.append(Planting(entry["source"], cost, entry["cell"], entry["kind"]))
-    evolution = "evolution" in game.previews.artifacts(route)
+    evolution = "evolution" in game.previews.artifacts(previews_in(route))
     _note_preview_cost(game, args.preview_cost, [p.cost for p in plantings if p.source == game.previews.source], evolution)
     result = scenario(game, route, level, plantings, activation, dict(args.cell or []), args.offset, args.rank,
                       preview_cost=args.preview_cost)
@@ -209,15 +257,20 @@ def cmd_predict(args):
         print(json.dumps(result, indent=2))
         return
     if not route:
-        print("No previews: the stream starts at offset 0.")
+        print("No route: the stream starts at offset 0.")
     elif evolution:
-        print("Previews with %s at effective cost %d:" % (game.previews.source, result["preview_cost"]))
+        print("Route with %s at effective cost %d:" % (game.previews.source, result["preview_cost"]))
     else:
-        print("Previews:")
-    _print_previews(result["steps"])
-    if args.offset:
+        print("Route:")
+    _print_steps(result["steps"])
+    if result["offset_after_route"] is None:
+        skipped = (["the rest of the route"] if len(result["steps"]) < len(route) else []) + (["the level"] if level else [])
+        print("The position after step %d is not established: a Draftodil's attack shuffles with the shared engine and "
+              "is not modelled%s." % (len(result["steps"]), ", so %s %s not predicted" % (
+                  " and ".join(skipped), "is" if len(skipped) == 1 else "are") if skipped else ""))
+    elif args.offset:
         print("Extra raw outputs consumed: %d" % args.offset)
-    if level:
+    if level and result["offset_after_route"] is not None:
         print("Level %s (stage %s); rank-%d activation at %s; level entry at offset %d." % (
             level.name, level.stage, args.rank, format_cell(activation) if activation else "unspecified",
             result["level_entry_offset"]))
@@ -359,10 +412,12 @@ def main(argv=None):
     predict = commands.add_parser("predict", help="Replay a stated scenario and print what the game shows")
     predict.add_argument("--route", default="",
                          help="The steps run after a full restart, in order: previews, Evolution ranks and D1 and D4 for "
-                              "the Devolution previews, for example 1x6, 1,4 or D1x2,1,3 (default: none)")
+                              "the Devolution previews, and level steps LEVEL@CELL, a rank-4 activation on CELL with "
+                              "nothing planted, or LEVEL, its entry alone; for example 1x6, D1x2,1,3 or "
+                              "1,egypt6@9-1x2,D1 (default: none)")
     predict.add_argument("--preview-cost", type=int, metavar="COST",
                          help="Effective cost of the previews' Sunflowers (default: the declared cost)")
-    predict.add_argument("--offset", type=int, default=0, help="Extra raw engine outputs consumed between the previews and the level")
+    predict.add_argument("--offset", type=int, default=0, help="Extra raw engine outputs consumed between the route and the level")
     predict.add_argument("--level", help="Level id from data/levels, or a path to a description")
     predict.add_argument("--rank", type=int, choices=LEVEL_RANKS, default=1, help="Artifact rank of the activation (default: 1)")
     predict.add_argument("--activate", help="Activation cell COLUMN-ROW")
@@ -395,7 +450,7 @@ def main(argv=None):
                       help="The longest route to plan after the done steps, a preview counting 1 (default 100)")
     plan.add_argument("--preview-cost", type=int, metavar="COST",
                       help="Effective cost of the previews' Sunflowers (default: the declared cost)")
-    plan.add_argument("--offset", type=int, default=0, help="Extra raw engine outputs consumed between the previews and the level")
+    plan.add_argument("--offset", type=int, default=0, help="Extra raw engine outputs consumed between the route and the level")
     plan.add_argument("--max-sources", type=int, metavar="N",
                       help="The most sources the recipe may plant; required with --source")
     plan.add_argument("--json", action="store_true")

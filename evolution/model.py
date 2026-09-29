@@ -39,6 +39,17 @@ fixtures under tests/fixtures replay the captures named below.
   and the 10 outputs between two consecutive captures of one process, which are the
   Dark Ages 4 entry from where the earlier capture ended). Every other captured level
   consumed nothing at entry; those with a decoded definition declare no such action.
+- A route can pass through levels. A level step enters a level, activates at rank 4 with
+  nothing planted and leaves: it draws the level's entry shuffles, the spawn pass over the
+  free cells of the 3x3 and its placement effects, whose rows hold the plants standing in
+  the level at its start and the spawns placed. Nothing else drew at an entry, after an
+  activation, at a restart of the level or at a quit to the map (a fresh-launch capture on
+  4.2.4: Egypt 6 activated on 9-1, restarted and activated there again, quit, then Egypt 13
+  activated on 2-2; all 1,096 outputs, consecutive from 0, were the 15 spawn shuffles).
+  Neither level has tides or entry shuffles, and no spawn was a Draftodil. A Draftodil's
+  attack shuffles with the shared engine and is not modelled, and it drew after a level's
+  effects in captures in a Beach level with tides, so the position after a level step
+  whose spawns include a row-shuffling plant is not established.
 """
 
 from collections import Counter
@@ -245,6 +256,30 @@ def enter_level(level, stream, offset):
         effects.append({"action": "shuffle", "objects": objects, "start": offset, "end": end})
         offset = end
     return effects, offset
+
+
+def level_step(level, cell, pools, stream, offset):
+    """The draws of a level step at an offset: the level's entry shuffles and, with a cell, a rank-4 activation there
+    with nothing planted and its placement effects.
+
+    Returns the entry effects, the activation offset, the rows and the selection end (None without a cell), the
+    placement effect rows, the offset after them, and whether that offset is established. It is not when a
+    row-shuffling plant was placed, and the effects and the offset are then None if the level does not list its plants,
+    since its row populations are not known.
+    """
+    entry_effects, start = enter_level(level, stream, offset)
+    if cell is None:
+        return {"entry_effects": entry_effects, "activation_offset": None, "results": [], "selection_end": None,
+                "effects": [], "end": start, "established": True}
+    rows, selection_end = activate(Board(level, None, cell), pools, [], 4, stream, start)
+    shuffled = any(row["placed"] and row["result"] in ROW_SHUFFLERS for row in rows)
+    if shuffled and level.plants is None:
+        effects, end = None, None
+    else:
+        population = Counter(row for (_, row), plant in (level.plants or {}).items() if plant != LILYPAD)
+        effects, end = placement_draws(rows, population, stream, selection_end)
+    return {"entry_effects": entry_effects, "activation_offset": start, "results": rows, "selection_end": selection_end,
+            "effects": effects, "end": end, "established": not shuffled}
 
 
 def placement_draws(rows, population, stream, offset):

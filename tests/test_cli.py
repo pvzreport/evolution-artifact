@@ -100,7 +100,7 @@ class CliTest(unittest.TestCase):
         # Captured on 4.2.4: two Devolution previews after a fresh launch drew 90 and 84 outputs, and a rank-1 preview
         # with Sunflowers at cost 37 after them ended at 3222.
         text = run("predict", "--route", "D1x2,1", "--preview-cost", "37")
-        self.assertIn("Preview 2 (Devolution rank 1): 6 shuffles of 10 and 15 objects, 84 draws (stream at 174 after)", text)
+        self.assertIn("Step 2 (Devolution rank 1): 6 shuffles of 10 and 15 objects, 84 draws (stream at 174 after)", text)
         self.assertIn("3-1 whitemelon (stream at 3222 after)", text)
         request = ["plan", "--level", "egypt1", "--want", "chestnut@1-1", "--source", "wallnut=50", "--max-sources", "1",
                    "--max-length", "4"]
@@ -110,6 +110,23 @@ class CliTest(unittest.TestCase):
         self.assert_error(request + ["--allow", "3,4"], "None of the allowed previews 3, 4 can come first")
         self.assert_error(request + ["--done", "D1,4"], "4 cannot follow D1")
         self.assert_error(["predict", "--route", "D1,3"], "3 cannot follow D1")
+
+    def test_level_steps_say_how_to_leave_and_where_the_stream_stands(self):
+        # The route of the level-step capture, which was played with a restart between the two Egypt 6 steps.
+        text = run("predict", "--route", "egypt6@9-1x2,egypt13@2-2")
+        self.assertIn("Step 1 (egypt6@9-1): enter Egypt 6 (story), activate rank-4 Evolution on 9-1 with nothing planted, "
+                      "then restart the level. Spawns 8-1 endurian, 9-1 puffshroom, 9-2 guardshroom (stream at 209 after).",
+                      text)
+        self.assertIn("Step 2 (egypt6@9-1): in the restarted level, activate rank-4 Evolution on 9-1 with nothing planted, "
+                      "then quit to the map.", text)
+        # Dark Ages 4 shuffles at entry, so each of its steps enters it again from the map.
+        self.assertIn("Step 3 (dark4@2-2): enter Dark Ages 4 (story) again from the map, activate",
+                      run("predict", "--route", "1,dark4,dark4@2-2"))
+        text = run("predict", "--route", "dark19@6-4,1", "--level", "egypt1", "--rank", "4", "--activate", "2-2")
+        self.assertIn("draftodil at 5-3 shuffles 3 plant objects (2 draws) (selections end at 528; stream at 530 after).", text)
+        self.assertIn("The position after step 1 is not established: a Draftodil's attack shuffles with the shared engine "
+                      "and is not modelled, so the rest of the route and the level are not predicted.", text)
+        self.assertNotIn("Level Egypt 1", text)
 
     def test_pool_listing(self):
         text = run("pool", "--level", "pirate1", "--kind", "pirate_plank", "--cost", "0")

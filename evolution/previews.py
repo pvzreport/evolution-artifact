@@ -12,10 +12,10 @@ entering a level choose where in the fixed sequence the level's activation start
 
 A preview is named as in a route: an Evolution preview by its rank, a Devolution
 preview by D and its rank, so D1 is the Devolution artifact's rank-1 preview. Tapping an
-artifact plays its rank-1 preview, so a route starts with a rank-1 preview, and so does
-each run of an artifact's previews after another artifact's. The boards, cells and
-shuffle sizes come from data/previews.json, which was read from captures; the Evolution
-source's effective cost is a route input.
+artifact plays its rank-1 preview, so a route's previews start with a rank-1 preview, and
+so does each run of an artifact's previews after another artifact's. The boards, cells
+and shuffle sizes come from data/previews.json, which was read from captures; the
+Evolution source's effective cost is a route input.
 """
 
 from collections import Counter
@@ -28,7 +28,7 @@ from .model import Board, Planting, Pools, activate, placement_draws
 from .plants import DATA
 
 DEVOLUTION_PREFIX = "D"  # a Devolution preview's name is this prefix and its rank
-_NAME = re.compile(r"(\d+)|[Dd](\d+)")
+PREVIEW_NAME = re.compile(r"(\d+)|[Dd](\d+)")
 
 
 def load_previews(path=None):
@@ -37,7 +37,7 @@ def load_previews(path=None):
 
 def parse_preview(text):
     """A preview's name: an Evolution rank such as 4, or D and a Devolution rank such as D1."""
-    match = _NAME.fullmatch(text)
+    match = PREVIEW_NAME.fullmatch(text)
     if not match:
         raise ValueError("Name a preview by its Evolution rank, such as 4, or as D1 for the Devolution rank-1 preview")
     evolution, devolution = match.groups()
