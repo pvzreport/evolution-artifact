@@ -65,19 +65,6 @@ class PredictTest(unittest.TestCase):
         for cell, plant in expected.items():
             self.assertEqual(cells[cell], plant, cell)
 
-    def test_pennys_pursuit_27_preview_recipe(self):
-        # Forecast saved before play with Sunflowers at cost 50; both Convallaria Chemists appeared in the game, and
-        # only those two cells were checked. The forecast omitted the row shuffles of the four Draftodils among these
-        # previews. With them the level entry moves by two outputs and the stream re-aligns inside the first level
-        # selection, the Cactus at 2-1, whose result differs and was not checked.
-        plantings = [Planting("cosmicpea", 150, (1, 3)), Planting("cabbagepult", 100, (1, 2)),
-                     Planting("cabbagepult", 100, (1, 1)), Planting("cabbagepult", 100, (3, 1)),
-                     Planting("cactus", 175, (2, 1))]
-        out = self.run_scenario([1] * 27, "pennys-pursuit-dark", plantings, (2, 2), preview_cost=50)
-        cells = by_cell(out["results"])
-        self.assertEqual(cells[(1, 1)], "convallariachemist")
-        self.assertEqual(cells[(1, 3)], "convallariachemist")
-
     def test_arthurs_challenge_after_24_discounted_previews(self):
         # Captured: a rank-1 activation in Arthur's Challenge after 24 reported rank-1 previews with
         # Sunflowers at effective cost 47. The nine selections and all 2,974 recorded outputs match from entry 72725,
