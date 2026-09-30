@@ -45,38 +45,12 @@ from collections import Counter
 
 from .level import LILYPAD, format_cell
 from .plants import declared_costs, stage_allows
-from .stream import shared
 from .tiles import NONE
 
 PAD = "beach_pad"
 RANKS = (1, 3, 4)  # the ranks an activation is modelled at
 LEVEL_RANKS = (1, 4)  # the ranks a level activation is predicted and planned at; rank 3 is known only as a preview
 ROW_SHUFFLERS = ("draftodil",)
-
-_CONDITIONS = [
-    "Start after a full process restart (seed 5489, offset 0).",
-    "Run exactly the listed previews, each one complete with its placement effects, and nothing else that "
-    "uses an artifact before entering the level.",
-    "Enter the level once, after the previews and any stated extra outputs, and do not restart it: its entry runs the "
-    "gravestone-bag shuffles its description lists, and nothing else uses the shared engine before the activation.",
-    "Same level as described, sources at the listed effective cost (no discounts unless included), "
-    "activate once while every source remains and before any automatic spawning.",
-    "Activate promptly after planting and read the results at once.",
-    "Each cell's kind must match the board at activation: Beach cells right of the coast are shore when dry, "
-    "water when flooded without a pad, and pad whenever a Lily Pad is present, bare or occupied. "
-    "Keep terrain and supports unchanged until the effects finish, apart from the predicted additions.",
-    "Plant exactly the listed sources in the listed order inside the 3x3 around the activation cell; "
-    "the newest plant is processed first.",
-]
-
-
-def conditions(game, preview_cost=None, previews=()):
-    """What a prediction assumes: the game version of its plant data, what its previews need, then the fixed
-    conditions. `previews` are the previews the prediction involves: a route or, for a search without a recipe,
-    every preview it could have planned."""
-    lines = ["The game runs version %s, the version of the plant data used (read from the %s package)."
-             % (game.version, game.platform)]
-    return lines + game.previews.conditions(previews, preview_cost) + _CONDITIONS
 
 
 def check_level_rank(rank):
@@ -162,7 +136,7 @@ class Pools:
 def selection_row(action, cell, kind, source, cost, candidates, shuffled, start, end, beneath=False):
     """One selection: what was shuffled, what came first, the offsets the shuffle spanned, and for a spawn
     whether it is the Lily Pad added beneath an occupied cell."""
-    return {"action": action, "cell": tuple(cell), "kind": kind, "source": source, "cost": cost,
+    return {"action": action, "cell": tuple(cell), "cell_kind": kind, "source": source, "cost": cost,
             "candidates": candidates, "result": shuffled[0] if shuffled else None, "runners_up": shuffled[1:5],
             "start": start, "end": end, "placed": None, "beneath": beneath}
 
@@ -298,31 +272,3 @@ def placement_draws(rows, population, stream, offset):
                             "start": offset, "end": end})
             offset = end
     return effects, offset
-
-
-def scenario(game, sequence=(), level=None, plantings=(), activation=None, overrides=None, offset=0, rank=1,
-             stream=None, preview_cost=None):
-    """Replay previews, optional extra raw outputs, then an optional level entry and activation, from a
-    fresh process, with the plant data of `game`; a preview sequence that no route can run is refused.
-    `preview_cost` is the Evolution previews' effective source cost; the default is the source's declared cost."""
-    if offset < 0:
-        raise ValueError("The extra offset cannot be negative")
-    if level:
-        check_level_rank(rank)
-    sequence = list(sequence)
-    game.previews.check_route(sequence)
-    stream = stream or shared()
-    cost = game.previews.cost(preview_cost)
-    preview_rows, after_previews = game.previews.advance(stream, 0, sequence, cost)
-    entry = after_previews + offset
-    entry_effects, start, results, end = [], entry, [], entry
-    if level:
-        entry_effects, start = enter_level(level, stream, entry)
-        board = Board(level, overrides, activation)
-        results, end = activate(board, game.pools(level), plantings, rank, stream, start)
-    return {"game": game.describe(), "preview_cost": cost, "previews": preview_rows,
-            "offset_after_previews": after_previews, "extra_offset": offset,
-            "level": level.describe() if level else None, "level_entry_offset": entry,
-            "entry_effects": entry_effects, "activation_offset": start,
-            "activation": {"column": activation[0], "row": activation[1]} if activation else None, "rank": rank,
-            "results": results, "stream_end": end, "conditions": conditions(game, cost, sequence)}

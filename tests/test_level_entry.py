@@ -66,7 +66,7 @@ class LevelEntryTest(unittest.TestCase):
         # two sources and the two Puff-shrooms outside the 3x3 in its row, at positions 6407 to 6410.
         plantings = [Planting("puffshroom", 0, cell) for cell in [(3, 4), (2, 4), (2, 5), (3, 3), (3, 5)]]
         out = scenario(self.game, ["E1", "E4"], load_level("dark19"), plantings, (2, 4), preview_cost=47)
-        self.assertEqual((out["offset_after_previews"], out["activation_offset"], out["stream_end"]), (4643, 4652, 6407))
+        self.assertEqual((out["offset_after_route"], out["activation_offset"], out["stream_end"]), (4643, 4652, 6407))
         self.assertEqual([row["result"] for row in out["results"]],
                          ["nukelauncher", "electriccurrant", "cosmicnut", "pamegranate", "draftodil"])
         self.assertEqual({row["candidates"] for row in out["results"]}, {251})
@@ -99,8 +99,8 @@ class LevelEntryTest(unittest.TestCase):
                  ("puffshroom", 0, (1, 2)), ("peashooter", 100, (3, 2)), ("puffshroom", 0, (3, 3))]
         plantings = [Planting(*p) for p in order]
         out = scenario(self.game, ["E1"] * 3, load_level("arthurs-challenge"), plantings, (2, 2), preview_cost=47)
-        self.assertEqual([p["end"] for p in out["previews"]], [3135, 6140, 9152])
-        self.assertEqual(sum(len(p["effects"]) for p in out["previews"]), 0)
+        self.assertEqual([p["end"] for p in out["steps"]], [3135, 6140, 9152])
+        self.assertEqual(sum(len(p["effects"]) for p in out["steps"]), 0)
         self.assertEqual((out["level_entry_offset"], out["entry_effects"], out["activation_offset"]), (9152, [], 9152))
         self.assertEqual([(row["cell"], row["result"], row["candidates"]) for row in out["results"]],
                          [((3, 3), "lotusshooter", 251), ((3, 2), "actinostemma", 198), ((1, 2), "draftodil", 251),

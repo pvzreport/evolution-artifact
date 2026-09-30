@@ -34,7 +34,7 @@ from evolution.tiles import NONE
 from projections import game_on
 
 FIXTURE = Path(__file__).parent / "fixtures" / "search-equality.json"
-ROW_KEYS = ("action", "cell", "kind", "source", "cost", "candidates", "result", "runners_up", "start", "end", "placed",
+ROW_KEYS = ("action", "cell", "cell_kind", "source", "cost", "candidates", "result", "runners_up", "start", "end", "placed",
             "beneath", "sources", "wanted")
 DRAWN_BELOW = 1000000
 
@@ -278,7 +278,7 @@ def _reference(job):
     if compare:
         level_id, activation, wants, sources, rank, overrides, max_sources = case_request(case)
         match = search_recipe(game, load_level(level_id), wants, sources, activation, overrides=overrides, rank=rank,
-                              max_previews=0, offset=entry, max_sources=max_sources)["match"]
+                              max_length=0, offset=entry, max_sources=max_sources)["match"]
         same = _entry(None if match is None else match["processing_order"]) == expected
     return case["name"], entry, expected, same, seconds
 

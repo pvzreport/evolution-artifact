@@ -36,7 +36,7 @@ class Rank4Test(unittest.TestCase):
                 pools = game.pools(level)
                 if "previews" in case:
                     result = scenario(game, level=level, plantings=plantings, activation=case["activation"],
-                                      overrides=overrides, sequence=case["previews"], rank=4)
+                                      overrides=overrides, route=case["previews"], rank=4)
                     self.assertEqual((result["level_entry_offset"], result["activation_offset"]), (case["offset"], case["offset"]))
                     rows, end = result["results"], result["stream_end"]
                 else:
@@ -51,9 +51,9 @@ class Rank4Test(unittest.TestCase):
                     self.assertEqual(list(actual["cell"]), expected["cell"])
                     self.assertEqual(actual["placed"], expected.get("placed", True), (case["capture"], expected["cell"]))
                     if actual["action"] == "evolve":
-                        pool = pools.transformation(actual["kind"], actual["cost"])
+                        pool = pools.transformation(actual["cell_kind"], actual["cost"])
                     else:
-                        pool = pools.spawn(actual["kind"], actual["cell"] in occupied)
+                        pool = pools.spawn(actual["cell_kind"], actual["cell"] in occupied)
                     digest = hashlib.sha256(json.dumps(list(pool), separators=(",", ":")).encode()).hexdigest()
                     self.assertEqual(digest, expected["pool_sha256"], (case["capture"], expected["cell"]))
                 if "captured_stream_end" in case:
