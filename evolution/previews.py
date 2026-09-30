@@ -10,10 +10,10 @@ too. A Devolution preview devolves its zombies with shuffles of fixed sizes. Eac
 therefore moves the shared stream by a replayable amount, and the previews run before
 entering a level choose where in the fixed sequence the level's activation starts.
 
-A preview is named as in a sequence: an Evolution preview by its rank, a Devolution
-preview by D and its rank, so D1 is the Devolution artifact's rank-1 preview. Tapping an
-artifact plays its rank-1 preview, so a route starts with a rank-1 preview, and so does
-each run of an artifact's previews after another artifact's. The boards, cells and
+A preview is named by its artifact's letter and its rank: E4 is the Evolution artifact's
+rank-4 preview, D1 the Devolution artifact's rank-1 preview. Tapping an artifact plays its
+rank-1 preview, so a route starts with E1 or D1, and so does each run of an artifact's
+previews after another artifact's. The boards, cells and
 shuffle sizes come from data/previews.json, which was read from captures; the Evolution
 source's effective cost is a route input.
 """
@@ -27,8 +27,8 @@ from .level import Level, parse_cell
 from .model import Board, Planting, Pools, activate, placement_draws
 from .plants import DATA
 
-DEVOLUTION_PREFIX = "D"  # a Devolution preview's name is this prefix and its rank
-_NAME = re.compile(r"(\d+)|[Dd](\d+)")
+EVOLUTION_PREFIX, DEVOLUTION_PREFIX = "E", "D"  # a preview's name is its artifact's prefix and its rank
+_NAME = re.compile(r"[Ee](\d+)|[Dd](\d+)")
 
 
 def load_previews(path=None):
@@ -36,24 +36,26 @@ def load_previews(path=None):
 
 
 def parse_preview(text):
-    """A preview's name: an Evolution rank such as 4, or D and a Devolution rank such as D1."""
+    """A preview's name: E and an Evolution rank such as E4, or D and a Devolution rank such as D1."""
     match = _NAME.fullmatch(text)
     if not match:
-        raise ValueError("Name a preview by its Evolution rank, such as 4, or as D1 for the Devolution rank-1 preview")
+        raise ValueError("Name a preview by its artifact and rank, such as E4 for the Evolution rank-4 preview or D1 for the "
+                         "Devolution rank-1 preview")
     evolution, devolution = match.groups()
-    return int(evolution) if evolution else DEVOLUTION_PREFIX + str(int(devolution))
+    return EVOLUTION_PREFIX + str(int(evolution)) if evolution else DEVOLUTION_PREFIX + str(int(devolution))
 
 
 def parse_sequence(text):
-    """Previews in order: "1x6,4" is six rank-1 Evolution previews then one rank-4, "D1x2,1" two Devolution previews
-    then a rank-1 Evolution preview."""
+    """Previews in order: "E1x6,E4" is six rank-1 Evolution previews then one rank-4, "D1x2,E1" two Devolution
+    previews then a rank-1 Evolution preview."""
     sequence = []
     for part in str(text or "").replace(" ", "").split(","):
         if not part:
             continue
         name, _, times = part.partition("x")
         if times and not times.isdigit():
-            raise ValueError("A preview sequence lists NAME or NAMExCOUNT items separated by commas, for example 1x6,4 or D1x2,1")
+            raise ValueError("A preview sequence lists NAME or NAMExCOUNT items separated by commas, for example E1x6,E4 or "
+                             "D1x2,E1")
         sequence.extend([parse_preview(name)] * (int(times) if times else 1))
     return sequence
 
@@ -76,7 +78,7 @@ class Previews:
         devolution = {int(rank): tuple(spec["shuffles"]) for rank, spec in self.record["devolution"]["ranks"].items()}
         self.shuffles = {DEVOLUTION_PREFIX + str(rank): sizes for rank, sizes in devolution.items()}
         # Every known preview by name, in preference order: the Evolution ranks, then the Devolution previews.
-        self._known = {rank: ("evolution", rank) for rank in sorted(self.sources)}
+        self._known = {EVOLUTION_PREFIX + str(rank): ("evolution", rank) for rank in sorted(self.sources)}
         self._known.update((DEVOLUTION_PREFIX + str(rank), ("devolution", rank)) for rank in sorted(devolution))
 
     def ranks(self):
@@ -84,14 +86,14 @@ class Previews:
         return sorted(self.sources)
 
     def names(self):
-        """Every known preview, in preference order: the Evolution ranks, then the Devolution previews."""
+        """Every known preview, in preference order: the Evolution previews, then the Devolution previews."""
         return list(self._known)
 
     def identify(self, preview):
         """A preview's artifact and rank."""
-        if isinstance(preview, bool) or preview not in self._known:
-            raise ValueError("No measured structure for the preview %r; known previews: %s, an Evolution preview named "
-                             "by its int rank" % (preview, ", ".join(str(name) for name in self.names())))
+        if preview not in self._known:
+            raise ValueError("No measured structure for the preview %r; known previews: %s"
+                             % (preview, ", ".join(self.names())))
         return self._known[preview]
 
     def artifacts(self, sequence):
@@ -116,7 +118,7 @@ class Previews:
                 raise ValueError("In a preview sequence, %s cannot %s: tapping an artifact plays its rank-1 preview, so a "
                                  "sequence starts with %s, and so does each switch to another artifact"
                                  % (preview, "come first" if last is None else "follow %s" % last,
-                                    " or ".join(str(name) for name in self.openers())))
+                                    " or ".join(self.openers())))
             last = preview
 
     def check_preview(self, preview, cost):

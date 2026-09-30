@@ -36,7 +36,7 @@ class PredictTest(unittest.TestCase):
 
     def test_fresh_launch_rank1_preview(self):
         # Captured after a fresh launch with Sunflowers at cost 50: nine selections, 2,874 outputs.
-        out = self.run_scenario([1], None, [], None, preview_cost=50)
+        out = self.run_scenario(["E1"], None, [], None, preview_cost=50)
         self.assertEqual(results(out["previews"][0]["results"]),
                          ["nekotail", "goldmagnet", "passionflower", "kiwifruit", "gluttonydragon",
                           "chomper", "electricitea", "agave", "duckpear"])
@@ -57,7 +57,7 @@ class PredictTest(unittest.TestCase):
         plantings = [Planting("sunflower", 50, c) for c in [(1, 3), (3, 3), (2, 3), (3, 2), (2, 2), (1, 1)]]
         plantings += [Planting("puffshroom", 0, c) for c in [(1, 2), (3, 1), (2, 1)]]
         dry = {(3, row): "beach_shore" for row in (1, 2, 3)}
-        out = self.run_scenario([1] * 6, "memory-lane-s33-6-hard", plantings, (2, 2), dry, preview_cost=50)
+        out = self.run_scenario(["E1"] * 6, "memory-lane-s33-6-hard", plantings, (2, 2), dry, preview_cost=50)
         cells = by_cell(out["results"])
         self.assertEqual(cells[(1, 1)], "aeonium")
         self.assertEqual(cells[(1, 3)], "aeonium")
@@ -78,7 +78,7 @@ class PredictTest(unittest.TestCase):
                  ("puffshroom", 0, (3, 2)), ("puffshroom", 0, (1, 1)),
                  ("wallnut", 50, (3, 3))]
         plantings = [Planting(*p) for p in order]
-        out = self.run_scenario([1] * 24, "arthurs-challenge", plantings, (2, 2), preview_cost=47)
+        out = self.run_scenario(["E1"] * 24, "arthurs-challenge", plantings, (2, 2), preview_cost=47)
         self.assertEqual(out["level_entry_offset"], 72725)
         self.assertEqual(results(out["results"]), ["fireshroom", "cthulhuactinia", "monotropa", "sweetpotato",
                                                    "draftodil", "nekotail", "happyleek", "paphiopedilum", "inferno"])
@@ -114,7 +114,7 @@ class PredictTest(unittest.TestCase):
     def test_rank4_preview_after_one_rank1_preview(self):
         # Forecast saved before play and matched in the game: the three evolutions and the six spawns
         # in order. The spawn cells were not recorded then; they follow the display-board layout captured later.
-        out = self.run_scenario([1, 4], None, [], None, preview_cost=50)
+        out = self.run_scenario(["E1", "E4"], None, [], None, preview_cost=50)
         second = out["previews"][1]["results"]
         self.assertEqual([(row["cell"], row["result"]) for row in second if row["action"] == "evolve"],
                          [((3, 3), "pinecone"), ((3, 2), "wiregelsemium"), ((3, 1), "peach")])
@@ -129,21 +129,21 @@ class PredictTest(unittest.TestCase):
         # Captured with Sunflowers at cost 50: two complete rank-4 previews and the three evolutions
         # of a third, 3,717 outputs, starting at offset 35,296.
         stream = Stream()
-        rows, end = self.previews.advance(stream, 35296, [4, 4], 50)
+        rows, end = self.previews.advance(stream, 35296, ["E4", "E4"], 50)
         evolved = [r["result"] for p in rows for r in p["results"] if r["action"] == "evolve"]
         self.assertEqual(evolved, ["cottonyeti", "inferno", "goldencassia", "elaeocarpus", "waxgourd", "rhubarbarian"])
         spawned = [r["result"] for p in rows for r in p["results"] if r["action"] == "spawn" and not r["beneath"]]
         self.assertEqual(spawned, ["wallnut", "pineapple", "lilypad", "garlic", "guardshroom", "cosmicmushroom",
                                    "aloes", "endurian", "heavendatura", "endurian", "turnip", "cosmicmushroom"])
         self.assertEqual(end, 35296 + 2782)
-        third = self.previews.run(stream, end, 4, 50)["results"]
+        third = self.previews.run(stream, end, "E4", 50)["results"]
         self.assertEqual([r["result"] for r in third if r["action"] == "evolve"], ["bowlingbulb", "chestnut", "peonychi"])
         self.assertEqual(third[2]["end"], 35296 + 3717)
 
     def test_display_board_layout_played_check(self):
         # Played after a fresh launch with Sunflowers at cost 47: a rank-1 preview, then a rank-4 preview.
         # The board showed these plants on these cells, a Lily Pad beneath each evolved plant, and nothing else.
-        out = self.run_scenario([1, 4], None, [], None, preview_cost=47)
+        out = self.run_scenario(["E1", "E4"], None, [], None, preview_cost=47)
         second = out["previews"][1]["results"]
         self.assertEqual([(row["cell"], row["result"]) for row in second if row["action"] == "evolve"],
                          [((3, 3), "exorcislily"), ((3, 2), "mulberry"), ((3, 1), "bonkchoy")])
@@ -153,10 +153,10 @@ class PredictTest(unittest.TestCase):
                           ((5, 3), "alarmsagittifolia")])
 
     def test_spawned_draftodil_effect_played_check(self):
-        # Played after a fresh launch at cost 47, ranks 1,1,1,1,4,4,4,1. Preview 7 showed a bare Lily Pad
+        # Played after a fresh launch at cost 47, previews E1x4,E4x3,E1. Preview 7 showed a bare Lily Pad
         # at 3-2, whose pad rejects jewelrabbit, and preview 8 showed rheumnobile at 5-3: the result of one draw,
         # because the spawned Draftodil at 5-3 was added first, when its row held only the source and itself.
-        out = self.run_scenario([1, 1, 1, 1, 4, 4, 4, 1], None, [], None, preview_cost=47)
+        out = self.run_scenario(["E1", "E1", "E1", "E1", "E4", "E4", "E4", "E1"], None, [], None, preview_cost=47)
         seventh = out["previews"][6]
         evolved = {row["cell"]: (row["result"], row["placed"]) for row in seventh["results"] if row["action"] == "evolve"}
         self.assertEqual(evolved, {(3, 3): ("dartichoke", True), (3, 2): ("jewelrabbit", False), (3, 1): ("sugarcane", True)})
@@ -168,25 +168,25 @@ class PredictTest(unittest.TestCase):
         self.assertEqual(by_cell(out["previews"][7]["results"])[(5, 3)], "rheumnobile")
 
     def test_rank1_rows_one_and_two_played_checks(self):
-        # Played after fresh launches at cost 47. Ranks 1,1,1,1,1,4,1,1,1,1: preview 9 evolved a Draftodil
-        # at 3-1 and preview 10 showed dendrobiumguard at 5-3. Ranks 1,1,1,4,4,1,4,4,1,1,1,1: preview 11 evolved a
+        # Played after fresh launches at cost 47. Previews E1x5,E4,E1x4: preview 9 evolved a Draftodil
+        # at 3-1 and preview 10 showed dendrobiumguard at 5-3. Previews E1x3,E4x2,E1,E4x2,E1x4: preview 11 evolved a
         # Draftodil at 4-2 and preview 12 showed darkmatter_dragonfruit at 5-3. Each is the result of two draws,
         # three objects in the row.
-        out = self.run_scenario([1, 1, 1, 1, 1, 4, 1, 1, 1, 1], None, [], None, preview_cost=47)
+        out = self.run_scenario(["E1", "E1", "E1", "E1", "E1", "E4", "E1", "E1", "E1", "E1"], None, [], None, preview_cost=47)
         self.assertEqual(out["previews"][8]["effects"], [{"action": "shuffle", "plant": "draftodil", "cell": (3, 1),
                                                           "objects": 3, "start": 25797, "end": 25799}])
         self.assertEqual(by_cell(out["previews"][9]["results"])[(5, 3)], "dendrobiumguard")
-        out = self.run_scenario([1, 1, 1, 4, 4, 1, 4, 4, 1, 1, 1, 1], None, [], None, preview_cost=47)
+        out = self.run_scenario(["E1", "E1", "E1", "E4", "E4", "E1", "E4", "E4", "E1", "E1", "E1", "E1"], None, [], None, preview_cost=47)
         self.assertEqual(out["previews"][10]["effects"], [{"action": "shuffle", "plant": "draftodil", "cell": (4, 2),
                                                            "objects": 3, "start": 27173, "end": 27175}])
         self.assertEqual(by_cell(out["previews"][11]["results"])[(5, 3)], "darkmatter_dragonfruit")
 
     def test_bare_pad_in_a_draftodil_row_played_check(self):
-        # Forecast saved before play and matched in the game after a fresh launch at cost 47, ranks
-        # 1,1,1,1,1,4,1,1,1,4,1. Preview 10 spawned a Draftodil at 4-2 and a bare Lily Pad at 5-2, and preview 11
+        # Forecast saved before play and matched in the game after a fresh launch at cost 47, previews
+        # E1x5,E4,E1x3,E4,E1. Preview 10 spawned a Draftodil at 4-2 and a bare Lily Pad at 5-2, and preview 11
         # showed geraniifencer at 5-3: the result of one draw, because the row then held only the source at 3-2 and
         # the Draftodil, the bare pad not among its objects (thundersnapdragon would have followed two draws).
-        out = self.run_scenario([1, 1, 1, 1, 1, 4, 1, 1, 1, 4, 1], None, [], None, preview_cost=47)
+        out = self.run_scenario(["E1", "E1", "E1", "E1", "E1", "E4", "E1", "E1", "E1", "E4", "E1"], None, [], None, preview_cost=47)
         tenth = out["previews"][9]
         spawns = {row["cell"]: row["result"] for row in tenth["results"] if row["action"] == "spawn" and not row["beneath"]}
         self.assertEqual((spawns[(4, 2)], spawns[(5, 2)]), ("draftodil", "lilypad"))
@@ -195,12 +195,12 @@ class PredictTest(unittest.TestCase):
         self.assertEqual(by_cell(out["previews"][10]["results"])[(5, 3)], "geraniifencer")
 
     def test_rejected_values_in_a_row_shuffle_played_check(self):
-        # Forecast saved before play and matched in the game after a fresh launch at cost 47, ranks
-        # 1,1,1,1,4,1,4,4,1,1,4,1,4,1. Preview 13 spawned Draftodils at 4-1 and 4-2. The one at 4-2 is added first
+        # Forecast saved before play and matched in the game after a fresh launch at cost 47, previews
+        # E1x4,E4,E1,E4x2,E1x2,E4,E1,E4,E1. Preview 13 spawned Draftodils at 4-1 and 4-2. The one at 4-2 is added first
         # and shuffles three objects in two draws; the one at 4-1 then shuffles three objects in four draws, the
         # engine rejecting two values. Preview 14 showed longmalily at 5-3, the result after those six draws
         # (orchidmage would have followed four, marigold five).
-        out = self.run_scenario([1, 1, 1, 1, 4, 1, 4, 4, 1, 1, 4, 1, 4, 1], None, [], None, preview_cost=47)
+        out = self.run_scenario(["E1", "E1", "E1", "E1", "E4", "E1", "E4", "E4", "E1", "E1", "E4", "E1", "E4", "E1"], None, [], None, preview_cost=47)
         thirteenth = out["previews"][12]
         spawns = {row["cell"]: row["result"] for row in thirteenth["results"] if row["action"] == "spawn" and not row["beneath"]}
         self.assertEqual((spawns[(4, 1)], spawns[(4, 2)]), ("draftodil", "draftodil"))

@@ -1,15 +1,15 @@
 """Command line: predict a stated scenario, plan a recipe, list a pool, build the plant data.
 
-  python3 -m evolution predict --previews 1,4
-  python3 -m evolution predict --previews D1x2,1,3
-  python3 -m evolution predict --level memory-lane-s33-6-hard --previews 1x6 --activate 2-2 \\
+  python3 -m evolution predict --previews E1,E4
+  python3 -m evolution predict --previews D1x2,E1,E3
+  python3 -m evolution predict --level memory-lane-s33-6-hard --previews E1x6 --activate 2-2 \\
       --plant sunflower=50@1-3 --plant puffshroom=0@3-1:beach_shore
   python3 -m evolution predict --rank 4 --level egypt13 --activate 2-2
   python3 -m evolution plan --level memory-lane-s33-6-hard --want aeonium@1-1 --want aeonium@1-3 \\
       --source sunflower=50 --source puffshroom=0 --cell 3-1=beach_shore
   python3 -m evolution plan --rank 4 --level egypt13 --want kiwifruit@2-1 --want primalwallnut@3-3 --source wallnut=50
-  python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --done 1x2 --style shorter
-  python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --allow 1,4
+  python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --done E1x2 --style shorter
+  python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --allow E1,E4
   python3 -m evolution pool --level pirate1 --kind pirate_plank --cost 0
   python3 -m evolution pool --preview evolution --cost 47
 """
@@ -90,13 +90,13 @@ def parse_override(text):
 
 
 def parse_allowed(text):
-    """PREVIEW,PREVIEW: the previews a planned route may use, for example 1,4 or 1,3,4,D1,D4."""
+    """PREVIEW,PREVIEW: the previews a planned route may use, for example E1,E4 or E1,E3,E4,D1,D4."""
     try:
         allowed = [parse_preview(name) for name in text.replace(" ", "").split(",") if name]
     except ValueError as error:
         raise argparse.ArgumentTypeError(str(error))
     if not allowed:
-        raise argparse.ArgumentTypeError("List at least one preview, for example 1,4")
+        raise argparse.ArgumentTypeError("List at least one preview, for example E1,E4")
     return allowed
 
 
@@ -108,14 +108,14 @@ def parse_version(text):
 
 
 def format_sequence(sequence):
-    """Previews as NAMExCOUNT runs, for example 1x6,4 or D1x2,1; "none" for an empty sequence."""
+    """Previews as NAMExCOUNT runs, for example E1x6,E4 or D1x2,E1; "none" for an empty sequence."""
     runs = []
     for preview in sequence:
         if runs and runs[-1][0] == preview:
             runs[-1][1] += 1
         else:
             runs.append([preview, 1])
-    return ",".join("%sx%d" % (preview, count) if count > 1 else str(preview) for preview, count in runs) or "none"
+    return ",".join("%sx%d" % (preview, count) if count > 1 else preview for preview, count in runs) or "none"
 
 
 def _count(number, noun):
@@ -290,7 +290,7 @@ def cmd_plan(args):
         print("Not plantable in this level or on any cell of this area, so not planned: " + ", ".join(result["unusable_sources"]))
     after = " after the done previews %s" % format_sequence(done) if done else ""
     print("Routes of the %s style (%s) with the previews %s, up to %s%s: %s searched." % (
-        args.style, _switches(args.style), ", ".join(str(preview) for preview in result["allowed_previews"]),
+        args.style, _switches(args.style), ", ".join(result["allowed_previews"]),
         _count(result["max_previews"], "preview"), after,
         _count(result["entry_positions_searched"], "distinct entry position")))
     for capped in result["state_cap_reached"]:
@@ -366,8 +366,8 @@ def main(argv=None):
 
     predict = commands.add_parser("predict", help="Replay a stated scenario and print what the game shows")
     predict.add_argument("--previews", default="",
-                         help="Previews in order, Evolution ranks, and D1 and D4 for the Devolution previews, for example "
-                              "1x6, 1,4 or D1x2,1,3 (default: none)")
+                         help="Previews in order, E1, E3 and E4 for the Evolution previews and D1 and D4 for the Devolution "
+                              "previews, for example E1x6, E1,E4 or D1x2,E1,E3 (default: none)")
     predict.add_argument("--preview-cost", type=int, metavar="COST",
                          help="Effective cost of the previews' Sunflowers (default: the declared cost)")
     predict.add_argument("--offset", type=int, default=0, help="Extra raw engine outputs consumed between the previews and the level")
@@ -393,12 +393,13 @@ def main(argv=None):
     plan.add_argument("--cell", type=parse_override, action="append", metavar="CELL=KIND",
                       help="Kind of a cell for this activation; repeatable")
     plan.add_argument("--done", default="", metavar="SEQ",
-                      help="Previews already run since a full restart, in order, for example 1x3,4 or D1,1 (default: none)")
+                      help="Previews already run since a full restart, in order, for example E1x3,E4 or D1,E1 (default: none)")
     plan.add_argument("--style", choices=tuple(STYLES), default="shorter",
                       help="Switches between previews the route may make after the done previews: simple at most one, "
                            "shorter at most three, shortest any (default shorter)")
     plan.add_argument("--allow", type=parse_allowed, metavar="PREVIEWS",
-                      help="The previews the planned route may use, for example 1,4 (default: every known one, 1,3,4,D1,D4)")
+                      help="The previews the planned route may use, for example E1,E4 (default: every known one, "
+                           "E1,E3,E4,D1,D4)")
     plan.add_argument("--max-previews", type=int, default=100, help="Most previews to plan after the done ones (default 100)")
     plan.add_argument("--preview-cost", type=int, metavar="COST",
                       help="Effective cost of the previews' Sunflowers (default: the declared cost)")

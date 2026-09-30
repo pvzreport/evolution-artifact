@@ -6,7 +6,7 @@
    "capture": "B",
    "activation": [9,3],
    "offset": 20078,
-   "previews": [1,1,1,1,1,1,1],
+   "previews": ["E1","E1","E1","E1","E1","E1","E1"],
    "plantings": [{"source":"seashroom","cost":0,"cell":[9,3]}],
    "cell_kinds": {"8-2":"beach_water","8-3":"beach_water","8-4":"beach_water","9-2":"beach_water","9-3":"beach_water","9-4":"beach_water"},
    "board_notes": ["Sea-shroom stood over water without a pad; other cells in the clipped area were empty and flooded.","The user confirmed only a Lily Pad remained at 9-3 after the effects."],

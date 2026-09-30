@@ -36,7 +36,7 @@ class CliTest(unittest.TestCase):
 
     def test_predict_rank4_shows_blocked_placements(self):
         # After thirteen previews the Sunflower at 4-2 evolves into a Snap Pea, which the Lily Pad added beneath it rejects.
-        text = run("predict", "--rank", "4", "--level", "beach3", "--previews", "1x13", "--activate", "5-3",
+        text = run("predict", "--rank", "4", "--level", "beach3", "--previews", "E1x13", "--activate", "5-3",
                    "--plant", "puffshroom=0@5-3", "--plant", "sunflower=50@6-4", "--plant", "sunflower=50@4-2",
                    "--cell", "4-2=beach_shore", "--cell", "4-4=beach_shore", "--cell", "6-4=beach_shore")
         self.assertIn("4-2 sunflower, cost 50 (beach_shore, 226 candidates) -> snappea (placement blocked)", text)
@@ -58,10 +58,10 @@ class CliTest(unittest.TestCase):
         text = run("plan", "--rank", "4", "--level", "egypt13", "--want", "whitemelon@1-1", "--max-sources", "0", "--max-previews", "0")
         self.assertIn("leave the activation area empty", text)
         self.assertIn("rank-4 Evolution", text)
-        text = run("plan", "--level", "egypt13", "--want", "eagleclaw@2-1", "--source", "wallnut=50", "--done", "1",
+        text = run("plan", "--level", "egypt13", "--want", "eagleclaw@2-1", "--source", "wallnut=50", "--done", "E1",
                    "--style", "simple", "--max-previews", "1", "--max-sources", "1")
-        self.assertIn("Continue from the previews already run since a full relaunch: 1.", text)
-        self.assertIn("Run these further previews, each one complete, with sunflower at effective cost 50: 4.", text)
+        self.assertIn("Continue from the previews already run since a full relaunch: E1.", text)
+        self.assertIn("Run these further previews, each one complete, with sunflower at effective cost 50: E4.", text)
         self.assertIn("eagleclaw  <- wanted", text)
 
     def test_repeated_source_flags_widen_the_kinds(self):
@@ -74,22 +74,22 @@ class CliTest(unittest.TestCase):
 
     def test_rank4_preview_text_shows_pads_spawns_and_cells(self):
         # Captured on 4.2.4: a rank-1 and a rank-4 preview with Sunflowers at cost 47 end at 4643.
-        text = run("predict", "--previews", "1,4", "--preview-cost", "47")
+        text = run("predict", "--previews", "E1,E4", "--preview-cost", "47")
         self.assertIn("3-3 deodarcedar, 3-2 beercoconut, 3-1 dmdragonfruit; pads beneath 3-1, 3-2, 3-3; spawns 4-1 cthulhuactinia, "
                       "4-2 bramble, 4-3 scaredyshroom, 5-1 streetlamp, 5-2 moonflower, 5-3 aloes (stream at 4643 after)", text)
 
     def test_preview_cost_reaches_previews_and_pools(self):
         # Captured on 4.2.4: three rank-1 previews with Sunflowers at cost 47 end at 3135, 6140 and 9152.
-        out = json.loads(run("predict", "--previews", "1x3", "--preview-cost", "47", "--json"))
+        out = json.loads(run("predict", "--previews", "E1x3", "--preview-cost", "47", "--json"))
         self.assertEqual((out["preview_cost"], [p["end"] for p in out["previews"]]), (47, [3135, 6140, 9152]))
         # After five rank-1 previews, a rank-4 preview spawns a Draftodil at 4-3 whose row shuffle of three plant objects
         # rejects one value.
         self.assertIn("draftodil at 4-3 shuffles 3 plant objects (3 draws) (selections end at 16738; stream at 16741 after)",
-                      run("predict", "--previews", "1x5,4", "--preview-cost", "47"))
+                      run("predict", "--previews", "E1x5,E4", "--preview-cost", "47"))
         self.assertIn("244 candidates", run("pool", "--preview", "evolution", "--cost", "47"))
         error = io.StringIO()
         with contextlib.redirect_stderr(error):
-            run("predict", "--level", "dark1", "--activate", "2-2", "--previews", "1", "--plant", "sunflower=47@1-1")
+            run("predict", "--level", "dark1", "--activate", "2-2", "--previews", "E1", "--plant", "sunflower=47@1-1")
             run("predict", "--level", "dark1", "--activate", "2-2", "--plant", "sunflower=47@1-1")
             run("predict", "--level", "dark1", "--activate", "2-2", "--previews", "D1", "--plant", "sunflower=47@1-1")
         self.assertEqual(error.getvalue().count("pass --preview-cost"), 1)
@@ -97,17 +97,17 @@ class CliTest(unittest.TestCase):
     def test_devolution_previews_reach_predict_and_plan(self):
         # Captured on 4.2.4: two Devolution previews after a fresh launch drew 90 and 84 outputs, and a rank-1 preview
         # with Sunflowers at cost 37 after them ended at 3222.
-        text = run("predict", "--previews", "D1x2,1", "--preview-cost", "37")
+        text = run("predict", "--previews", "D1x2,E1", "--preview-cost", "37")
         self.assertIn("Preview 2 (Devolution rank 1): 6 shuffles of 10 and 15 objects, 84 draws (stream at 174 after)", text)
         self.assertIn("3-1 whitemelon (stream at 3222 after)", text)
         request = ["plan", "--level", "egypt1", "--want", "chestnut@1-1", "--source", "wallnut=50", "--max-sources", "1",
                    "--max-previews", "4"]
-        self.assertIn("at effective cost 50: D1,1,3;", run(*request))
-        self.assertNotIn("D1", run(*request, "--allow", "1,4"))
-        self.assert_error(request + ["--allow", "1,D2"], "No measured structure for the preview 'D2'")
-        self.assert_error(request + ["--allow", "3,4"], "None of the allowed previews 3, 4 can come first")
-        self.assert_error(request + ["--done", "D1,4"], "4 cannot follow D1")
-        self.assert_error(["predict", "--previews", "D1,3"], "3 cannot follow D1")
+        self.assertIn("at effective cost 50: D1,E1,E3;", run(*request))
+        self.assertNotIn("D1", run(*request, "--allow", "E1,E4"))
+        self.assert_error(request + ["--allow", "E1,D2"], "No measured structure for the preview 'D2'")
+        self.assert_error(request + ["--allow", "E3,E4"], "None of the allowed previews E3, E4 can come first")
+        self.assert_error(request + ["--done", "D1,E4"], "E4 cannot follow D1")
+        self.assert_error(["predict", "--previews", "D1,E3"], "E3 cannot follow D1")
 
     def test_pool_listing(self):
         text = run("pool", "--level", "pirate1", "--kind", "pirate_plank", "--cost", "0")

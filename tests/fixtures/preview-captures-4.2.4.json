@@ -7,9 +7,9 @@
    "capture_sha256": "55cbfab1a484ef6556d90a093b0b191c8e5579969920c0fe71d4128ca58e1f7d",
    "preview_cost": 37,
    "previews": [
-    1,
-    3,
-    1
+    "E1",
+    "E3",
+    "E1"
    ],
    "first_captured_preview": 1,
    "start_offset": 0,
@@ -392,7 +392,7 @@
    "preview_cost": 37,
    "previews": [
     "D1",
-    1
+    "E1"
    ],
    "first_captured_preview": 1,
    "start_offset": 0,
@@ -594,7 +594,7 @@
    "previews": [
     "D1",
     "D1",
-    1
+    "E1"
    ],
    "first_captured_preview": 1,
    "start_offset": 0,
@@ -826,19 +826,19 @@
    "capture_sha256": "e784694b81d3a4e749f9d249ebdfc3ecac2c6ac67418ac4b4d52f7abe5cd5ac3",
    "preview_cost": 37,
    "previews": [
-    1,
-    4,
-    3,
-    3,
-    4,
+    "E1",
+    "E4",
+    "E3",
+    "E3",
+    "E4",
     "D1",
-    1,
-    3,
+    "E1",
+    "E3",
     "D1",
     "D1",
-    1,
+    "E1",
     "D1",
-    1
+    "E1"
    ],
    "first_captured_preview": 1,
    "start_offset": 0,
@@ -2182,10 +2182,10 @@
    "capture_sha256": "74e702f78b0dea94a681fe96eaff16c098d5962472c14378ba53d41472839480",
    "preview_cost": 37,
    "previews": [
-    1,
-    3,
+    "E1",
+    "E3",
     "D1",
-    1
+    "E1"
    ],
    "first_captured_preview": 1,
    "start_offset": 0,
@@ -2602,10 +2602,10 @@
     "D1",
     "D4",
     "D4",
-    1,
+    "E1",
     "D1",
     "D4",
-    1
+    "E1"
    ],
    "first_captured_preview": 1,
    "start_offset": 0,
@@ -3256,13 +3256,13 @@
    "capture_sha256": "5019d9ede77a5fad3f4f4266067a9b5bd227e4aae66fe591271377c04b1b4baf",
    "preview_cost": 37,
    "previews": [
-    1,
-    4,
+    "E1",
+    "E4",
     "D1",
     "D4",
     "D4",
     "D4",
-    1
+    "E1"
    ],
    "first_captured_preview": 1,
    "start_offset": 0,
