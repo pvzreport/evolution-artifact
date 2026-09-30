@@ -1,0 +1,36 @@
+{
+ "id": "egypt6",
+ "name": "Egypt 6 (story)",
+ "stage": "egypt",
+ "default_kind": "ground",
+ "bans": [],
+ "cells": {
+  "6-2": "none",
+  "6-5": "none",
+  "7-3": "none",
+  "7-4": "none",
+  "8-2": "none"
+ },
+ "entry_shuffles": [],
+ "notes": "Gravestones declared at level start on 6-2, 6-5, 7-3, 7-4, 8-2 hold no plant while they stand; give ground for that activation once one has been destroyed.",
+ "provenance": {
+  "kind": "declared",
+  "resources": [
+   {
+    "path": "PACKAGES/LEVELS/EGYPT6.json",
+    "sha256": "1ab727058be0b330fd6a6d771afa8e983e84c97f952df701639dff790507294f"
+   },
+   {
+    "path": "PACKAGES/LEVELMODULES.json",
+    "sha256": "c108947987785337f7013e2eb7c2e55cf4ea28afd542eb5b0e53af5290b95b3d"
+   }
+  ]
+ },
+ "measured": [
+  {
+   "game_version": "4.2.4",
+   "capture_sha256": "334fcf130de6749b35d5e7154ddcc5416b5c5c7d547f217b772047844b037110",
+   "note": "A fresh-launch route of level steps, each a rank-4 activation with nothing planted: Egypt 6 on 9-1, on 9-1 again after restarting the level, then Egypt 13 on 2-2 after quitting Egypt 6 to the map. All 15 spawns matched, and all 1,096 outputs were the spawn shuffles, consecutive from 0: nothing drew at either level's entry, after either activation, at the restart or at the quit."
+  }
+ ]
+}

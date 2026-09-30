@@ -15,6 +15,11 @@
   "9-3": "none",
   "9-4": "none"
  },
+ "protected": {
+  "6-1": "magnetshroom",
+  "6-3": "magnetshroom",
+  "6-5": "magnetshroom"
+ },
  "entry_shuffles": [
   3,
   6,
