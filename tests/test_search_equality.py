@@ -37,7 +37,7 @@ class SearchEqualityTest(unittest.TestCase):
             for entry, count, expected in case["entries"]:
                 with self.subTest(case=case["name"], entry=entry):
                     match = search_recipe(self.game, level, wants, sources, activation, overrides=overrides, rank=rank,
-                                          max_previews=0, offset=entry, max_sources=max_sources)["match"]
+                                          max_length=0, offset=entry, max_sources=max_sources)["match"]
                     self.assertEqual((match["source_count"], digest(match["processing_order"])) if match else (None, None),
                                      (count, expected))
 

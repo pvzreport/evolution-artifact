@@ -7,8 +7,7 @@
    "measured": [
     {"game_version": "4.2.2", "level": "Egypt 13", "capture_sha256": "5c7015b4f66911906f7ebecf88bb0a64fb6da23d5cd8ba040e7f079e596448ed", "cells": "nine cells, cost 50"},
     {"game_version": "4.2.2", "level": "Memory Lane season 33 level 6 difficult", "capture_sha256": "179f74504c2c66e8ebc79d3b8090cc78e4b1d22bdfb6c4198f012e7d6641ad42", "cells": "column 2, costs 0 and 50"},
-    {"game_version": "4.2.2", "level": "Pirate Seas 1", "capture_sha256": "dc4a50370d9bfcc51d827d7f07c87a8f4551a28f22bfe217a3a8c0df7f50fc84", "cells": "columns 4 and 5, costs 0, 25 and 50"},
-    {"game_version": "4.2.2", "level": "Penny's Pursuit, stage dark", "capture_sha256": "1e391c76bf63dd40306213a21ad11098e26f7f1dde0d30de84e5f8866d0a6dd7", "cells": "costs 25 to 175"}
+    {"game_version": "4.2.2", "level": "Pirate Seas 1", "capture_sha256": "dc4a50370d9bfcc51d827d7f07c87a8f4551a28f22bfe217a3a8c0df7f50fc84", "cells": "columns 4 and 5, costs 0, 25 and 50"}
    ]
   },
   "beach_shore": {

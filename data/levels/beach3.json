@@ -8,38 +8,38 @@
  ],
  "cells": {
   "4-1": "beach_shore",
-  "4-2": "beach_shore",
+  "4-2": "beach_pad",
   "4-3": "beach_shore",
-  "4-4": "beach_shore",
+  "4-4": "beach_pad",
   "4-5": "beach_shore",
   "5-1": "beach_shore",
   "5-2": "beach_shore",
   "5-3": "beach_shore",
   "5-4": "beach_shore",
   "5-5": "beach_shore",
-  "6-1": "beach_shore",
+  "6-1": "beach_pad",
   "6-2": "beach_shore",
   "6-3": "beach_shore",
-  "6-4": "beach_shore",
-  "6-5": "beach_shore",
-  "7-1": "beach_shore",
-  "7-2": "beach_shore",
-  "7-3": "beach_shore",
-  "7-4": "beach_shore",
-  "7-5": "beach_shore",
-  "8-1": "beach_shore",
-  "8-2": "beach_shore",
-  "8-3": "beach_shore",
-  "8-4": "beach_shore",
-  "8-5": "beach_shore",
-  "9-1": "beach_shore",
-  "9-2": "beach_shore",
-  "9-3": "beach_shore",
-  "9-4": "beach_shore",
-  "9-5": "beach_shore"
+  "6-4": "beach_pad",
+  "6-5": "beach_pad",
+  "7-1": "beach_water",
+  "7-2": "beach_water",
+  "7-3": "beach_water",
+  "7-4": "beach_water",
+  "7-5": "beach_water",
+  "8-1": "beach_water",
+  "8-2": "beach_water",
+  "8-3": "beach_water",
+  "8-4": "beach_water",
+  "8-5": "beach_water",
+  "9-1": "beach_water",
+  "9-2": "beach_water",
+  "9-3": "beach_water",
+  "9-4": "beach_water",
+  "9-5": "beach_water"
  },
  "entry_shuffles": [],
- "notes": "Columns 1 to 3 never flood. Columns 4 to 9 are shore cells when dry; the tide is a scheduled level event. For a flooded cell give beach_water (no pad) or beach_pad (plant on a Lily Pad) for that activation. The shore column is observed.",
+ "notes": "Columns 1 to 3 are ground and never flood; columns 4 to 9 are shore. At level start columns 7 to 9 are flooded and Lily Pads stand on 4-2, 4-4, 6-1, 6-4 and 6-5, over dry sand. The tide moves later, on the level's schedule; for an activation after it has moved, give each cell's kind of the moment for that activation.",
  "provenance": {
   "kind": "declared",
   "resources": [
@@ -51,9 +51,6 @@
     "path": "PACKAGES/LEVELMODULES.json",
     "sha256": "104bcd4e760bb2be68113d9b5abbc07f8576446b91e17f50e812df67495c9196"
    }
-  ],
-  "observed": {
-   "shore_from": 4
-  }
+  ]
  }
 }

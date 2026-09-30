@@ -7,13 +7,17 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from evolution import Board, Level, Planting, Stream, activate, load_level, scenario, search_recipe, shared
+from evolution import Board, Level, Planting, Steps, Stream, activate, load_level, replay, scenario, search_recipe, shared
 from evolution.tiles import NONE
 from projections import game_on
 
 # The version whose captures fix the preview counts and offsets asserted below. The route cases show the properties
 # their comments name with this version's plant data, not all of them with 4.2.4's.
 CAPTURED_ON = "4.2.2"
+# These Beach requests take their shore cells as dry sand rather than the level-start state the descriptions give: column 3
+# of Memory Lane, and Beach 3's start pads inside their areas.
+DRY_MEMORY_LANE = {(3, row): "beach_shore" for row in (1, 2, 3)}
+DRY_BEACH3 = {cell: "beach_shore" for cell in [(4, 2), (4, 4), (6, 4)]}
 
 
 class SearchTest(unittest.TestCase):
@@ -23,7 +27,7 @@ class SearchTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.game = game_on(CAPTURED_ON)
-        cls.previews = cls.game.previews
+        cls.steps = Steps(cls.game, 50)
 
     def search(self, level, wants, sources, activation=(2, 2), **options):
         if isinstance(level, str):
@@ -35,7 +39,7 @@ class SearchTest(unittest.TestCase):
         if isinstance(level, str):
             level = load_level(level)
         plantings = [Planting(s["source"], s["cost"], s["cell"]) for s in match["planting_order"]]
-        out = scenario(self.game, match["preview_sequence"], level, plantings, activation, overrides, offset, rank,
+        out = scenario(self.game, match["route"], level, plantings, activation, overrides, offset, rank,
                        preview_cost=preview_cost)
         self.assertEqual((out["level_entry_offset"], out["activation_offset"], out["entry_effects"]),
                          (match["level_entry_offset"], match["activation_offset"], match["entry_effects"]))
@@ -47,24 +51,25 @@ class SearchTest(unittest.TestCase):
 
     def test_two_aeoniums_in_memory_lane(self):
         wants = [("aeonium", (1, 1)), ("aeonium", (1, 3))]
-        result = self.search("memory-lane-s33-6-hard", wants, {"sunflower": 50, "puffshroom": 0}, max_previews=12)
+        result = self.search("memory-lane-s33-6-hard", wants, {"sunflower": 50, "puffshroom": 0}, max_length=12,
+                             max_sources=9, overrides=DRY_MEMORY_LANE)
         match = result["match"]
         self.assertIsNotNone(match)
-        self.assertEqual((match["preview_sequence"], result["state_cap_reached"]), ([1] * 6, []))
-        self.assertTrue(set(wants) <= self.replay("memory-lane-s33-6-hard", match, (2, 2)))
+        self.assertEqual((match["route"], result["state_cap_reached"]), (["E1"] * 6, []))
+        self.assertTrue(set(wants) <= self.replay("memory-lane-s33-6-hard", match, (2, 2), DRY_MEMORY_LANE))
         for row in match["processing_order"]:
-            self.assertEqual(row["kind"], "beach_shore" if row["cell"][0] == 3 else "ground")
+            self.assertEqual(row["cell_kind"], "beach_shore" if row["cell"][0] == 3 else "ground")
 
     def test_recipes_start_after_the_level_entry(self):
         # Dark Ages 19 shuffles bags of 3, 6 and 3 at entry; a recipe found after previews and extra outputs must start
-        # where those shuffles end and replay from there through the route a player follows, here one with a rank-3
+        # where those shuffles end and replay from there through the route a player follows, here one with an E3
         # preview.
         result = self.search("dark19", [("draftodil", (2, 4))], {"puffshroom": 0, "wallnut": 50}, activation=(2, 4),
-                             done=[1], max_previews=3, max_sources=6, offset=3, preview_cost=47)
+                             done=["E1"], max_length=3, max_sources=6, offset=3, preview_cost=47)
         match = result["match"]
         self.assertIsNotNone(match)
-        self.assertEqual((match["preview_sequence"], match["source_count"], match["level_entry_offset"], match["activation_offset"]),
-                         ([1, 3], 5, 4137, 4148))
+        self.assertEqual((match["route"], match["source_count"], match["level_entry_offset"], match["activation_offset"]),
+                         (["E1", "E3"], 5, 4137, 4148))
         self.assertEqual([e["objects"] for e in match["entry_effects"]], [3, 6, 3])
         self.assertEqual(match["processing_order"][0]["start"], match["activation_offset"])
         self.assertIn(("draftodil", (2, 4)), self.replay("dark19", match, (2, 4), offset=3, preview_cost=47))
@@ -73,40 +78,41 @@ class SearchTest(unittest.TestCase):
         # Captured: after ten rank-1 previews with Sunflowers at cost 47 the stream stands at 30335, two draws past
         # the tenth preview's selections. A recipe after those previews enters the level there.
         level = load_level("arthurs-challenge")
-        result = self.search(level, [("parsnip", (2, 2))], {"wallnut": 50}, done=[1] * 10, max_previews=0,
+        result = self.search(level, [("parsnip", (2, 2))], {"wallnut": 50}, done=["E1"] * 10, max_length=0,
                              max_sources=1, preview_cost=47)
         match = result["match"]
         self.assertIsNotNone(match)
         self.assertEqual((match["level_entry_offset"], result["preview_cost"]), (30335, 47))
         plantings = [Planting(p["source"], p["cost"], p["cell"]) for p in match["planting_order"]]
-        replay = scenario(self.game, match["preview_sequence"], level, plantings, (2, 2), preview_cost=47)
+        replay = scenario(self.game, match["route"], level, plantings, (2, 2), preview_cost=47)
         self.assertEqual(replay["level_entry_offset"], 30335)
         self.assertEqual(replay["results"][0]["result"], "parsnip")
 
     def test_wanted_plant_on_a_plank_cell_uses_the_plank_pool(self):
         result = self.search("pirate1", [("exorcislily", (6, 4))], {"puffshroom": 0, "sunflower": 50},
-                             activation=(5, 4), max_previews=20)
+                             activation=(5, 4), max_length=20, max_sources=9)
         match = result["match"]
         self.assertIsNotNone(match)
         wanted = next(row for row in match["processing_order"] if row["wanted"])
-        self.assertEqual((wanted["cell"], wanted["kind"]), ((6, 4), "pirate_plank"))
+        self.assertEqual((wanted["cell"], wanted["cell_kind"]), ((6, 4), "pirate_plank"))
         self.assertTrue(all(row["cell"] != (6, 3) for row in match["processing_order"]))
         self.assertIn(("exorcislily", (6, 4)), self.replay("pirate1", match, (5, 4)))
 
     def test_source_restricted_to_a_kind(self):
         result = self.search("memory-lane-s33-6-hard", [("aeonium", (1, 1))],
-                             {"sunflower": 50, "puffshroom": (0, ["ground"])}, max_previews=12)
+                             {"sunflower": 50, "puffshroom": (0, ["ground"])}, max_length=12, max_sources=9,
+                             overrides=DRY_MEMORY_LANE)
         self.assertIsNotNone(result["match"])
         for row in result["match"]["processing_order"]:
             if "puffshroom" in row["sources"]:
-                self.assertEqual(row["kind"], "ground")
+                self.assertEqual(row["cell_kind"], "ground")
 
     def test_done_previews_of_both_ranks(self):
-        # One rank-1 preview then one rank-4 preview end at offset 4,292 (forecast matched in the game).
-        result = self.search("egypt13", [("eagleclaw", (2, 1))], {"wallnut": 50}, done=[1, 4], max_previews=0, max_sources=1)
+        # One E1 then one E4 end at offset 4,292 (forecast matched in the game).
+        result = self.search("egypt13", [("eagleclaw", (2, 1))], {"wallnut": 50}, done=["E1", "E4"], max_length=0, max_sources=1)
         match = result["match"]
         self.assertIsNotNone(match)
-        self.assertEqual((match["preview_sequence"], match["planned_previews"], match["level_entry_offset"]), ([1, 4], [], 4292))
+        self.assertEqual((match["route"], match["planned"], match["level_entry_offset"]), (["E1", "E4"], [], 4292))
         self.assertIn(("eagleclaw", (2, 1)), self.replay("egypt13", match, (2, 2)))
 
     def test_two_tallnuts_across_ground_and_shore(self):
@@ -115,21 +121,21 @@ class SearchTest(unittest.TestCase):
         for rank in (1, 4):
             with self.subTest(rank=rank):
                 result = self.search("beach3", wants, {"sunflower": 50, "puffshroom": 0}, activation=(4, 2),
-                                     rank=rank, done=[1] * 10, max_previews=0)
+                                     rank=rank, done=["E1"] * 10, max_length=0, max_sources=9, overrides=DRY_BEACH3)
                 self.assertIsNotNone(result["match"])
-                self.assertTrue(set(wants) <= self.replay("beach3", result["match"], (4, 2), rank=rank))
+                self.assertTrue(set(wants) <= self.replay("beach3", result["match"], (4, 2), DRY_BEACH3, rank=rank))
 
     def test_mixed_wants_leave_the_spawn_cell_free(self):
         # Kiwifruit needs a transformation; Primal Wall-nut can only spawn, so 3-3 must stay free.
         wants = [("kiwifruit", (2, 1)), ("primalwallnut", (3, 3))]
-        result = self.search("egypt13", wants, {"wallnut": 50}, rank=4, max_previews=0)
+        result = self.search("egypt13", wants, {"wallnut": 50}, rank=4, max_length=0, max_sources=9)
         match = result["match"]
         self.assertIsNotNone(match)
-        self.assertEqual((match["preview_sequence"], match["source_count"]), ([], 8))
+        self.assertEqual((match["route"], match["source_count"]), ([], 8))
         self.assertTrue(set(wants) <= self.replay("egypt13", match, (2, 2), rank=4))
 
     def test_empty_area_and_capture_1(self):
-        result = self.search("egypt13", [("whitemelon", (1, 1))], {}, rank=4, max_sources=0, max_previews=0)
+        result = self.search("egypt13", [("whitemelon", (1, 1))], {}, rank=4, max_sources=0, max_length=0)
         match = result["match"]
         self.assertIsNotNone(match)
         self.assertEqual((match["source_count"], match["planting_order"], match["stream_end"]), (0, [], 640))
@@ -139,29 +145,30 @@ class SearchTest(unittest.TestCase):
         overrides = {(c, r): "beach_water" for c in (4, 5, 6) for r in (2, 3, 4)}
         wants = [("electricpeel", (5, 3)), ("lilypad", (5, 3))]
         result = self.search("beach3", wants, {"seashroom": (0, ["beach_water"])}, activation=(5, 3),
-                             overrides=overrides, rank=4, max_sources=1, max_previews=99)
+                             overrides=overrides, rank=4, max_sources=1, max_length=99)
         self.assertIsNotNone(result["match"])
         self.assertTrue(set(wants) <= self.replay("beach3", result["match"], (5, 3), overrides, rank=4))
 
     def test_sources_that_cannot_be_planted_are_reported_not_planned(self):
         # Sea-shroom is Beach-only and Puff-shroom is banned in Egypt 13; neither is an error, neither is planned.
         result = self.search("egypt13", [("kiwifruit", (2, 1))], {"wallnut": 50, "seashroom": (0, ["beach_water"]), "puffshroom": 0},
-                             max_previews=10)
+                             max_length=10, max_sources=9)
         self.assertEqual(sorted(result["unusable_sources"]), ["puffshroom", "seashroom"])
         self.assertIsNotNone(result["match"])
         self.assertTrue(all(row["source"] == "wallnut" for row in result["match"]["processing_order"]))
 
     def test_lily_pad_beneath_an_occupied_shore_cell(self):
-        # Follow-up A: a source on dry shore receives a Lily Pad beneath it for no draws.
-        result = self.search("beach3", [("lilypad", (5, 3))], {"puffshroom": 0}, activation=(5, 3), rank=4, max_previews=0)
+        # A source on dry shore receives a Lily Pad beneath it for no draws, as the display board's sources do.
+        result = self.search("beach3", [("lilypad", (5, 3))], {"puffshroom": 0}, activation=(5, 3), rank=4, max_length=0,
+                             max_sources=9, overrides=DRY_BEACH3)
         match = result["match"]
         self.assertIsNotNone(match)
         self.assertEqual([(s["source"], s["cell"]) for s in match["planting_order"]], [("puffshroom", (5, 3))])
-        self.assertIn(("lilypad", (5, 3)), self.replay("beach3", match, (5, 3), rank=4))
+        self.assertIn(("lilypad", (5, 3)), self.replay("beach3", match, (5, 3), DRY_BEACH3, rank=4))
 
     def test_a_source_with_no_candidates_still_occupies_its_cell(self):
         # Winter Melon at its full cost has no dearer candidate; planted, it only shifts the spawn cells.
-        result = self.search("egypt13", [("whitemelon", (1, 2))], {"wintermelon": 500}, rank=4, max_previews=0, max_sources=1)
+        result = self.search("egypt13", [("whitemelon", (1, 2))], {"wintermelon": 500}, rank=4, max_length=0, max_sources=1)
         match = result["match"]
         self.assertIsNotNone(match)
         self.assertEqual([(s["source"], s["cell"], s["result"]) for s in match["planting_order"]], [("wintermelon", (1, 1), None)])
@@ -170,7 +177,7 @@ class SearchTest(unittest.TestCase):
     def test_extra_offset_between_previews_and_level(self):
         # Capture 4 started at offset 2,874 after a process that had run one rank-1 preview and nothing else.
         result = self.search("egypt1", [("witchhazel", (1, 1))], {"puffshroom": 0}, activation=(2, 1), rank=4,
-                             offset=2874, max_previews=0, max_sources=1)
+                             offset=2874, max_length=0, max_sources=1)
         match = result["match"]
         self.assertIsNotNone(match)
         self.assertEqual((match["level_entry_offset"], match["stream_end"]), (2874, 3584))
@@ -194,36 +201,36 @@ class SearchTest(unittest.TestCase):
         for level, wants, sources, options, message in cases:
             with self.subTest(wants=wants, sources=sources, options=options):
                 with self.assertRaisesRegex(ValueError, message):
-                    self.search(level, wants, sources, **options)
+                    self.search(level, wants, sources, max_sources=9, **options)
 
     def test_each_artifact_starts_with_its_rank_1_preview(self):
-        # Tapping an artifact plays its rank-1 preview, so previews run since a restart cannot begin with rank 4, and the
-        # Evolution previews after a Devolution preview start again with rank 1. A prediction refuses such a sequence as
-        # a search does, and a search refuses allowed previews that can never start its route.
+        # Tapping an artifact plays its rank-1 preview, so previews run since a restart cannot begin with E4, and the
+        # Evolution previews after a Devolution preview start again with E1. A prediction refuses such a sequence as a
+        # search does, and a search refuses allowed previews that can never start its route.
         request = ("egypt13", [("eagleclaw", (2, 1))], {"wallnut": 50})
-        for done in ([4, 1], ["D1", 4], [1, "D1", 3]):
+        for done in (["E4", "E1"], ["D1", "E4"], ["E1", "D1", "E3"]):
             with self.subTest(done=done):
                 with self.assertRaisesRegex(ValueError, "cannot"):
-                    self.search(*request, done=done)
+                    self.search(*request, done=done, max_sources=1)
                 with self.assertRaisesRegex(ValueError, "cannot"):
                     scenario(self.game, done)
-        for done, allowed in (([], [3, 4]), (["D1"], [3, 4])):
+        for done, allowed in (([], ["E3", "E4"]), (["D1"], ["E3", "E4"])):
             with self.subTest(done=done, allowed=allowed), self.assertRaisesRegex(ValueError, "None of the allowed"):
-                self.search(*request, done=done, allowed=allowed)
-        for done in (["D1", 1, 4], [1, 4, "D1", "D1", 1, 3]):
+                self.search(*request, done=done, allowed=allowed, max_sources=1)
+        for done in (["D1", "E1", "E4"], ["E1", "E4", "D1", "D1", "E1", "E3"]):
             with self.subTest(done=done):
-                self.search(*request, done=done, max_previews=0)
+                self.search(*request, done=done, max_length=0, max_sources=1)
 
     def test_a_search_stopped_by_the_state_cap_is_reported(self):
         # Two Kernel-pults at this entry need seven sources. The start is a stored state, so with room for two the
         # search stores one one-source sequence and stops at the second: the entry is listed with the number of sources
         # among whose recipes it stopped, and no recipe is claimed there.
         wants, sources = [("kernelpult", (1, 1)), ("kernelpult", (3, 3))], {"wallnut": 50, "puffshroom": 0}
-        full = self.search("egypt1", wants, sources, max_previews=0, offset=13958)
-        capped = self.search("egypt1", wants, sources, max_previews=0, offset=13958, max_states=2)
+        full = self.search("egypt1", wants, sources, max_length=0, offset=13958, max_sources=9)
+        capped = self.search("egypt1", wants, sources, max_length=0, offset=13958, max_sources=9, max_states=2)
         self.assertEqual((full["match"]["source_count"], full["state_cap_reached"]), (7, []))
         self.assertIsNone(capped["match"])
-        self.assertEqual(capped["state_cap_reached"], [{"preview_sequence": [], "level_entry_offset": 13958,
+        self.assertEqual(capped["state_cap_reached"], [{"route": [], "level_entry_offset": 13958,
                                                         "activation_offset": 13958, "sources": 1}])
 
     def test_the_preview_cost_is_a_condition_only_of_routes_with_previews(self):
@@ -233,54 +240,56 @@ class SearchTest(unittest.TestCase):
         aeoniums = [("aeonium", (1, 1)), ("aeonium", (1, 3))], {"sunflower": 50, "puffshroom": 0}
         three = [("kernelpult", (1, 1)), ("peashooter", (2, 2)), ("burdockbatter", (3, 3))], {}
         cases = [
-            (self.search("memory-lane-s33-6-hard", *aeoniums, max_previews=12), True),
-            (self.search("egypt13", [("whitemelon", (1, 1))], {}, rank=4, max_sources=0, max_previews=3), False),
-            (self.search("egypt1", *three, rank=4, max_sources=0, max_previews=2), True),
-            (self.search("egypt1", *three, rank=4, max_sources=0, max_previews=0), False),
+            (self.search("memory-lane-s33-6-hard", *aeoniums, max_length=12, max_sources=9, overrides=DRY_MEMORY_LANE), True),
+            (self.search("egypt13", [("whitemelon", (1, 1))], {}, rank=4, max_sources=0, max_length=3), False),
+            (self.search("egypt1", *three, rank=4, max_sources=0, max_length=2), True),
+            (self.search("egypt1", *three, rank=4, max_sources=0, max_length=0), False),
         ]
         for result, stated in cases:
-            with self.subTest(match=result["match"] and result["match"]["preview_sequence"], max_previews=result["max_previews"]):
+            with self.subTest(match=result["match"] and result["match"]["route"], max_length=result["max_length"]):
                 self.assertEqual(line in result["conditions"], stated)
 
     def test_routes_agree_with_a_brute_force_over_every_route(self):
         """Every route of up to a few previews is searched on its own. For each style, the route search must return the
         shortest allowed route with a recipe, then the fewest sources, the fewest switches and the first in preview
         order, with that route's own recipe, and must search each position the allowed routes reach once."""
-        aeoniums = ("memory-lane-s33-6-hard", [("aeonium", (1, 1)), ("aeonium", (1, 3))], {"sunflower": 50, "puffshroom": 0}, (2, 2))
-        kernelpults = ("beach3", [("kernelpult", (3, 1)), ("kernelpult", (5, 3))], {"wallnut": 50, "puffshroom": 0}, (4, 2))
-        starfruit = ("pirate1", [("starfruit", (5, 1))], {"wallnut": 50}, (6, 2))
-        evolution, every = [1, 4], [1, 3, 4, "D1"]
+        aeoniums = ("memory-lane-s33-6-hard", [("aeonium", (1, 1)), ("aeonium", (1, 3))], {"sunflower": 50, "puffshroom": 0}, (2, 2),
+                    DRY_MEMORY_LANE)
+        kernelpults = ("beach3", [("kernelpult", (3, 1)), ("kernelpult", (5, 3))], {"wallnut": 50, "puffshroom": 0}, (4, 2),
+                       DRY_BEACH3)
+        starfruit = ("pirate1", [("starfruit", (5, 1))], {"wallnut": 50}, (6, 2), None)
+        evolution, every = ["E1", "E4"], ["E1", "E3", "E4", "D1"]
         cases = [
             (aeoniums, 1, [], evolution, 6, 9),  # the styles differ in length, and switches decide the simple route
-            (aeoniums, 1, [1, 4], evolution, 4, 9),  # switches count from the last done preview
+            (aeoniums, 1, ["E1", "E4"], evolution, 4, 9),  # switches count from the last done preview
             (kernelpults, 4, [], evolution, 6, 9),  # routes of the shortest length differ in switches
             (kernelpults, 1, [], evolution, 5, 9),  # no recipe within the limit
-            (("pirate1", [("aeonium", (6, 1))], {"wallnut": 50, "puffshroom": 0, "potatomine": 25}, (6, 2)), 1, [1], evolution, 4, 5),
-            (starfruit, 1, [1, 4], evolution, 4, 6),
+            (("pirate1", [("aeonium", (6, 1))], {"wallnut": 50, "puffshroom": 0, "potatomine": 25}, (6, 2), None), 1, ["E1"], evolution, 4, 5),
+            (starfruit, 1, ["E1", "E4"], evolution, 4, 6),
             # In the last two, fewer sources outweigh a switch, and one switch beats three on a route first in preview
-            # order. With every preview, 3,4,D1 beats the simple style's 4,1,1,1 by a preview:
-            (starfruit, 1, [1, 4], every, 4, 6),
-            (aeoniums, 1, ["D1"], every, 4, 9),  # switches count from a done D1: D1,1,3 makes two
-            # 3,D1,1 would be first, but a route cannot start with rank 3:
-            (("egypt1", [("chestnut", (1, 1))], {"wallnut": 50}, (2, 2)), 1, [], every, 3, 1),
-            # D1,4 would be first, but rank 4 cannot follow D1, and no route within the limit has a recipe:
-            (("egypt1", [("broccoli", (1, 1))], {"wallnut": 50}, (2, 2)), 1, [], every, 3, 1),
-            # one rank-3 preview after the done D1 would have a recipe, but rank 3 cannot follow D1:
-            (("egypt1", [("iceshroom", (1, 1))], {"wallnut": 50}, (2, 2)), 1, ["D1"], every, 3, 1),
+            # order. With every preview, E3,E4,D1 beats the simple style's E4,E1,E1,E1 by a preview:
+            (starfruit, 1, ["E1", "E4"], every, 4, 6),
+            (aeoniums, 1, ["D1"], every, 4, 9),  # switches count from a done D1: D1,E1,E3 makes two
+            # E3,D1,E1 would be first, but a route cannot start with E3:
+            (("egypt1", [("chestnut", (1, 1))], {"wallnut": 50}, (2, 2), None), 1, [], every, 3, 1),
+            # D1,E4 would be first, but E4 cannot follow D1, and no route within the limit has a recipe:
+            (("egypt1", [("broccoli", (1, 1))], {"wallnut": 50}, (2, 2), None), 1, [], every, 3, 1),
+            # one E3 after the done D1 would have a recipe, but E3 cannot follow D1:
+            (("egypt1", [("iceshroom", (1, 1))], {"wallnut": 50}, (2, 2), None), 1, ["D1"], every, 3, 1),
             # routes still rank in preview order when --allow lists the previews in another order and leaves out the
-            # last done one: 1,D1 comes before D1,1
-            (("egypt1", [("tuliptrumpeter", (1, 1))], {"wallnut": 50, "puffshroom": 0}, (2, 2)), 1, [1, 3], ["D1", 4, 1], 2, 2),
-            # D4,D4,D4 would be first, but D4 needs a Devolution preview before it; 1,D1,1 is
-            (("egypt1", [("snapdragon", (1, 1))], {"wallnut": 50}, (2, 2)), 1, [], every + ["D4"], 3, 1),
-            (("egypt1", [("aloes", (1, 1))], {"wallnut": 50}, (2, 2)), 1, [], every + ["D4"], 3, 1),  # 1,D1,D4
+            # last done one: E1,D1 comes before D1,E1
+            (("egypt1", [("tuliptrumpeter", (1, 1))], {"wallnut": 50, "puffshroom": 0}, (2, 2), None), 1, ["E1", "E3"], ["D1", "E4", "E1"], 2, 2),
+            # D4,D4,D4 would be first, but D4 needs a Devolution preview before it; E1,D1,E1 is
+            (("egypt1", [("snapdragon", (1, 1))], {"wallnut": 50}, (2, 2), None), 1, [], every + ["D4"], 3, 1),
+            (("egypt1", [("aloes", (1, 1))], {"wallnut": 50}, (2, 2), None), 1, [], every + ["D4"], 3, 1),  # E1,D1,D4
         ]
-        for (level, wants, sources, activation), rank, done, allowed, limit, most in cases:
+        for (level, wants, sources, activation, overrides), rank, done, allowed, limit, most in cases:
             level = load_level(level)
             outcomes = {}
             for planned in self.every_route(done, limit, allowed=allowed):
-                match = self.search(level, wants, sources, activation, rank=rank, done=done + planned, max_previews=0,
-                                    max_sources=most)["match"]
-                outcomes[tuple(planned)] = (self.previews.advance(shared(), 0, done + planned, 50)[1], match)
+                match = self.search(level, wants, sources, activation, rank=rank, done=done + planned, max_length=0,
+                                    max_sources=most, overrides=overrides)["match"]
+                outcomes[tuple(planned)] = (replay(self.steps.route(done + planned), shared())[1], match)
             for style, switches in (("simple", 1), ("shorter", 3), ("shortest", None)):
                 with self.subTest(level=level.id, rank=rank, done=done, allowed=allowed, style=style):
                     within = {planned: outcome for planned, outcome in outcomes.items()
@@ -289,11 +298,11 @@ class SearchTest(unittest.TestCase):
                                     self.preference(planned), planned)
                                    for planned, (_, match) in within.items() if match)
                     result = self.search(level, wants, sources, activation, rank=rank, done=done, style=style,
-                                         allowed=allowed, max_previews=limit, max_sources=most)
+                                         allowed=allowed, max_length=limit, max_sources=most, overrides=overrides)
                     match, length = result["match"], found[0][0] if found else limit
                     if found:
                         _, count, switched, _, planned = found[0]
-                        self.assertEqual((match["preview_sequence"], match["planned_previews"], match["source_count"],
+                        self.assertEqual((match["route"], match["planned"], match["source_count"],
                                           match["switches"]), (done + list(planned), list(planned), count, switched))
                         keys = ("action", "cell", "result", "start", "end", "placed")
                         self.assertEqual([[row[k] for k in keys] for row in match["processing_order"]],
@@ -308,34 +317,34 @@ class SearchTest(unittest.TestCase):
         # routes reach, and each only once, however many routes reach it. Positions reached with more than one last
         # preview occur in these ranges.
         wants = [("kernelpult", (1, 1)), ("peashooter", (2, 2)), ("burdockbatter", (3, 3))]
-        evolution, every = [1, 4], [1, 3, 4, "D1"]
+        evolution, every = ["E1", "E4"], ["E1", "E3", "E4", "D1"]
         after = {}
         for style, switches, done, allowed, limit in (
-                ("simple", 1, [], evolution, 30), ("simple", 1, [1, 4], evolution, 30), ("shorter", 3, [], evolution, 12),
-                ("shortest", None, [1], evolution, 9), ("simple", 1, [], every, 20), ("shorter", 3, ["D1"], every, 7),
-                ("shortest", None, [1], every, 5)):
+                ("simple", 1, [], evolution, 30), ("simple", 1, ["E1", "E4"], evolution, 30),
+                ("shorter", 3, [], evolution, 12), ("shortest", None, ["E1"], evolution, 9), ("simple", 1, [], every, 20),
+                ("shorter", 3, ["D1"], every, 7), ("shortest", None, ["E1"], every, 5)):
             with self.subTest(style=style, done=done, allowed=allowed):
-                origin = self.previews.advance(shared(), 0, done, 50)[1]
+                origin = replay(self.steps.route(done), shared())[1]
                 ends = set()
                 for planned in self.every_route(done, limit, switches, allowed):
                     position = origin
                     for preview in planned:
                         if (position, preview) not in after:
-                            after[(position, preview)] = self.previews.run(shared(), position, preview, 50)["end"]
+                            after[(position, preview)] = self.steps.get(preview).run(shared(), position)["end"]
                         position = after[(position, preview)]
                     ends.add(position)
                 result = self.search("egypt1", wants, {}, rank=4, max_sources=0, done=done, style=style, allowed=allowed,
-                                     max_previews=limit)
+                                     max_length=limit)
                 self.assertIsNone(result["match"])
                 self.assertEqual(result["entry_positions_searched"], len(ends))
 
     @staticmethod
-    def every_route(done, limit, most=None, allowed=(1, 4)):
+    def every_route(done, limit, most=None, allowed=("E1", "E4")):
         """Every sequence of up to `limit` allowed previews after the done ones with at most `most` switches, counted
-        from the last done preview. Tapping an artifact plays its rank-1 preview, so a route starts with 1 or D1, and
+        from the last done preview. Tapping an artifact plays its rank-1 preview, so a route starts with E1 or D1, and
         each switch to another artifact starts with its rank-1 preview."""
         def devolution(preview):
-            return str(preview).startswith("D")
+            return preview.startswith("D")
 
         def extend(route, last, switches):
             yield route
@@ -343,7 +352,7 @@ class SearchTest(unittest.TestCase):
                 for preview in allowed:
                     count = switches + (last is not None and preview != last)
                     same_artifact = last is not None and devolution(last) == devolution(preview)
-                    if (preview in (1, "D1") or same_artifact) and (most is None or count <= most):
+                    if (preview in ("E1", "D1") or same_artifact) and (most is None or count <= most):
                         yield from extend(route + [preview], preview, count)
         return extend([], done[-1] if done else None, 0)
 
@@ -354,12 +363,12 @@ class SearchTest(unittest.TestCase):
 
     @staticmethod
     def preference(planned):
-        """A route's place in preview order, compared preview by preview: the Evolution ranks from 1 up, then the
+        """A route's place in preview order, compared preview by preview: the Evolution previews by rank, then the
         Devolution ones."""
-        return [[1, 3, 4, "D1", "D4"].index(preview) for preview in planned]
+        return [["E1", "E3", "E4", "D1", "D4"].index(preview) for preview in planned]
 
     def test_each_entry_agrees_with_a_brute_force_on_small_boards(self):
-        """On tiny boards every planting is enumerable: after each number of rank-1 previews the search must find the
+        """On tiny boards every planting is enumerable: after each number of E1 previews the search must find the
         fewest sources that place the wants, or report none."""
         rng = random.Random(20260923)
         stream = Stream()
@@ -385,7 +394,7 @@ class SearchTest(unittest.TestCase):
             if wants is None:
                 continue
             for count, fewest in enumerate(truth):
-                result = self.search(level, wants, sources, activation, rank=rank, done=[1] * count, max_previews=0,
+                result = self.search(level, wants, sources, activation, rank=rank, done=["E1"] * count, max_length=0,
                                      max_sources=len(usable))
                 match = result["match"]
                 self.assertEqual(match["source_count"] if match else None, fewest, (wants, sources, rank, activation, count))
@@ -398,7 +407,7 @@ class SearchTest(unittest.TestCase):
 
     def brute_force(self, level, board, pools, usable, sources, rank, rng, stream):
         """Pick wants from a random planting so a recipe exists, then the fewest sources placing them after 0 to 3
-        rank-1 previews (None where no planting does)."""
+        E1 previews (None where no planting does)."""
         def allowed(alias, cell):
             spec, kind = sources[alias], board.kind_at(cell)
             return (isinstance(spec, int) or kind in spec[1]) and pools.plantable(alias, kind)
@@ -408,7 +417,7 @@ class SearchTest(unittest.TestCase):
             return spec if isinstance(spec, int) else spec[0]
 
         def plantings(count):
-            _, offset = self.previews.advance(stream, 0, [1] * count, 50)
+            _, offset = replay(self.steps.route(["E1"] * count), stream)
             for size in range(len(usable) + 1):
                 for cells in itertools.permutations(usable, size):
                     choices = [[a for a in sources if allowed(a, cell)] for cell in cells]

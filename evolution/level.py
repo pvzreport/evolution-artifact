@@ -1,16 +1,18 @@
 """A level: its stage, its seed-bank bans, the kind of each cell, and what its entry shuffles.
 
 A level description is a small JSON file holding declared values only: the stage name,
-the banned plants, the default cell kind, the cells whose kind differs, and the sizes of
-the gravestone bags the level shuffles with the shared engine when it loads. The tide
-state of a Beach cell changes during play, so it is supplied per activation instead of
-stored here. Cells are written COLUMN-ROW, one-based, for example 3-1.
+the banned plants, the default cell kind, the cells whose kind at level start differs, the
+plants the level protects, and the sizes of the gravestone bags the level shuffles with the
+shared engine when it loads. The tide moves a Beach cell's kind during play, so an
+activation after it has moved supplies the kinds of the moment. Cells are written
+COLUMN-ROW, one-based, for example 3-1.
 """
 
 import json
 from pathlib import Path
 
 from .plants import DATA, declared_costs, model_pool
+from .tiles import NONE
 
 LEVELS = DATA / "levels"
 LILYPAD = "lilypad"
@@ -46,6 +48,16 @@ class Level:
             raise ValueError("entry_shuffles lists the object count of each gravestone bag the level shuffles at entry, "
                              "non-negative integers in order; got %r" % (shuffles,))
         self.entry_shuffles = list(shuffles)
+        protected = record.get("protected", {})
+        if not isinstance(protected, dict) or not all(isinstance(alias, str) for alias in protected.values()):
+            raise ValueError("protected maps COLUMN-ROW to the alias of the plant the level protects there; got %r"
+                             % (protected,))
+        self.protected = {parse_cell(cell): alias for cell, alias in protected.items()}
+        self.lists_protected = "protected" in record  # a description without the field is taken to protect nothing
+        for cell in self.protected:
+            if self.kind_at(cell) != NONE:
+                raise ValueError("The protected plant at %s stands on a cell no other plant can hold: give it the kind none"
+                                 % format_cell(cell))
         self.notes = record.get("notes", "")
 
     def kind_at(self, cell, overrides=None):
@@ -74,7 +86,7 @@ class Level:
 
     def spawn_pool(self, kind, max_cost, document, kinds, occupied=False):
         """Candidates for a rank-4 addition on a cell of this kind: declared cost at most max_cost, and beneath a
-        plant only a Lily Pad, which a shore or water cell admits (capture 9 and follow-ups A, B and Cactus)."""
+        plant only a Lily Pad, which a shore or water cell admits (capture 9, follow-up B, the display-board captures)."""
         costs = declared_costs(document)
         return [alias for alias in self.candidates(kind, document, kinds)
                 if costs[alias] <= max_cost and (not occupied or alias == LILYPAD)]
@@ -83,6 +95,8 @@ class Level:
         return {"id": self.id, "name": self.name, "stage": self.stage, "bans": self.bans,
                 "default_kind": self.default_kind, "width": self.width, "height": self.height,
                 "cells": {format_cell(cell): kind for cell, kind in sorted(self.cells.items())},
+                "protected": ({format_cell(cell): alias for cell, alias in sorted(self.protected.items())}
+                              if self.lists_protected else None),
                 "entry_shuffles": list(self.entry_shuffles)}
 
 
@@ -90,11 +104,17 @@ def available_levels():
     return sorted(path.stem for path in LEVELS.glob("*.json"))
 
 
+def level_path(name):
+    """The description file a level id from data/levels or a path names, or None."""
+    for path in (Path(name), LEVELS / (str(name) + ".json")):
+        if path.is_file():
+            return path
+    return None
+
+
 def load_level(name):
     """A level by id from data/levels, or by path to a description file."""
-    path = Path(name)
-    if not path.exists():
-        path = LEVELS / (str(name) + ".json")
-    if not path.exists():
+    path = level_path(name)
+    if path is None:
         raise ValueError("Unknown level %r; available: %s" % (name, ", ".join(available_levels())))
     return Level(json.loads(path.read_text()), path)
