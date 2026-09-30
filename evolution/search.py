@@ -25,14 +25,15 @@ pool and offset. The states stored at one start are capped as a memory guard, an
 at which the cap stopped the search is reported.
 
 A route is the sequence of steps run after a full restart, from those the request allows:
-by default every known preview, E1, E3, E4, D1 and D4. Tapping an artifact plays its rank-1
-preview, so a route starts with E1 or D1, and each switch to the other artifact starts with
-its rank-1 preview. Routes continuing the steps already run are tried in increasing length,
-each preview counting 1, and routes that reach the same stream position share one search
-there. The shortest route of the chosen style that has a recipe wins; among routes of that
-length, the one with the fewest sources, then the fewest switches between steps, then the
-first in step order (E1, E3, E4, D1, D4). The recipe is replayed through `activate`, which
-gives the rows it returns.
+by default every known preview, E1, E3, E4, D1 and D4, and level steps only when listed.
+Tapping an artifact plays its rank-1 preview, so the previews after a restart, after a level
+step or after a switch to the other artifact start with E1 or D1. Routes continuing the
+steps already run are tried in increasing length, a preview counting 1 and a level step its
+stated length, and routes that reach the same stream position share one search there. The
+shortest route of the chosen style that has a recipe wins; among routes of that length, the
+one with the fewest sources, then the fewest switches between steps, then the first in step
+order (E1, E3, E4, D1, D4, then the level steps in the order allowed). The recipe is
+replayed through `activate`, which gives the rows it returns.
 
 A source whose pool is empty transforms into nothing and draws nothing, but at rank 4 it
 still occupies its cell and so moves the spawns; all such sources form one option.
@@ -43,7 +44,7 @@ from itertools import combinations
 
 from .level import LILYPAD, format_cell
 from .model import PAD, Board, Planting, activate, check_board, check_level_rank, enter_level, place, selection_row
-from .route import Steps, conditions, replay
+from .route import LEVEL_LENGTH, Steps, conditions, replay
 from .stream import shared
 from .tiles import NONE
 
@@ -57,8 +58,8 @@ def parse_spec(spec):
 
 
 def search_recipe(game, level, wants, sources, activation=(2, 2), *, max_sources, overrides=None, rank=1, done=(),
-                  style="simple", allowed=None, max_length=100, offset=0, max_states=MAX_STATES, stream=None,
-                  preview_cost=None):
+                  style="simple", allowed=None, max_length=100, level_length=LEVEL_LENGTH, offset=0, max_states=MAX_STATES,
+                  stream=None, preview_cost=None):
     """The shortest route of `style` continuing the `done` steps, with the recipe that places every want.
 
     game: the Game whose plant data the recipe is for. wants: list of (plant, cell). sources:
@@ -67,18 +68,18 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, max_sources
     since a full restart, in order. style: "simple" (at most one switch), "shorter" (at most three)
     or "shortest" (any number); a switch counts whenever a planned step differs from the step before
     it, the last done step included. allowed: the names of the steps the planned ones may be, by
-    default every known preview. max_length: the most length planned after the done steps, a
-    preview counting 1. offset: extra raw outputs consumed between the route and the level, before
-    the level's own entry shuffles. max_states: the most search states stored at one entry
-    position. preview_cost: the Evolution previews' effective source cost; the default is the
-    source's declared cost.
+    default every known preview; a level step only when listed. max_length: the most length planned
+    after the done steps, a preview counting 1 and a level step level_length. offset: extra raw
+    outputs consumed between the route and the level, before the level's own entry shuffles.
+    max_states: the most search states stored at one entry position. preview_cost: the Evolution
+    previews' effective source cost; the default is the source's declared cost.
     """
     check_level_rank(rank)
     if style not in STYLES:
         raise ValueError("Route styles are %s" % ", ".join(STYLES))
     if max_length < 0 or max_sources < 0 or offset < 0 or max_states < 1:
         raise ValueError("Require max_length >= 0, max_sources >= 0, offset >= 0 and max_states >= 1")
-    steps = Steps(game, preview_cost)
+    steps = Steps(game, preview_cost, level_length)
     done = steps.route(done)
     allowed = _allowed(steps, steps.names() if allowed is None else allowed)
     latest = done[-1] if done else None
@@ -119,7 +120,7 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, max_sources
         "options": [{"sources": sorted({alias for pairs in o["aliases"].values() for alias, _ in pairs}),
                      "kinds": o["kinds"], "candidates": len(o["pool"])} for o in options],
         "unusable_sources": unusable, "done": [step.name for step in done], "style": style,
-        "allowed": [step.name for step in allowed], "max_length": max_length,
+        "allowed": [step.name for step in allowed], "max_length": max_length, "level_length": level_length,
         "extra_offset": offset, "max_sources": max_sources, "max_states": max_states, "preview_cost": steps.cost,
         "entry_positions_searched": 0, "state_cap_reached": [], "conditions": None, "match": None,
     }
@@ -141,13 +142,16 @@ def search_recipe(game, level, wants, sources, activation=(2, 2), *, max_sources
                 best = (sum(1 for row in rows if row["action"] == "evolve"), planned, switches, entry, entered, start, rows)
         if best is not None:
             break
-    if best is not None:
-        _, planned, switches, entry, entered, start, rows = best
-        rows = _replay(board, pools, rank, stream, start, rows)
-        result["match"] = _recipe(done + planned, planned, replay(done + planned, stream)[0], switches, entry, entered,
-                                  start, rows)
-    # Without a recipe, the conditions cover every step the search could have planned.
-    result["conditions"] = conditions(game, done + (planned if best is not None else allowed if max_length else []))
+    if best is None:
+        # Without a recipe, the conditions cover the done steps and what every step the search could have planned states.
+        entries, _ = replay(done, stream, then=level)
+        result["conditions"] = conditions(game, done, entries, level, allowed if max_length else [])
+        return result
+    _, planned, switches, entry, entered, start, rows = best
+    rows = _replay(board, pools, rank, stream, start, rows)
+    entries, _ = replay(done + planned, stream, then=level)
+    result["match"] = _recipe(done + planned, planned, entries, switches, level_length, entry, entered, start, rows)
+    result["conditions"] = conditions(game, done + planned, entries, level)
     return result
 
 
@@ -206,9 +210,11 @@ def _options(pools, sources, kind_of, usable, rank):
 
 
 def _allowed(steps, names):
-    """The steps a route may use, each once, in preference order: the known previews in their order."""
+    """The steps a route may use, each once, in preference order: the known previews in their order, then the level
+    steps in the order given."""
     order = steps.names()
-    return sorted({step.name: step for step in map(steps.get, names)}.values(), key=lambda step: order.index(step.name))
+    return sorted({step.name: step for step in map(steps.get, names)}.values(),
+                  key=lambda step: order.index(step.name) if step.name in order else len(order))
 
 
 def _routes(stream, done, allowed, max_switches, max_length):
@@ -216,10 +222,12 @@ def _routes(stream, done, allowed, max_switches, max_length):
     (position, planned steps, switches) with its preferred route: the fewest switches, then the first in step order, the
     order of `allowed`, comparing the planned steps one by one.
 
-    A route's future depends only on its position, its last step and the switches it has used. A route is therefore
-    dropped when another reached the same position with the same last step and no more switches, at no greater length
-    and earlier in preference order; with no limit on switches, the first route to reach them covers every later one.
-    The routes of one length are drawn from the routes kept at shorter lengths, a step's length before.
+    A route's future depends only on its position, its last step and the switches it has used. The last step counts
+    by its name: what may follow a level step is the same for every level step, but whether the next step is a switch
+    depends on which one it was. A route is therefore dropped when another reached the same position with the same last
+    step and no more switches, at no greater length and earlier in preference order; with no limit on switches, the
+    first route to reach them covers every later one. The routes of one length grow from the routes kept at shorter
+    lengths, a step's length before.
     """
     ends = {}
 
@@ -549,13 +557,13 @@ def _replay(board, pools, rank, stream, start, rows):
     return replayed
 
 
-def _recipe(route, planned, steps, switches, entry, entered, start, rows):
+def _recipe(route, planned, steps, switches, level_length, entry, entered, start, rows):
     for position, row in enumerate(rows, start=1):
         row["position"] = position
     sources = [row for row in rows if row["action"] == "evolve"]
     planting = [dict(row, step=index) for index, row in enumerate(reversed(sources), start=1)]
     return {"route": [step.name for step in route], "planned": [step.name for step in planned], "steps": steps,
-            "switches": switches,
+            "switches": switches, "length": sum(step.length for step in planned), "level_length": level_length,
             "level_entry_offset": entry, "entry_effects": entered, "activation_offset": start,
             "source_count": len(sources), "processing_order": rows, "planting_order": planting,
             "stream_end": rows[-1]["end"] if rows else start}

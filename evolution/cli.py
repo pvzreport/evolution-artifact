@@ -2,6 +2,7 @@
 
   python3 -m evolution predict --route E1,E4
   python3 -m evolution predict --route D1x2,E1,E3
+  python3 -m evolution predict --route egypt6@9-1x2,egypt13@2-2
   python3 -m evolution predict --level memory-lane-s33-6-hard --route E1x6 --activate 2-2 \\
       --plant sunflower=50@1-3 --plant puffshroom=0@3-1:beach_shore
   python3 -m evolution predict --rank 4 --level egypt13 --activate 2-2
@@ -12,6 +13,8 @@
   python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --max-sources 9 --done E1x2 \\
       --style shorter
   python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --max-sources 9 --allow E1,E4
+  python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --max-sources 1 \\
+      --allow E1,egypt6@9-1,dark21 --level-length 25
   python3 -m evolution pool --level pirate1 --kind pirate_plank --cost 0
   python3 -m evolution pool --preview evolution --cost 47
 """
@@ -27,7 +30,7 @@ from .game import Game
 from .level import format_cell, load_level, parse_cell
 from .model import LEVEL_RANKS, Planting
 from .plants import PLANTS
-from .route import Steps, format_route, parse_route, scenario
+from .route import LEVEL_LENGTH, LEVEL_RANK, Steps, format_route, parse_route, scenario
 from .search import STYLES, search_recipe
 
 PLATFORMS = ("iOS", "Android")
@@ -110,7 +113,7 @@ def _count(number, noun):
     return "%d %s%s" % (number, noun, "" if number == 1 else "s")
 
 
-def _evolution_line(entry):
+def _evolution_line(entry, previous):
     evolved, pads, spawns = [], [], []
     for row in entry["results"]:
         text = "%s %s" % (format_cell(row["cell"]), _outcome(row))
@@ -131,11 +134,36 @@ def _evolution_line(entry):
     return line + " (stream at %d after)" % entry["end"]
 
 
-def _devolution_line(entry):
+def _devolution_line(entry, previous):
     shuffles = entry["shuffles"]
     sizes = list(dict.fromkeys(str(shuffle["objects"]) for shuffle in shuffles))
     return "%s of %s objects, %s (stream at %d after)" % (
         _count(len(shuffles), "shuffle"), " and ".join(sizes), _count(entry["end"] - entry["start"], "draw"), entry["end"])
+
+
+def _level_line(entry, previous):
+    """What to do in a level step and what appears: the load, the activation's spawns, the Draftodils' row shuffles,
+    and how to leave."""
+    if previous is not None and previous.get("leave") == "restart":
+        line = "the restart " + _bags(entry["entry_effects"])
+    else:
+        line = "enter %s, which %s" % (entry["level"]["name"], _bags(entry["entry_effects"]))
+    if entry["activation"]:
+        spawns = ", ".join("%s %s" % (format_cell(row["cell"]), _outcome(row)) for row in entry["results"])
+        line += "; start the waves and activate rank-%d Evolution at %s with nothing planted: spawns %s" % (
+            LEVEL_RANK, format_cell((entry["activation"]["column"], entry["activation"]["row"])), spawns or "nothing")
+        line += "".join(_effect(effect) for effect in entry["effects"])
+    leave = "restart the level" if entry["leave"] == "restart" else "quit to the map"
+    return line + "; then %s (stream at %d after)" % (leave, entry["end"])
+
+
+def _bags(effects):
+    """What a level's load draws: nothing, or its gravestone-bag shuffles and their draws."""
+    if not effects:
+        return "draws nothing"
+    bags = ("a gravestone bag of %s" % _count(effects[0]["objects"], "object") if len(effects) == 1
+            else "gravestone bags of %s objects" % ", ".join(str(e["objects"]) for e in effects))
+    return "shuffles %s (%s)" % (bags, _count(effects[-1]["end"] - effects[0]["start"], "draw"))
 
 
 def _effect(effect):
@@ -144,12 +172,15 @@ def _effect(effect):
                                            _count(effect["end"] - effect["start"], "draw"))
 
 
-_STEP_LINES = {"evolution": _evolution_line, "devolution": _devolution_line}
+_STEP_LINES = {("preview", "evolution"): _evolution_line, ("preview", "devolution"): _devolution_line,
+               ("level", None): _level_line}
 
 
-def _print_steps(entries):
-    for entry in entries:
-        print("Step %d, %s: %s" % (entry["step"], entry["name"], _STEP_LINES[entry["artifact"]](entry)))
+def _step_line(entries, index):
+    """Step `index` of a route's entries as 'Step N, NAME: what to do and what appears'."""
+    entry = entries[index]
+    line = _STEP_LINES[entry["kind"], entry.get("artifact")](entry, entries[index - 1] if index else None)
+    return "Step %d, %s: %s" % (entry["step"], entry["name"], line)
 
 
 def _note_preview_cost(game, preview_cost, listed_costs, evolution):
@@ -173,12 +204,7 @@ def _outcome(row):
 
 def _describe_entry(effects, start):
     """What entering the level draws: its gravestone-bag shuffles, and the offset the activation starts from."""
-    if not effects:
-        return "Entering the level draws nothing; the activation starts at offset %d." % start
-    bags = ("a gravestone bag of %s" % _count(effects[0]["objects"], "object") if len(effects) == 1
-            else "gravestone bags of %s objects" % ", ".join(str(e["objects"]) for e in effects))
-    return "Entering the level shuffles %s (%s); the activation starts at offset %d." % (
-        bags, _count(start - effects[0]["start"], "draw"), start)
+    return "Entering the level %s; the activation starts at offset %d." % (_bags(effects), start)
 
 
 def _describe_row(row):
@@ -207,7 +233,7 @@ def cmd_predict(args):
         plantings.append(Planting(entry["source"], cost, entry["cell"], entry["kind"]))
     result = scenario(game, parse_route(args.route), level, plantings, activation, dict(args.cell or []), args.offset,
                       args.rank, preview_cost=args.preview_cost)
-    evolution = any(entry["artifact"] == "evolution" for entry in result["steps"])
+    evolution = any(entry.get("artifact") == "evolution" for entry in result["steps"])
     _note_preview_cost(game, args.preview_cost, [p.cost for p in plantings if p.source == game.previews.source], evolution)
     if args.json:
         print(json.dumps(result, indent=2))
@@ -218,7 +244,8 @@ def cmd_predict(args):
         print("Route after a full restart, with %s at effective cost %d:" % (game.previews.source, result["preview_cost"]))
     else:
         print("Route after a full restart:")
-    _print_steps(result["steps"])
+    for index in range(len(result["steps"])):
+        print(_step_line(result["steps"], index))
     if args.offset:
         print("Extra raw outputs consumed: %d" % args.offset)
     if level:
@@ -243,13 +270,14 @@ def _switches(style):
 
 
 def _run_steps(game, match, cost):
-    """Step 2 of a recipe: the planned steps, the Evolution previews' cost, and how each artifact's previews start."""
+    """Step 2 of a recipe: the planned steps, the Evolution previews' cost, how each artifact's previews start, and what
+    to do in each level step."""
     done = len(match["route"]) - len(match["planned"])
     entries = match["steps"][done:]
-    artifacts = [entry["artifact"] for entry in match["steps"][max(done - 1, 0):]]  # from the last done step on
+    artifacts = [entry.get("artifact") for entry in match["steps"][max(done - 1, 0):]]  # from the last done step on
     switches = any(before != after for before, after in zip(artifacts, artifacts[1:]))
     source = ""
-    if any(entry["artifact"] == "evolution" for entry in entries):
+    if any(entry.get("artifact") == "evolution" for entry in entries):
         whose = "the Evolution previews' " if "devolution" in artifacts else ""
         source = ", with %s%s at effective cost %d" % (whose, game.previews.source, cost)
     if switches or (not done and "devolution" in artifacts):
@@ -258,8 +286,12 @@ def _run_steps(game, match, cost):
         start = "; the first is the rank-1 preview that plays when the artifact is tapped"
     else:
         start = ""
-    print("2. Run these %ssteps, each one complete%s: %s%s." % ("further " if done else "", source,
-                                                                 format_route(match["planned"]), start))
+    levels = [index for index, entry in enumerate(match["steps"]) if index >= done and entry["kind"] == "level"]
+    length = " (length %d, a level step counting %d)" % (match["length"], match["level_length"]) if levels else ""
+    print("2. Run these %ssteps, each one complete%s: %s%s%s." % ("further " if done else "", source,
+                                                                   format_route(match["planned"]), length, start))
+    for index in levels:
+        print("   " + _step_line(match["steps"], index))
 
 
 def cmd_plan(args):
@@ -270,14 +302,14 @@ def cmd_plan(args):
         raise ValueError("Give with --max-sources the most sources a recipe may plant")
     done = parse_route(args.done)
     listed = sources.get(game.previews.source)
-    steps = Steps(game, args.preview_cost)
+    steps = Steps(game, args.preview_cost, args.level_length)
     involved = done + ((args.allow or steps.names()) if args.max_length > 0 else [])
     _note_preview_cost(game, args.preview_cost, [listed[0] if isinstance(listed, tuple) else listed],
                        any(steps.get(name).artifact == "evolution" for name in involved))
     result = search_recipe(game, level, args.want, sources, parse_cell(args.activate),
                            overrides=dict(args.cell or []), rank=args.rank, done=done, style=args.style,
-                           allowed=args.allow, max_length=args.max_length, offset=args.offset,
-                           max_sources=args.max_sources or 0, preview_cost=args.preview_cost)
+                           allowed=args.allow, max_length=args.max_length, level_length=args.level_length,
+                           offset=args.offset, max_sources=args.max_sources or 0, preview_cost=args.preview_cost)
     if args.json:
         print(json.dumps(result, indent=2))
         return
@@ -288,8 +320,10 @@ def cmd_plan(args):
     if result["unusable_sources"]:
         print("Not plantable in this level or on any cell of this area, so not planned: " + ", ".join(result["unusable_sources"]))
     after = " after the done steps %s" % format_route(result["done"]) if done else ""
-    print("Routes of the %s style (%s) with the steps %s, up to length %d%s: %s searched." % (
-        args.style, _switches(args.style), ", ".join(result["allowed"]), result["max_length"], after,
+    counting = (", a level step counting %d" % result["level_length"]
+                if any(steps.get(name).loads is not None for name in result["allowed"]) else "")
+    print("Routes of the %s style (%s) with the steps %s, up to length %d%s%s: %s searched." % (
+        args.style, _switches(args.style), ", ".join(result["allowed"]), result["max_length"], counting, after,
         _count(result["entry_positions_searched"], "distinct entry position")))
     for capped in result["state_cap_reached"]:
         print("The state cap (%d) stopped the search at level entry %d, after %s, among recipes of %s: a recipe there "
@@ -313,10 +347,13 @@ def cmd_plan(args):
             print("2. Run no %ssteps." % ("further " if done else ""))
         if result["extra_offset"]:
             print("   Then let the engine consume the %d further outputs stated with --offset." % result["extra_offset"])
+        load = "Enter the level directly and"
+        if match["steps"] and match["steps"][-1].get("leave") == "restart":  # step 2 says so for a planned level step
+            load = "After the restart," if match["planned"] else "Restart the level and"
         if match["planting_order"]:
-            print("3. Enter the level directly and plant %s, in this order:" % _count(match["source_count"], "source"))
+            print("3. %s plant %s, in this order:" % (load, _count(match["source_count"], "source")))
         else:
-            print("3. Enter the level directly; leave the activation area empty.")
+            print("3. %s leave the activation area empty." % load)
         for step in match["planting_order"]:
             print("   %d. %s at %s" % (step["step"], "/".join(step["sources"]), format_cell(step["cell"])))
         print("4. Start the waves, then activate rank-%d Evolution once at %s." % (args.rank, args.activate))
@@ -365,8 +402,10 @@ def main(argv=None):
 
     predict = commands.add_parser("predict", help="Replay a stated scenario and print what the game shows")
     predict.add_argument("--route", default="",
-                         help="Steps after a full restart, in order: the previews E1, E3, E4, D1 and D4, each optionally "
-                              "repeated as xCOUNT, for example E1x6, E1,E4 or D1x2,E1,E3 (default: none)")
+                         help="Steps after a full restart, in order: the previews E1, E3, E4, D1 and D4, and level steps, "
+                              "LEVEL@CELL for a rank-4 activation on CELL with nothing planted or LEVEL for entering and "
+                              "leaving, each optionally repeated as xCOUNT, for example E1x6,E4 or egypt6@9-1x2,E1 "
+                              "(default: none)")
     predict.add_argument("--preview-cost", type=int, metavar="COST",
                          help="Effective cost of the previews' Sunflowers (default: the declared cost)")
     predict.add_argument("--offset", type=int, default=0, help="Extra raw engine outputs consumed between the route and the level")
@@ -392,15 +431,19 @@ def main(argv=None):
     plan.add_argument("--cell", type=parse_override, action="append", metavar="CELL=KIND",
                       help="Kind of a cell for this activation; repeatable")
     plan.add_argument("--done", default="", metavar="ROUTE",
-                      help="Steps already run since a full restart, in order, for example E1x3,E4 or D1,E1 (default: none)")
+                      help="Steps already run since a full restart, in order, for example E1x3,E4 or D1,egypt6@9-1 "
+                           "(default: none)")
     plan.add_argument("--style", choices=tuple(STYLES), default="shorter",
                       help="Switches between steps the route may make after the done steps: simple at most one, "
                            "shorter at most three, shortest any (default shorter)")
     plan.add_argument("--allow", type=parse_allowed, metavar="STEPS",
-                      help="The steps the planned route may use, for example E1,E4 (default: every known preview, "
-                           "E1,E3,E4,D1,D4)")
+                      help="The steps the planned route may use, for example E1,E4,egypt6@9-1 (default: every known "
+                           "preview, E1,E3,E4,D1,D4; a level step only when listed)")
     plan.add_argument("--max-length", type=int, default=100,
-                      help="Most length to plan after the done steps, a preview counting 1 (default 100)")
+                      help="Most length to plan after the done steps, a preview counting 1 and a level step "
+                           "--level-length (default 100)")
+    plan.add_argument("--level-length", type=int, default=LEVEL_LENGTH, metavar="N",
+                      help="The length a level step counts in a route, against a preview's 1 (default %d)" % LEVEL_LENGTH)
     plan.add_argument("--preview-cost", type=int, metavar="COST",
                       help="Effective cost of the previews' Sunflowers (default: the declared cost)")
     plan.add_argument("--offset", type=int, default=0, help="Extra raw engine outputs consumed between the route and the level")

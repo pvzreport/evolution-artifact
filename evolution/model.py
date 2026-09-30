@@ -1,7 +1,8 @@
 """One activation of the Evolution artifact, as a function of the board, the plantings and a stream position.
 
-Every rule the predictor asserts is here, with the evidence behind it. The regression
-fixtures under tests/fixtures replay the captures named below.
+Every rule of an activation the predictor asserts is here, with the evidence behind it;
+what the steps of a route draw around it is in the route module. The regression fixtures
+under tests/fixtures replay the captures named below.
 
 - A transformation shuffles the pool of its source's cell kind and effective cost and
   selects element 0; sources are processed newest planting first (every capture).

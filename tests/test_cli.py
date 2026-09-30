@@ -112,6 +112,21 @@ class CliTest(unittest.TestCase):
         self.assert_error(request + ["--done", "D1,E4"], "E4 cannot follow D1")
         self.assert_error(["predict", "--route", "D1,E3"], "E3 cannot follow D1")
 
+    def test_level_steps_reach_the_text_output(self):
+        # A level step's line says what to do and what appears: the bags its load shuffles, the spawns and their cells,
+        # a Draftodil's row shuffle and how to leave; a recipe through one gives its length and the level length.
+        self.assertIn("Step 1, dark19@6-4: enter Dark Ages 19 (story), which shuffles gravestone bags of 3, 6, 3 objects "
+                      "(10 draws); start the waves and activate rank-4 Evolution at 6-4 with nothing planted: spawns 5-3 "
+                      "draftodil, 5-4 spikeweed, 5-5 springbean, 6-4 cabbagepult, 7-3 moonflower, 7-4 saucer, 7-5 "
+                      "cosmicmushroom; draftodil at 5-3 shuffles 3 plant objects (2 draws); then quit to the map (stream at "
+                      "530 after)", run("predict", "--route", "dark19@6-4,E1"))
+        text = run("plan", "--level", "egypt1", "--want", "kernelpult@1-1", "--source", "wallnut=50", "--max-sources", "1",
+                   "--allow", "E1,egypt6@9-1,dark21")
+        self.assertIn(": egypt6@9-1,E1x20 (length 45, a level step counting 25);", text)
+        self.assertIn("   Step 1, egypt6@9-1: enter Egypt 6 (story), which draws nothing; start the waves and activate rank-4 "
+                      "Evolution at 9-1 with nothing planted: spawns 8-1 endurian, 9-1 puffshroom, 9-2 guardshroom; then quit "
+                      "to the map (stream at 209 after)", text)
+
     def test_pool_listing(self):
         text = run("pool", "--level", "pirate1", "--kind", "pirate_plank", "--cost", "0")
         self.assertIn("245 candidates", text)
