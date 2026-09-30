@@ -12,24 +12,24 @@ fixtures under tests/fixtures replay the captures named below.
   candidates it admits costing at most the preview file's spawn_max_cost. An occupied
   cell admits nothing, except that an occupied shore or water cell admits a Lily Pad
   beneath its plant, a one-candidate shuffle that consumes no outputs (captures 1 to 10,
-  follow-ups A and Cactus, the display-board captures).
+  follow-up B, the display-board captures).
 - Effects then run in reverse selection order, and each selected plant is re-checked
   against its cell's kind at that moment: a Lily Pad placed earlier turns its cell into
   beach_pad, which rejects some replacements, and a second Lily Pad on one cell is
-  dropped (follow-ups B and Cactus). The `placed` flag of a row records the outcome. A
-  rejected replacement still removes its source, leaving the bare pad (played check on
-  the display board).
+  dropped (follow-up B). The `placed` flag of a row records the outcome. A rejected
+  replacement still removes its source, leaving the bare pad (played check on the
+  display board).
 - Placing a Draftodil shuffles the plant objects of its row with the shared engine, so
   the effects can move the stream: one output per object beyond the first, with the
   engine's rejection rule as in any shuffle. A Lily Pad, bare or beneath a plant, is
   not one of the objects, a replaced source is gone, and the Draftodil itself is
-  counted (display-board captures with a Draftodil at 4-3 and at 3-3, follow-up A at
-  4-2, an Arthur's Challenge activation at 2-3, played checks in every display row, a
-  played check with a bare Lily Pad in the row, one whose second shuffle rejected two
-  values, and a Dark Ages 19 activation whose row held two plants outside the 3x3). No
-  other plant's placement has drawn in any capture. The count needs every plant in the
-  row, which is known on the display board; a level activation reports its selection
-  end and leaves these draws to the caller.
+  counted (display-board captures with a Draftodil at 4-3 and at 3-3, an Arthur's
+  Challenge activation at 2-3, played checks in every display row, a played check with a
+  bare Lily Pad in the row, one whose second shuffle rejected two values, and a Dark Ages
+  19 activation whose row held two plants outside the 3x3). No other plant's placement
+  has drawn in any capture. The count needs every plant in the row, which is known on
+  the display board; a level activation reports its selection end and leaves these
+  draws to the caller.
 - Entering a level draws from the shared engine when its wave list references
   gravestone-spawning wave actions: as the level loads, each such action is built in
   wave order and its bag of gravestones is shuffled once, so its description lists the
@@ -61,8 +61,7 @@ _CONDITIONS = [
     "gravestone-bag shuffles its description lists, and nothing else uses the shared engine before the activation.",
     "Same level as described, sources at the listed effective cost (no discounts unless included), "
     "activate once while every source remains and before any automatic spawning.",
-    "Activate promptly after planting and read the results at once: in one capture, outputs from outside "
-    "the artifact followed the selections during the effects, so in-level events can move the stream.",
+    "Activate promptly after planting and read the results at once.",
     "Each cell's kind must match the board at activation: Beach cells right of the coast are shore when dry, "
     "water when flooded without a pad, and pad whenever a Lily Pad is present, bare or occupied. "
     "Keep terrain and supports unchanged until the effects finish, apart from the predicted additions.",

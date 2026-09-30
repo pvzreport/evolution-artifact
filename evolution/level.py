@@ -74,7 +74,7 @@ class Level:
 
     def spawn_pool(self, kind, max_cost, document, kinds, occupied=False):
         """Candidates for a rank-4 addition on a cell of this kind: declared cost at most max_cost, and beneath a
-        plant only a Lily Pad, which a shore or water cell admits (capture 9 and follow-ups A, B and Cactus)."""
+        plant only a Lily Pad, which a shore or water cell admits (capture 9, follow-up B, the display-board captures)."""
         costs = declared_costs(document)
         return [alias for alias in self.candidates(kind, document, kinds)
                 if costs[alias] <= max_cost and (not occupied or alias == LILYPAD)]

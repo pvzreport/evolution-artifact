@@ -152,7 +152,7 @@ class SearchTest(unittest.TestCase):
         self.assertTrue(all(row["source"] == "wallnut" for row in result["match"]["processing_order"]))
 
     def test_lily_pad_beneath_an_occupied_shore_cell(self):
-        # Follow-up A: a source on dry shore receives a Lily Pad beneath it for no draws.
+        # A source on dry shore receives a Lily Pad beneath it for no draws, as the display board's sources do.
         result = self.search("beach3", [("lilypad", (5, 3))], {"puffshroom": 0}, activation=(5, 3), rank=4, max_previews=0)
         match = result["match"]
         self.assertIsNotNone(match)
