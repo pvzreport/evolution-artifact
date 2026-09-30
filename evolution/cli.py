@@ -6,10 +6,12 @@
       --plant sunflower=50@1-3 --plant puffshroom=0@3-1:beach_shore
   python3 -m evolution predict --rank 4 --level egypt13 --activate 2-2
   python3 -m evolution plan --level memory-lane-s33-6-hard --want aeonium@1-1 --want aeonium@1-3 \\
-      --source sunflower=50 --source puffshroom=0 --cell 3-1=beach_shore
-  python3 -m evolution plan --rank 4 --level egypt13 --want kiwifruit@2-1 --want primalwallnut@3-3 --source wallnut=50
-  python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --done E1x2 --style shorter
-  python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --allow E1,E4
+      --source sunflower=50 --source puffshroom=0 --max-sources 9 --cell 3-1=beach_shore
+  python3 -m evolution plan --rank 4 --level egypt13 --want kiwifruit@2-1 --want primalwallnut@3-3 \\
+      --source wallnut=50 --max-sources 9
+  python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --max-sources 9 --done E1x2 \\
+      --style shorter
+  python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=50 --max-sources 9 --allow E1,E4
   python3 -m evolution pool --level pirate1 --kind pirate_plank --cost 0
   python3 -m evolution pool --preview evolution --cost 47
 """
@@ -264,6 +266,8 @@ def cmd_plan(args):
     game = Game()
     level = load_level(args.level)
     sources = merge_sources(args.source)
+    if sources and args.max_sources is None:
+        raise ValueError("Give with --max-sources the most sources a recipe may plant")
     done = parse_route(args.done)
     listed = sources.get(game.previews.source)
     steps = Steps(game, args.preview_cost)
@@ -273,7 +277,7 @@ def cmd_plan(args):
     result = search_recipe(game, level, args.want, sources, parse_cell(args.activate),
                            overrides=dict(args.cell or []), rank=args.rank, done=done, style=args.style,
                            allowed=args.allow, max_length=args.max_length, offset=args.offset,
-                           max_sources=args.max_sources, preview_cost=args.preview_cost)
+                           max_sources=args.max_sources or 0, preview_cost=args.preview_cost)
     if args.json:
         print(json.dumps(result, indent=2))
         return
@@ -309,7 +313,10 @@ def cmd_plan(args):
             print("2. Run no %ssteps." % ("further " if done else ""))
         if result["extra_offset"]:
             print("   Then let the engine consume the %d further outputs stated with --offset." % result["extra_offset"])
-        print("3. Enter the level directly" + (" and plant, in this order:" if match["planting_order"] else "; leave the activation area empty."))
+        if match["planting_order"]:
+            print("3. Enter the level directly and plant %s, in this order:" % _count(match["source_count"], "source"))
+        else:
+            print("3. Enter the level directly; leave the activation area empty.")
         for step in match["planting_order"]:
             print("   %d. %s at %s" % (step["step"], "/".join(step["sources"]), format_cell(step["cell"])))
         print("4. Start the waves, then activate rank-%d Evolution once at %s." % (args.rank, args.activate))
@@ -397,7 +404,8 @@ def main(argv=None):
     plan.add_argument("--preview-cost", type=int, metavar="COST",
                       help="Effective cost of the previews' Sunflowers (default: the declared cost)")
     plan.add_argument("--offset", type=int, default=0, help="Extra raw engine outputs consumed between the route and the level")
-    plan.add_argument("--max-sources", type=int, default=9)
+    plan.add_argument("--max-sources", type=int, metavar="N",
+                      help="The most sources a recipe may plant; required with --source")
     plan.add_argument("--json", action="store_true")
     plan.set_defaults(run=cmd_plan)
 

@@ -52,7 +52,7 @@ class SearchTest(unittest.TestCase):
     def test_two_aeoniums_in_memory_lane(self):
         wants = [("aeonium", (1, 1)), ("aeonium", (1, 3))]
         result = self.search("memory-lane-s33-6-hard", wants, {"sunflower": 50, "puffshroom": 0}, max_length=12,
-                             overrides=DRY_MEMORY_LANE)
+                             max_sources=9, overrides=DRY_MEMORY_LANE)
         match = result["match"]
         self.assertIsNotNone(match)
         self.assertEqual((match["route"], result["state_cap_reached"]), (["E1"] * 6, []))
@@ -90,7 +90,7 @@ class SearchTest(unittest.TestCase):
 
     def test_wanted_plant_on_a_plank_cell_uses_the_plank_pool(self):
         result = self.search("pirate1", [("exorcislily", (6, 4))], {"puffshroom": 0, "sunflower": 50},
-                             activation=(5, 4), max_length=20)
+                             activation=(5, 4), max_length=20, max_sources=9)
         match = result["match"]
         self.assertIsNotNone(match)
         wanted = next(row for row in match["processing_order"] if row["wanted"])
@@ -100,7 +100,8 @@ class SearchTest(unittest.TestCase):
 
     def test_source_restricted_to_a_kind(self):
         result = self.search("memory-lane-s33-6-hard", [("aeonium", (1, 1))],
-                             {"sunflower": 50, "puffshroom": (0, ["ground"])}, max_length=12, overrides=DRY_MEMORY_LANE)
+                             {"sunflower": 50, "puffshroom": (0, ["ground"])}, max_length=12, max_sources=9,
+                             overrides=DRY_MEMORY_LANE)
         self.assertIsNotNone(result["match"])
         for row in result["match"]["processing_order"]:
             if "puffshroom" in row["sources"]:
@@ -120,14 +121,14 @@ class SearchTest(unittest.TestCase):
         for rank in (1, 4):
             with self.subTest(rank=rank):
                 result = self.search("beach3", wants, {"sunflower": 50, "puffshroom": 0}, activation=(4, 2),
-                                     rank=rank, done=["E1"] * 10, max_length=0, overrides=DRY_BEACH3)
+                                     rank=rank, done=["E1"] * 10, max_length=0, max_sources=9, overrides=DRY_BEACH3)
                 self.assertIsNotNone(result["match"])
                 self.assertTrue(set(wants) <= self.replay("beach3", result["match"], (4, 2), DRY_BEACH3, rank=rank))
 
     def test_mixed_wants_leave_the_spawn_cell_free(self):
         # Kiwifruit needs a transformation; Primal Wall-nut can only spawn, so 3-3 must stay free.
         wants = [("kiwifruit", (2, 1)), ("primalwallnut", (3, 3))]
-        result = self.search("egypt13", wants, {"wallnut": 50}, rank=4, max_length=0)
+        result = self.search("egypt13", wants, {"wallnut": 50}, rank=4, max_length=0, max_sources=9)
         match = result["match"]
         self.assertIsNotNone(match)
         self.assertEqual((match["route"], match["source_count"]), ([], 8))
@@ -151,7 +152,7 @@ class SearchTest(unittest.TestCase):
     def test_sources_that_cannot_be_planted_are_reported_not_planned(self):
         # Sea-shroom is Beach-only and Puff-shroom is banned in Egypt 13; neither is an error, neither is planned.
         result = self.search("egypt13", [("kiwifruit", (2, 1))], {"wallnut": 50, "seashroom": (0, ["beach_water"]), "puffshroom": 0},
-                             max_length=10)
+                             max_length=10, max_sources=9)
         self.assertEqual(sorted(result["unusable_sources"]), ["puffshroom", "seashroom"])
         self.assertIsNotNone(result["match"])
         self.assertTrue(all(row["source"] == "wallnut" for row in result["match"]["processing_order"]))
@@ -159,7 +160,7 @@ class SearchTest(unittest.TestCase):
     def test_lily_pad_beneath_an_occupied_shore_cell(self):
         # A source on dry shore receives a Lily Pad beneath it for no draws, as the display board's sources do.
         result = self.search("beach3", [("lilypad", (5, 3))], {"puffshroom": 0}, activation=(5, 3), rank=4, max_length=0,
-                             overrides=DRY_BEACH3)
+                             max_sources=9, overrides=DRY_BEACH3)
         match = result["match"]
         self.assertIsNotNone(match)
         self.assertEqual([(s["source"], s["cell"]) for s in match["planting_order"]], [("puffshroom", (5, 3))])
@@ -200,7 +201,7 @@ class SearchTest(unittest.TestCase):
         for level, wants, sources, options, message in cases:
             with self.subTest(wants=wants, sources=sources, options=options):
                 with self.assertRaisesRegex(ValueError, message):
-                    self.search(level, wants, sources, **options)
+                    self.search(level, wants, sources, max_sources=9, **options)
 
     def test_each_artifact_starts_with_its_rank_1_preview(self):
         # Tapping an artifact plays its rank-1 preview, so previews run since a restart cannot begin with E4, and the
@@ -210,23 +211,23 @@ class SearchTest(unittest.TestCase):
         for done in (["E4", "E1"], ["D1", "E4"], ["E1", "D1", "E3"]):
             with self.subTest(done=done):
                 with self.assertRaisesRegex(ValueError, "cannot"):
-                    self.search(*request, done=done)
+                    self.search(*request, done=done, max_sources=1)
                 with self.assertRaisesRegex(ValueError, "cannot"):
                     scenario(self.game, done)
         for done, allowed in (([], ["E3", "E4"]), (["D1"], ["E3", "E4"])):
             with self.subTest(done=done, allowed=allowed), self.assertRaisesRegex(ValueError, "None of the allowed"):
-                self.search(*request, done=done, allowed=allowed)
+                self.search(*request, done=done, allowed=allowed, max_sources=1)
         for done in (["D1", "E1", "E4"], ["E1", "E4", "D1", "D1", "E1", "E3"]):
             with self.subTest(done=done):
-                self.search(*request, done=done, max_length=0)
+                self.search(*request, done=done, max_length=0, max_sources=1)
 
     def test_a_search_stopped_by_the_state_cap_is_reported(self):
         # Two Kernel-pults at this entry need seven sources. The start is a stored state, so with room for two the
         # search stores one one-source sequence and stops at the second: the entry is listed with the number of sources
         # among whose recipes it stopped, and no recipe is claimed there.
         wants, sources = [("kernelpult", (1, 1)), ("kernelpult", (3, 3))], {"wallnut": 50, "puffshroom": 0}
-        full = self.search("egypt1", wants, sources, max_length=0, offset=13958)
-        capped = self.search("egypt1", wants, sources, max_length=0, offset=13958, max_states=2)
+        full = self.search("egypt1", wants, sources, max_length=0, offset=13958, max_sources=9)
+        capped = self.search("egypt1", wants, sources, max_length=0, offset=13958, max_sources=9, max_states=2)
         self.assertEqual((full["match"]["source_count"], full["state_cap_reached"]), (7, []))
         self.assertIsNone(capped["match"])
         self.assertEqual(capped["state_cap_reached"], [{"route": [], "level_entry_offset": 13958,
@@ -239,7 +240,7 @@ class SearchTest(unittest.TestCase):
         aeoniums = [("aeonium", (1, 1)), ("aeonium", (1, 3))], {"sunflower": 50, "puffshroom": 0}
         three = [("kernelpult", (1, 1)), ("peashooter", (2, 2)), ("burdockbatter", (3, 3))], {}
         cases = [
-            (self.search("memory-lane-s33-6-hard", *aeoniums, max_length=12, overrides=DRY_MEMORY_LANE), True),
+            (self.search("memory-lane-s33-6-hard", *aeoniums, max_length=12, max_sources=9, overrides=DRY_MEMORY_LANE), True),
             (self.search("egypt13", [("whitemelon", (1, 1))], {}, rank=4, max_sources=0, max_length=3), False),
             (self.search("egypt1", *three, rank=4, max_sources=0, max_length=2), True),
             (self.search("egypt1", *three, rank=4, max_sources=0, max_length=0), False),

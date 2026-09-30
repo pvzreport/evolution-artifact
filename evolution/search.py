@@ -56,14 +56,14 @@ def parse_spec(spec):
     return (int(spec), None) if isinstance(spec, int) else (int(spec[0]), list(spec[1]))
 
 
-def search_recipe(game, level, wants, sources, activation=(2, 2), *, overrides=None, rank=1, done=(), style="simple",
-                  allowed=None, max_length=100, offset=0, max_sources=9, max_states=MAX_STATES, stream=None,
+def search_recipe(game, level, wants, sources, activation=(2, 2), *, max_sources, overrides=None, rank=1, done=(),
+                  style="simple", allowed=None, max_length=100, offset=0, max_states=MAX_STATES, stream=None,
                   preview_cost=None):
     """The shortest route of `style` continuing the `done` steps, with the recipe that places every want.
 
     game: the Game whose plant data the recipe is for. wants: list of (plant, cell). sources:
     {alias: cost} or {alias: (cost, [kinds])} when a source may only be planted on cells of those
-    kinds. overrides: {cell: kind} for this activation. done: the names of the steps already run
+    kinds. max_sources: the most sources a recipe may plant. overrides: {cell: kind} for this activation. done: the names of the steps already run
     since a full restart, in order. style: "simple" (at most one switch), "shorter" (at most three)
     or "shortest" (any number); a switch counts whenever a planned step differs from the step before
     it, the last done step included. allowed: the names of the steps the planned ones may be, by

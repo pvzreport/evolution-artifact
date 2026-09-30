@@ -44,7 +44,8 @@ class CliTest(unittest.TestCase):
 
     def test_plan_recipe_replays_through_predict(self):
         plan = json.loads(run("plan", "--rank", "4", "--level", "egypt13", "--want", "kiwifruit@2-1",
-                              "--want", "primalwallnut@3-3", "--source", "wallnut=50", "--max-length", "0", "--json"))
+                              "--want", "primalwallnut@3-3", "--source", "wallnut=50", "--max-sources", "9", "--max-length", "0",
+                              "--json"))
         match = plan["match"]
         argv = ["predict", "--rank", "4", "--level", "egypt13", "--activate", "2-2", "--json"]
         for step in match["planting_order"]:
@@ -62,12 +63,14 @@ class CliTest(unittest.TestCase):
                    "--style", "simple", "--max-length", "1", "--max-sources", "1")
         self.assertIn("Continue from the steps already run since a full relaunch: E1.", text)
         self.assertIn("Run these further steps, each one complete, with sunflower at effective cost 50: E4.", text)
+        self.assertIn("Enter the level directly and plant 1 source, in this order:", text)
         self.assertIn("eagleclaw  <- wanted", text)
 
     def test_repeated_source_flags_widen_the_kinds(self):
         plan = json.loads(run("plan", "--level", "memory-lane-s33-6-hard", "--want", "aeonium@1-1", "--max-length", "12",
                               "--cell", "3-1=beach_shore", "--cell", "3-2=beach_shore", "--cell", "3-3=beach_shore",
-                              "--source", "sunflower=50", "--source", "puffshroom=0:ground", "--source", "puffshroom=0:beach_shore", "--json"))
+                              "--source", "sunflower=50", "--source", "puffshroom=0:ground", "--source", "puffshroom=0:beach_shore",
+                              "--max-sources", "9", "--json"))
         self.assertEqual(sorted(k for o in plan["options"] if o["sources"] == ["puffshroom"] for k in o["kinds"]), ["beach_shore", "ground"])
         self.assert_error(["plan", "--level", "egypt13", "--want", "kiwifruit@1-1", "--source", "wallnut=50", "--source", "wallnut=75"],
                           "two costs")
@@ -130,8 +133,9 @@ class CliTest(unittest.TestCase):
 
     def test_model_refusals_reach_the_user_as_errors(self):
         self.assert_error(["predict", "--rank", "4", "--level", "beach3", "--activate", "5-3", "--plant", "lilypad=25@5-3"], "cannot stand on")
-        self.assert_error(["plan", "--rank", "4", "--level", "beach3", "--activate", "5-3", "--want", "cactus@5-3", "--source", "puffshroom=0"],
-                          "can never be placed")
+        self.assert_error(["plan", "--rank", "4", "--level", "beach3", "--activate", "5-3", "--want", "cactus@5-3", "--source", "puffshroom=0",
+                           "--max-sources", "1"], "can never be placed")
+        self.assert_error(["plan", "--level", "egypt13", "--want", "kiwifruit@1-1", "--source", "wallnut=50"], "--max-sources")
 
 
 if __name__ == "__main__":
