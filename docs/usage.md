@@ -46,6 +46,7 @@ python3 -m evolution predict --rank 4 --level beach3 --previews 1x11 --activate 
 
 ```bash
 python3 -m evolution plan --level memory-lane-s33-6-hard \
+  --cell 3-1=beach_shore --cell 3-2=beach_shore --cell 3-3=beach_shore \
   --want aeonium@1-1 --want aeonium@1-3 --source sunflower=50 --source puffshroom=0
 ```
 
@@ -61,7 +62,7 @@ python3 -m evolution plan --level egypt1 --want kernelpult@1-1 --source wallnut=
 
 Cells are written COLUMN-ROW, one-based, column first: `3-1` is the third column of the first row. The activation area is the 3x3 around the activation cell, clipped at the board's edges, and the rank-4 pass visits it down each column and then to the right.
 
-A level description gives each cell's usual kind. The kinds are `ground`, `beach_shore` (a Beach cell right of the coast while dry, with no Lily Pad), `beach_pad` (a Lily Pad, bare or carrying an ordinary plant, over water or over dry shore), `beach_water` (a flooded cell with no Lily Pad), `pirate_plank`, and `none` (a cell no source can occupy and no spawn reaches: a standing gravestone, a plant the level protects, or open water beside the planks). These are defaults, so override the tide and pads for the activation: `--plant puffshroom=0@3-1:beach_pad` or `--cell 3-1=beach_water`. A destroyed gravestone is `--cell 3-1=ground`. The `--plant` list holds the sources above any pad; the pad itself is a kind, not a plant.
+A level description gives each cell's kind at level start. The kinds are `ground`, `beach_shore` (a Beach cell right of the coast while dry, with no Lily Pad), `beach_pad` (a Lily Pad, bare or carrying an ordinary plant, over water or over dry shore), `beach_water` (a flooded cell with no Lily Pad), `pirate_plank`, and `none` (a cell no source can occupy and no spawn reaches: a standing gravestone, a plant the level protects, or open water beside the planks). These are defaults, so override the tide and pads for the activation: `--plant puffshroom=0@3-1:beach_pad` or `--cell 3-1=beach_water`. A destroyed gravestone is `--cell 3-1=ground`. The `--plant` list holds the sources above any pad; the pad itself is a kind, not a plant.
 
 ## Previews
 
@@ -83,7 +84,7 @@ At each entry position the search walks sequences of source pools breadth first,
 
 The tests hold this search to the one that walks every sequence. At 34,992 level entries drawn at random for 34 requests, on uniform ground, ground with Beach shore, Lily Pads and Pirate planks, at both ranks and with one to eight cost bands, both returned the same recipe, or none; `tests/fixtures/search-equality.json` keeps 635 of those entries, 389 with a recipe.
 
-Search time, measured in CPython 3.14 in one process, for requests with the default nine sources at most. Sources in n cost bands are the first n of `wallnut=50`, `puffshroom=0`, `potatomine=25`, `holonut=75`, `peashooter=100`, `twinsunflower=125`, `snowpea=150` and `repeater=200`, each band with its own pool. Egypt 1 is activated at 2-2 with Kernel-pults wanted at 1-1, 2-2 and 3-3, or Peashooters at 1-1 and 1-3 and Burdock batters at 3-1 and 3-3; Big Wave Beach 3 is activated at 4-2 with Kernel-pults wanted on the ground cell 3-1 and the shore cells 4-3 and 5-3. The time per entry position is over 100 positions drawn below 1,000,000; the simple search is `plan` from a restart with `--style simple` and up to 100 previews, until it returns.
+Search time, measured in CPython 3.14 in one process, for requests with the default nine sources at most. Sources in n cost bands are the first n of `wallnut=50`, `puffshroom=0`, `potatomine=25`, `holonut=75`, `peashooter=100`, `twinsunflower=125`, `snowpea=150` and `repeater=200`, each band with its own pool. Egypt 1 is activated at 2-2 with Kernel-pults wanted at 1-1, 2-2 and 3-3, or Peashooters at 1-1 and 1-3 and Burdock batters at 3-1 and 3-3; Big Wave Beach 3 is activated at 4-2, with 4-2 given as dry shore, and Kernel-pults wanted on the ground cell 3-1 and the shore cells 4-3 and 5-3. The time per entry position is over 100 positions drawn below 1,000,000; the simple search is `plan` from a restart with `--style simple` and up to 100 previews, until it returns.
 
 | Request | Per entry position, mean | Slowest of 100 | Simple search up to 100 previews |
 |---|---|---|---|

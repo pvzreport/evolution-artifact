@@ -1,10 +1,10 @@
 """A level: its stage, its seed-bank bans, the kind of each cell, and what its entry shuffles.
 
 A level description is a small JSON file holding declared values only: the stage name,
-the banned plants, the default cell kind, the cells whose kind differs, and the sizes of
-the gravestone bags the level shuffles with the shared engine when it loads. The tide
-state of a Beach cell changes during play, so it is supplied per activation instead of
-stored here. Cells are written COLUMN-ROW, one-based, for example 3-1.
+the banned plants, the default cell kind, the cells whose kind at level start differs, and
+the sizes of the gravestone bags the level shuffles with the shared engine when it loads.
+The tide moves a Beach cell's kind during play, so an activation after it has moved
+supplies the kinds of the moment. Cells are written COLUMN-ROW, one-based, for example 3-1.
 """
 
 import json

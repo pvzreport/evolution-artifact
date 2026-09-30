@@ -37,7 +37,8 @@ class CliTest(unittest.TestCase):
     def test_predict_rank4_shows_blocked_placements(self):
         # After thirteen previews the Sunflower at 4-2 evolves into a Snap Pea, which the Lily Pad added beneath it rejects.
         text = run("predict", "--rank", "4", "--level", "beach3", "--previews", "1x13", "--activate", "5-3",
-                   "--plant", "puffshroom=0@5-3", "--plant", "sunflower=50@6-4", "--plant", "sunflower=50@4-2")
+                   "--plant", "puffshroom=0@5-3", "--plant", "sunflower=50@6-4", "--plant", "sunflower=50@4-2",
+                   "--cell", "4-2=beach_shore", "--cell", "4-4=beach_shore", "--cell", "6-4=beach_shore")
         self.assertIn("4-2 sunflower, cost 50 (beach_shore, 226 candidates) -> snappea (placement blocked)", text)
         self.assertIn("Selection stream ends at 38734.", text)
 
@@ -65,6 +66,7 @@ class CliTest(unittest.TestCase):
 
     def test_repeated_source_flags_widen_the_kinds(self):
         plan = json.loads(run("plan", "--level", "memory-lane-s33-6-hard", "--want", "aeonium@1-1", "--max-previews", "12",
+                              "--cell", "3-1=beach_shore", "--cell", "3-2=beach_shore", "--cell", "3-3=beach_shore",
                               "--source", "sunflower=50", "--source", "puffshroom=0:ground", "--source", "puffshroom=0:beach_shore", "--json"))
         self.assertEqual(sorted(k for o in plan["options"] if o["sources"] == ["puffshroom"] for k in o["kinds"]), ["beach_shore", "ground"])
         self.assert_error(["plan", "--level", "egypt13", "--want", "kiwifruit@1-1", "--source", "wallnut=50", "--source", "wallnut=75"],

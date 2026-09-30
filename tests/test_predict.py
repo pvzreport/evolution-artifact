@@ -52,11 +52,12 @@ class PredictTest(unittest.TestCase):
         self.assertEqual(out["stream_end"], 2874)
 
     def test_memory_lane_six_preview_recipe(self):
-        # Forecast saved before play, then both Aeoniums appeared in the game. Cell 3-1 is a shore cell;
-        # its own result was not checked in that run and is left out here.
+        # Forecast saved before play with column 3 as dry shore, then both Aeoniums appeared in the game. Cell 3-1 is a
+        # shore cell; its own result was not checked in that run and is left out here.
         plantings = [Planting("sunflower", 50, c) for c in [(1, 3), (3, 3), (2, 3), (3, 2), (2, 2), (1, 1)]]
         plantings += [Planting("puffshroom", 0, c) for c in [(1, 2), (3, 1), (2, 1)]]
-        out = self.run_scenario([1] * 6, "memory-lane-s33-6-hard", plantings, (2, 2), preview_cost=50)
+        dry = {(3, row): "beach_shore" for row in (1, 2, 3)}
+        out = self.run_scenario([1] * 6, "memory-lane-s33-6-hard", plantings, (2, 2), dry, preview_cost=50)
         cells = by_cell(out["results"])
         self.assertEqual(cells[(1, 1)], "aeonium")
         self.assertEqual(cells[(1, 3)], "aeonium")
@@ -212,7 +213,7 @@ class PredictTest(unittest.TestCase):
         # Played after a fresh launch, tide out: Puff-shrooms at 2-1, at 3-1 on bare shore, and at 3-2
         # on a Lily Pad; activation at 2-2. Reported chestnut, bloomerang, agave: the pad kind's results only.
         def play(kind):
-            plantings = [Planting("puffshroom", 0, (2, 1)), Planting("puffshroom", 0, (3, 1)),
+            plantings = [Planting("puffshroom", 0, (2, 1)), Planting("puffshroom", 0, (3, 1), "beach_shore"),
                          Planting("puffshroom", 0, (3, 2), kind)]
             out = self.run_scenario([], "memory-lane-s33-6-hard", plantings, (2, 2))
             return by_cell(out["results"])

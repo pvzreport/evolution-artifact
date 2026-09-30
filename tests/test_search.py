@@ -14,6 +14,10 @@ from projections import game_on
 # The version whose captures fix the preview counts and offsets asserted below. The route cases show the properties
 # their comments name with this version's plant data, not all of them with 4.2.4's.
 CAPTURED_ON = "4.2.2"
+# These Beach requests take their shore cells as dry sand rather than the level-start state the descriptions give: column 3
+# of Memory Lane, and Beach 3's start pads inside their areas.
+DRY_MEMORY_LANE = {(3, row): "beach_shore" for row in (1, 2, 3)}
+DRY_BEACH3 = {cell: "beach_shore" for cell in [(4, 2), (4, 4), (6, 4)]}
 
 
 class SearchTest(unittest.TestCase):
@@ -47,11 +51,12 @@ class SearchTest(unittest.TestCase):
 
     def test_two_aeoniums_in_memory_lane(self):
         wants = [("aeonium", (1, 1)), ("aeonium", (1, 3))]
-        result = self.search("memory-lane-s33-6-hard", wants, {"sunflower": 50, "puffshroom": 0}, max_previews=12)
+        result = self.search("memory-lane-s33-6-hard", wants, {"sunflower": 50, "puffshroom": 0}, max_previews=12,
+                             overrides=DRY_MEMORY_LANE)
         match = result["match"]
         self.assertIsNotNone(match)
         self.assertEqual((match["preview_sequence"], result["state_cap_reached"]), ([1] * 6, []))
-        self.assertTrue(set(wants) <= self.replay("memory-lane-s33-6-hard", match, (2, 2)))
+        self.assertTrue(set(wants) <= self.replay("memory-lane-s33-6-hard", match, (2, 2), DRY_MEMORY_LANE))
         for row in match["processing_order"]:
             self.assertEqual(row["kind"], "beach_shore" if row["cell"][0] == 3 else "ground")
 
@@ -95,7 +100,7 @@ class SearchTest(unittest.TestCase):
 
     def test_source_restricted_to_a_kind(self):
         result = self.search("memory-lane-s33-6-hard", [("aeonium", (1, 1))],
-                             {"sunflower": 50, "puffshroom": (0, ["ground"])}, max_previews=12)
+                             {"sunflower": 50, "puffshroom": (0, ["ground"])}, max_previews=12, overrides=DRY_MEMORY_LANE)
         self.assertIsNotNone(result["match"])
         for row in result["match"]["processing_order"]:
             if "puffshroom" in row["sources"]:
@@ -115,9 +120,9 @@ class SearchTest(unittest.TestCase):
         for rank in (1, 4):
             with self.subTest(rank=rank):
                 result = self.search("beach3", wants, {"sunflower": 50, "puffshroom": 0}, activation=(4, 2),
-                                     rank=rank, done=[1] * 10, max_previews=0)
+                                     rank=rank, done=[1] * 10, max_previews=0, overrides=DRY_BEACH3)
                 self.assertIsNotNone(result["match"])
-                self.assertTrue(set(wants) <= self.replay("beach3", result["match"], (4, 2), rank=rank))
+                self.assertTrue(set(wants) <= self.replay("beach3", result["match"], (4, 2), DRY_BEACH3, rank=rank))
 
     def test_mixed_wants_leave_the_spawn_cell_free(self):
         # Kiwifruit needs a transformation; Primal Wall-nut can only spawn, so 3-3 must stay free.
@@ -153,11 +158,12 @@ class SearchTest(unittest.TestCase):
 
     def test_lily_pad_beneath_an_occupied_shore_cell(self):
         # A source on dry shore receives a Lily Pad beneath it for no draws, as the display board's sources do.
-        result = self.search("beach3", [("lilypad", (5, 3))], {"puffshroom": 0}, activation=(5, 3), rank=4, max_previews=0)
+        result = self.search("beach3", [("lilypad", (5, 3))], {"puffshroom": 0}, activation=(5, 3), rank=4, max_previews=0,
+                             overrides=DRY_BEACH3)
         match = result["match"]
         self.assertIsNotNone(match)
         self.assertEqual([(s["source"], s["cell"]) for s in match["planting_order"]], [("puffshroom", (5, 3))])
-        self.assertIn(("lilypad", (5, 3)), self.replay("beach3", match, (5, 3), rank=4))
+        self.assertIn(("lilypad", (5, 3)), self.replay("beach3", match, (5, 3), DRY_BEACH3, rank=4))
 
     def test_a_source_with_no_candidates_still_occupies_its_cell(self):
         # Winter Melon at its full cost has no dearer candidate; planted, it only shifts the spawn cells.
@@ -233,7 +239,7 @@ class SearchTest(unittest.TestCase):
         aeoniums = [("aeonium", (1, 1)), ("aeonium", (1, 3))], {"sunflower": 50, "puffshroom": 0}
         three = [("kernelpult", (1, 1)), ("peashooter", (2, 2)), ("burdockbatter", (3, 3))], {}
         cases = [
-            (self.search("memory-lane-s33-6-hard", *aeoniums, max_previews=12), True),
+            (self.search("memory-lane-s33-6-hard", *aeoniums, max_previews=12, overrides=DRY_MEMORY_LANE), True),
             (self.search("egypt13", [("whitemelon", (1, 1))], {}, rank=4, max_sources=0, max_previews=3), False),
             (self.search("egypt1", *three, rank=4, max_sources=0, max_previews=2), True),
             (self.search("egypt1", *three, rank=4, max_sources=0, max_previews=0), False),
@@ -246,40 +252,42 @@ class SearchTest(unittest.TestCase):
         """Every route of up to a few previews is searched on its own. For each style, the route search must return the
         shortest allowed route with a recipe, then the fewest sources, the fewest switches and the first in preview
         order, with that route's own recipe, and must search each position the allowed routes reach once."""
-        aeoniums = ("memory-lane-s33-6-hard", [("aeonium", (1, 1)), ("aeonium", (1, 3))], {"sunflower": 50, "puffshroom": 0}, (2, 2))
-        kernelpults = ("beach3", [("kernelpult", (3, 1)), ("kernelpult", (5, 3))], {"wallnut": 50, "puffshroom": 0}, (4, 2))
-        starfruit = ("pirate1", [("starfruit", (5, 1))], {"wallnut": 50}, (6, 2))
+        aeoniums = ("memory-lane-s33-6-hard", [("aeonium", (1, 1)), ("aeonium", (1, 3))], {"sunflower": 50, "puffshroom": 0}, (2, 2),
+                    DRY_MEMORY_LANE)
+        kernelpults = ("beach3", [("kernelpult", (3, 1)), ("kernelpult", (5, 3))], {"wallnut": 50, "puffshroom": 0}, (4, 2),
+                       DRY_BEACH3)
+        starfruit = ("pirate1", [("starfruit", (5, 1))], {"wallnut": 50}, (6, 2), None)
         evolution, every = [1, 4], [1, 3, 4, "D1"]
         cases = [
             (aeoniums, 1, [], evolution, 6, 9),  # the styles differ in length, and switches decide the simple route
             (aeoniums, 1, [1, 4], evolution, 4, 9),  # switches count from the last done preview
             (kernelpults, 4, [], evolution, 6, 9),  # routes of the shortest length differ in switches
             (kernelpults, 1, [], evolution, 5, 9),  # no recipe within the limit
-            (("pirate1", [("aeonium", (6, 1))], {"wallnut": 50, "puffshroom": 0, "potatomine": 25}, (6, 2)), 1, [1], evolution, 4, 5),
+            (("pirate1", [("aeonium", (6, 1))], {"wallnut": 50, "puffshroom": 0, "potatomine": 25}, (6, 2), None), 1, [1], evolution, 4, 5),
             (starfruit, 1, [1, 4], evolution, 4, 6),
             # In the last two, fewer sources outweigh a switch, and one switch beats three on a route first in preview
             # order. With every preview, 3,4,D1 beats the simple style's 4,1,1,1 by a preview:
             (starfruit, 1, [1, 4], every, 4, 6),
             (aeoniums, 1, ["D1"], every, 4, 9),  # switches count from a done D1: D1,1,3 makes two
             # 3,D1,1 would be first, but a route cannot start with rank 3:
-            (("egypt1", [("chestnut", (1, 1))], {"wallnut": 50}, (2, 2)), 1, [], every, 3, 1),
+            (("egypt1", [("chestnut", (1, 1))], {"wallnut": 50}, (2, 2), None), 1, [], every, 3, 1),
             # D1,4 would be first, but rank 4 cannot follow D1, and no route within the limit has a recipe:
-            (("egypt1", [("broccoli", (1, 1))], {"wallnut": 50}, (2, 2)), 1, [], every, 3, 1),
+            (("egypt1", [("broccoli", (1, 1))], {"wallnut": 50}, (2, 2), None), 1, [], every, 3, 1),
             # one rank-3 preview after the done D1 would have a recipe, but rank 3 cannot follow D1:
-            (("egypt1", [("iceshroom", (1, 1))], {"wallnut": 50}, (2, 2)), 1, ["D1"], every, 3, 1),
+            (("egypt1", [("iceshroom", (1, 1))], {"wallnut": 50}, (2, 2), None), 1, ["D1"], every, 3, 1),
             # routes still rank in preview order when --allow lists the previews in another order and leaves out the
             # last done one: 1,D1 comes before D1,1
-            (("egypt1", [("tuliptrumpeter", (1, 1))], {"wallnut": 50, "puffshroom": 0}, (2, 2)), 1, [1, 3], ["D1", 4, 1], 2, 2),
+            (("egypt1", [("tuliptrumpeter", (1, 1))], {"wallnut": 50, "puffshroom": 0}, (2, 2), None), 1, [1, 3], ["D1", 4, 1], 2, 2),
             # D4,D4,D4 would be first, but D4 needs a Devolution preview before it; 1,D1,1 is
-            (("egypt1", [("snapdragon", (1, 1))], {"wallnut": 50}, (2, 2)), 1, [], every + ["D4"], 3, 1),
-            (("egypt1", [("aloes", (1, 1))], {"wallnut": 50}, (2, 2)), 1, [], every + ["D4"], 3, 1),  # 1,D1,D4
+            (("egypt1", [("snapdragon", (1, 1))], {"wallnut": 50}, (2, 2), None), 1, [], every + ["D4"], 3, 1),
+            (("egypt1", [("aloes", (1, 1))], {"wallnut": 50}, (2, 2), None), 1, [], every + ["D4"], 3, 1),  # 1,D1,D4
         ]
-        for (level, wants, sources, activation), rank, done, allowed, limit, most in cases:
+        for (level, wants, sources, activation, overrides), rank, done, allowed, limit, most in cases:
             level = load_level(level)
             outcomes = {}
             for planned in self.every_route(done, limit, allowed=allowed):
                 match = self.search(level, wants, sources, activation, rank=rank, done=done + planned, max_previews=0,
-                                    max_sources=most)["match"]
+                                    max_sources=most, overrides=overrides)["match"]
                 outcomes[tuple(planned)] = (self.previews.advance(shared(), 0, done + planned, 50)[1], match)
             for style, switches in (("simple", 1), ("shorter", 3), ("shortest", None)):
                 with self.subTest(level=level.id, rank=rank, done=done, allowed=allowed, style=style):
@@ -289,7 +297,7 @@ class SearchTest(unittest.TestCase):
                                     self.preference(planned), planned)
                                    for planned, (_, match) in within.items() if match)
                     result = self.search(level, wants, sources, activation, rank=rank, done=done, style=style,
-                                         allowed=allowed, max_previews=limit, max_sources=most)
+                                         allowed=allowed, max_previews=limit, max_sources=most, overrides=overrides)
                     match, length = result["match"], found[0][0] if found else limit
                     if found:
                         _, count, switched, _, planned = found[0]
